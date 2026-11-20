@@ -9,7 +9,7 @@ import styles from "./HeaderFocusIndicator.module.css";
 
 const GROUP_KEYS: Record<"tabs" | "shortcuts", readonly string[]> = {
   tabs: ["family-tab", "home-tab"],
-  shortcuts: ["gear", "samsung-home-shortcut", "apps-tab"],
+  shortcuts: ["gear"],
 };
 
 interface PlateBox {
@@ -40,6 +40,7 @@ export const HeaderFocusIndicator = ({
     }
     return tabs ? state.page + "-tab" : "";
   });
+  const page = useStoreSelector(env.state, (state) => state.page);
   const previousKey = useRef<string>();
   const [plate, setPlate] = useState({
     motion: false,
@@ -97,7 +98,7 @@ export const HeaderFocusIndicator = ({
       aria-hidden="true"
       class={styles.indicator + " " + (tabs ? styles.tabs : styles.shortcuts)}
       data-header-focus={group}
-      data-visible={tabs || focused ? "true" : undefined}
+      data-visible={(tabs && page !== "apps") || focused ? "true" : undefined}
       data-focused={focused ? "true" : undefined}
       data-motion={plate.motion ? "true" : "false"}
       style={plate.style}

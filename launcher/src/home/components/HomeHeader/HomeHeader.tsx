@@ -1,4 +1,4 @@
-import { House, LayoutGrid, Settings } from "lucide-preact";
+import { Settings } from "lucide-preact";
 
 import { useStore, useStoreSelector } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
@@ -37,25 +37,6 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
         >
           <Icon icon={Settings} />
           {unread && <span class={styles.notice} data-home-update-notice aria-hidden="true" />}
-        </HomeControl>
-        <HomeControl
-          env={env}
-          id="samsung-home-shortcut"
-          controlKey="samsung-home-shortcut"
-          className={styles.shortcut + " " + styles.nativeShortcut}
-          title={t("common.samsungHome")}
-        >
-          <Icon icon={House} />
-        </HomeControl>
-        <HomeControl
-          env={env}
-          id="apps-tab"
-          controlKey="apps-tab"
-          className={styles.shortcut}
-          title={t("home.allApps")}
-          pressed={page === "apps"}
-        >
-          <Icon icon={LayoutGrid} />
         </HomeControl>
         <NetworkStatus status={env.status} />
       </div>

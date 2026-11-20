@@ -1,4 +1,4 @@
-import { House, X } from "lucide-preact";
+import { House, LayoutGrid, X } from "lucide-preact";
 import type { ComponentChildren } from "preact";
 
 import { FIXED_NAMES } from "../../../shared/fixedNames";
@@ -25,6 +25,7 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
     categoryContent,
     categoryScroll,
     bridge,
+    services,
     actions,
     updates,
     panes: paneRefs,
@@ -33,6 +34,10 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
   const { unread } = useStore(updates);
   const { t } = useTranslation();
   const active = categories.find((category) => category.id === state.category);
+  const openPage = (page: "apps" | "family") => {
+    bridge.close();
+    services.showPage(page);
+  };
   const expanded = state.expanded ? "true" : "false";
   return (
     <SettingsPanel class={styles.frame} data-settings-drawer="frame" data-expanded={expanded}>
@@ -64,6 +69,22 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
             );
           })}
           <div class={styles.return}>
+            <SettingsCategory
+              id="settings-home"
+              focusKey="settings-home"
+              variant="return"
+              icon={House}
+              label={t("home.family")}
+              onSelect={() => openPage("family")}
+            />
+            <SettingsCategory
+              id="settings-apps"
+              focusKey="settings-apps"
+              variant="return"
+              icon={LayoutGrid}
+              label={t("home.allApps")}
+              onSelect={() => openPage("apps")}
+            />
             <SettingsCategory
               id="escape"
               focusKey="escape"

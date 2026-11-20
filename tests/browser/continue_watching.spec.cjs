@@ -275,7 +275,8 @@ test("opt-in discovery, selection, merged row, remote navigation, launch and res
       id: prime,
       control: { data: [{ key: "PAYLOAD", value: [JSON.stringify({ values: "watch?id=p1" })] }] },
     });
-  await page.locator("#apps-tab").click();
+  await page.locator("#gear").click();
+  await page.locator("#settings-apps").click();
   await expect(page.locator("#continue-section")).toBeHidden();
   await page.locator("#home-tab").click();
   await expect(page.locator("#continue-section")).toBeVisible();

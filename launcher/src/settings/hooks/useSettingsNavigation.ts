@@ -144,7 +144,7 @@ export const useSettingsNavigation = (
                 drawer.set({ category: next.id, expanded: false });
               }
             });
-          } else if (current?.id === "escape") {
+          } else if (current?.id === "escape" || current?.id === "settings-home" || current?.id === "settings-apps") {
             if (code === K.ENTER || code === SPACE_KEY) {
               current.click();
             }

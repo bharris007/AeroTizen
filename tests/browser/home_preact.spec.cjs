@@ -74,7 +74,8 @@ test("a short OK launches once despite repeats; Back from actions permits the ne
 });
 test("All apps actions add and remove a favourite without removing the app card", async ({ page }) => {
   await openHome(page, ["demo0"]);
-  await page.locator("#apps-tab").click();
+  await page.locator("#gear").click();
+  await page.locator("#settings-apps").click();
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("ArrowRight");
   const cards = page.locator("#grid > [data-id]");

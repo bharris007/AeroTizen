@@ -57,6 +57,7 @@ export interface SettingsServices {
   openStore(): void;
   previewBackground(preview: BackgroundPreview | null): void;
   searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): () => void;
+  showPage(page: "apps" | "family"): void;
   useSamsungHome(): void;
   weather: Store<WeatherSnapshot>;
 }
