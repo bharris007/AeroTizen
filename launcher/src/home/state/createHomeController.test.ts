@@ -66,16 +66,14 @@ const ok = (home: ReturnType<typeof controller>) => {
 test("moves from the header to Family and between its columns", () => {
   const home = controller();
   home.bridge.focus();
-  expect(home.state.getSnapshot()).toMatchObject({ page: "home", selected: "app:demo" });
+  // Family is the default page; its weather card is the first content item.
+  expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "family-weather" });
 
+  // Up lands on the Family tab (the default, left-most tab).
   press(home, KEY.UP);
-  press(home, KEY.RIGHT);
-  press(home, KEY.RIGHT);
-  expect(home.state.getSnapshot()).toMatchObject({ page: "home", selected: "family-tab" });
-
-  ok(home);
   expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "family-tab" });
 
+  // Down moves into the family content columns.
   press(home, KEY.DOWN);
   expect(home.state.getSnapshot().selected).toBe("family-weather");
   press(home, KEY.RIGHT);
@@ -83,6 +81,13 @@ test("moves from the header to Family and between its columns", () => {
   press(home, KEY.UP);
   expect(home.state.getSnapshot().selected).toBe("family-tab");
 
-  press(home, KEY.BACK);
+  // Right moves to the Watch tab; activating it switches pages.
+  press(home, KEY.RIGHT);
+  expect(home.state.getSnapshot().selected).toBe("home-tab");
+  ok(home);
   expect(home.state.getSnapshot()).toMatchObject({ page: "home", selected: "home-tab" });
+
+  // Back returns to the default Family page.
+  press(home, KEY.BACK);
+  expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "family-tab" });
 });

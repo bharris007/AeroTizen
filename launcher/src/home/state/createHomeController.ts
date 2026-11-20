@@ -7,7 +7,7 @@ import type { HomeEnvironment, HomeMenuChoice, HomeState, Page } from "../types"
 
 import { revealHorizontalItem } from "./horizontalScroll";
 
-const HEADER_KEYS = ["gear", "samsung-home-shortcut", "home-tab", "apps-tab", "family-tab"] as const;
+const HEADER_KEYS = ["gear", "samsung-home-shortcut", "apps-tab", "family-tab", "home-tab"] as const;
 const FAMILY_ROW_KEYS = ["family-weather", "family-calendar"] as const;
 
 const tabForPage = (page: Page) => {
@@ -149,7 +149,7 @@ export const createHomeController = (
 ) => {
   const { runtime, settings, inventory, nodes } = env;
   const state = createStore<HomeState>({
-    page: "home",
+    page: "family",
     appsEndOffset: 0,
     scroll: 0,
     continueOffset: 0,
@@ -448,8 +448,8 @@ export const createHomeController = (
         return;
       }
       if (code === K.BACK || code === K.ESC) {
-        if (current.page !== "home") {
-          showPage("home");
+        if (current.page !== "family") {
+          showPage("family");
         }
         return;
       }
