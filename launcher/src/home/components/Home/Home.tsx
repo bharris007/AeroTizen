@@ -8,6 +8,7 @@ import type { HomeEnvironment } from "../../types";
 import { AppActionsMenu } from "../AppActionsMenu/AppActionsMenu";
 import { AppGrid } from "../AppGrid/AppGrid";
 import { ContinueWatchingRow } from "../ContinueWatchingRow/ContinueWatchingRow";
+import { FamilyBoard } from "../FamilyBoard/FamilyBoard";
 import { HomeControl } from "../HomeControl/HomeControl";
 import { HomeHeader } from "../HomeHeader/HomeHeader";
 import { InputDock } from "../InputDock/InputDock";
@@ -98,9 +99,10 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
                   active={active}
                   label={t("home.allApps")}
                 />
-                <p id="apps-empty" class={styles.empty} hidden={page === "home" || apps.length > 0}>
+                <p id="apps-empty" class={styles.empty} hidden={page !== "apps" || apps.length > 0}>
                   {t("home.emptyApps")}
                 </p>
+                <FamilyBoard env={env} shown={page === "family"} timeFormat={settings.timeFormat} />
                 <ContinueWatchingRow
                   env={env}
                   items={items}

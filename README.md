@@ -65,6 +65,51 @@ Developer Mode is sufficient for setup.
 
 To test before publication, [install a local build from `main`](docs/manage-installation.md#test-a-local-build).
 
+## Family tab in this fork
+
+This checkout adds a **Family** tab for a Samsung Q60B (Tizen 6.5). The tab shows
+weather for the place saved in Settings, or Franklin, TN (`America/Chicago`) when
+none is saved, beside an empty today calendar. Weather comes from the free
+[Open-Meteo](https://open-meteo.com) API already used by AeroTizen. The calendar
+does not connect to an account and does not add sample events.
+
+The widget id stays `DclHome001.Home` and the package stays `DclHome001`, so a
+stock install replaces this build in place. No root is required.
+
+### Install this build from a Mac
+
+Use the upstream `aerotizen` CLI from the
+[helalaou releases](https://github.com/helalaou/AeroTizen/releases). For this TV
+the binary is `~/aerotizen`. Certificates already stored under
+`~/.config/aerotizen/certs` are reused; the CLI picks the profile for the TV.
+From this repository:
+
+```sh
+npm ci
+npm run build
+~/aerotizen --tv 192.168.4.76 install ./dist/launcher
+```
+
+Open AeroTizen from Apps on the TV. Move to **Family** with Left or Right and
+press OK. Down enters the weather column, and Left or Right moves between the
+weather and calendar columns. `install ./dist/launcher` signs this checkout. It
+does not download the published launcher.
+
+### Revert to stock AeroTizen
+
+Revert with one command. `install launcher` downloads the latest stable launcher
+from the helalaou releases and installs it over this fork, including when the
+version number matches:
+
+```sh
+~/aerotizen --tv 192.168.4.76 install launcher
+```
+
+`aerotizen --tv <IP> install launcher` is the same command for another address.
+It uses the certificates in `~/.config/aerotizen/certs` and the same app id.
+`update launcher` leaves the installed package in place when the versions match,
+so use `install launcher` to return to the published build.
+
 ## Choose how Home works
 
 - **Native Home** is preferred on compatible TVs. The TV sends Home presses directly

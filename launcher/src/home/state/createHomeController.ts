@@ -7,7 +7,31 @@ import type { HomeEnvironment, HomeMenuChoice, HomeState, Page } from "../types"
 
 import { revealHorizontalItem } from "./horizontalScroll";
 
-const HEADER_KEYS = ["gear", "samsung-home-shortcut", "home-tab", "apps-tab"] as const;
+const HEADER_KEYS = ["gear", "samsung-home-shortcut", "home-tab", "apps-tab", "family-tab"] as const;
+const FAMILY_ROW_KEYS = ["family-weather", "family-calendar"] as const;
+
+const tabForPage = (page: Page) => {
+  if (page === "apps") {
+    return "apps-tab";
+  }
+  if (page === "family") {
+    return "family-tab";
+  }
+  return "home-tab";
+};
+
+const pageForTab = (key: string): Page | null => {
+  if (key === "home-tab") {
+    return "home";
+  }
+  if (key === "apps-tab") {
+    return "apps";
+  }
+  if (key === "family-tab") {
+    return "family";
+  }
+  return null;
+};
 // Reserve 16px for the focus outline beyond the 112px top and 80px bottom fades.
 const TOP_SCROLL_CLEARANCE = 128;
 const BOTTOM_SCROLL_CLEARANCE = 96;
@@ -86,7 +110,7 @@ const getVerticalColumn = ({
   getViewport(key: string): HTMLElement | null;
 }) => {
   if (target === 0) {
-    return rows[0].indexOf(page === "home" ? "home-tab" : "apps-tab");
+    return rows[0].indexOf(tabForPage(page));
   }
   if (row === 0) {
     return 0;
@@ -180,7 +204,11 @@ export const createHomeController = (
   };
   const sourceKey = (source: { type: string; number?: number }) => "input:" + source.type + ":" + source.number;
   const rows = (): readonly (readonly string[])[] => {
-    const columns = getAppGridColumns(settings.getSnapshot().homeCardColumns, state.getSnapshot().page);
+    const page = state.getSnapshot().page;
+    if (page === "family") {
+      return [HEADER_KEYS, FAMILY_ROW_KEYS];
+    }
+    const columns = getAppGridColumns(settings.getSnapshot().homeCardColumns, page);
     const appKeys = ids().map((id) => "app:" + id);
     const all = state.getSnapshot().page === "apps" ? [ADD_APPS_KEY, ...appKeys] : appKeys;
     const rowLength = scrollApps() ? Math.max(1, all.length) : columns;
@@ -241,7 +269,10 @@ export const createHomeController = (
       update({ [scroller.offset]: offset });
     }
     // Home's header and first row always use the top position. Avoid style/layout reads for each horizontal move.
-    if (pending.page === "home" && (list[0].includes(selected) || list[1]?.includes(selected))) {
+    if (
+      pending.page === "family" ||
+      (pending.page === "home" && (list[0].includes(selected) || list[1]?.includes(selected)))
+    ) {
       update({ appsEndOffset: 0, scroll: 0 });
       return;
     }
@@ -294,10 +325,11 @@ export const createHomeController = (
   const showPage = (page: Page) => {
     cancelPress();
     endMove();
-    update({ page, appsEndOffset: 0, scroll: 0, menu: null, selected: page === "home" ? "home-tab" : "apps-tab" });
+    update({ page, appsEndOffset: 0, scroll: 0, menu: null, selected: tabForPage(page) });
     focus();
   };
   const activate = (key: string) => {
+    const nextPage = pageForTab(key);
     if (key === "gear") {
       endMove();
       runtime.settingsUi?.open();
@@ -307,8 +339,10 @@ export const createHomeController = (
       } else {
         runtime.homewatch.useSamsungHome();
       }
-    } else if (key === "home-tab" || key === "apps-tab") {
-      showPage(key === "home-tab" ? "home" : "apps");
+    } else if (nextPage) {
+      showPage(nextPage);
+    } else if (key === "family-weather" || key === "family-calendar") {
+      return;
     } else if (key === "back-to-top") {
       select(ADD_APPS_KEY);
     } else if (key === ADD_APPS_KEY) {

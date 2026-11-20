@@ -10,6 +10,7 @@ import type { BackgroundState } from "./backgrounds/createBackgrounds";
 import { mountBackgrounds } from "./backgrounds/mountBackgrounds";
 import type { AppsService } from "./contracts/apps";
 import type { ContinueWatchingService } from "./contracts/continueWatching";
+import type { FamilyForecastService } from "./contracts/familyForecast";
 import type { HomeWatcherService } from "./contracts/homeWatcher";
 import type { InputsService } from "./contracts/inputs";
 import type { ClockService } from "./contracts/launcher";
@@ -41,6 +42,7 @@ import { createLauncherUpdates } from "./services/createLauncherUpdates";
 import { createNetworkService } from "./services/createNetworkService";
 import { createSettingsService } from "./services/createSettingsService";
 import { createWeatherService } from "./services/createWeatherService";
+import { createFamilyForecast } from "./services/family/createFamilyForecast";
 import { mountSettings } from "./settings/index";
 import { appCatalog } from "./shared/apps/appCatalog";
 
@@ -78,6 +80,7 @@ const hotData = import.meta.hot
       nativeNavigation?: NativeNavigation;
       network?: NetworkService;
       preferences?: SettingsService;
+      familyForecast?: FamilyForecastService;
       stopBoot?: () => void;
       weather?: WeatherService;
     })
@@ -170,6 +173,16 @@ const weather =
     timers: window,
   });
 runtime.weather = weather;
+const familyForecast =
+  hotData?.familyForecast ||
+  createFamilyForecast({
+    clock,
+    now: () => Date.now(),
+    platform: createWeatherPlatform(window),
+    settings,
+    timers: window,
+  });
+runtime.familyForecast = familyForecast;
 const continueWatching =
   hotData?.continueWatching ||
   runtime.continueWatching ||
@@ -265,6 +278,7 @@ try {
       hotData.clock = clock;
       hotData.preferences = settings;
       hotData.network = network;
+      hotData.familyForecast = familyForecast;
       hotData.weather = weather;
       hotData.continueWatching = continueWatching;
       hotData.stopBoot = stopBoot;

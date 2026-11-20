@@ -71,6 +71,7 @@
   transition: transform var(--motion-duration-viewport) cubic-bezier(0.2, 0.72, 0.25, 1);
 
   &[data-page="apps"],
+  &[data-page="family"],
   &[data-docked="true"] {
     height: 100%;
   }
@@ -87,6 +88,11 @@
 
   &[data-page="apps"] {
     animation: appsReveal var(--motion-duration-page) ease-out both;
+  }
+
+  &[data-page="family"] {
+    height: 100%;
+    animation: familyReveal var(--motion-duration-page) ease-out both;
   }
 
   &[data-docked="true"] {
@@ -137,6 +143,17 @@
   from {
     opacity: 0.7;
     transform: translate3d(-12px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes familyReveal {
+  from {
+    opacity: 0.7;
+    transform: translate3d(12px, 0, 0);
   }
   to {
     opacity: 1;

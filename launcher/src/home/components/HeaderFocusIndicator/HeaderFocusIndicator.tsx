@@ -8,7 +8,7 @@ import type { HomeEnvironment } from "../../types";
 import styles from "./HeaderFocusIndicator.module.css";
 
 const GROUP_KEYS: Record<"tabs" | "shortcuts", readonly string[]> = {
-  tabs: ["home-tab", "apps-tab"],
+  tabs: ["home-tab", "apps-tab", "family-tab"],
   shortcuts: ["gear", "samsung-home-shortcut"],
 };
 

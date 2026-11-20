@@ -65,11 +65,21 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
           env={env}
           id="apps-tab"
           controlKey="apps-tab"
-          className={styles.tab}
+          className={styles.tab + " " + styles.wide}
           title={t("home.allApps")}
           pressed={page === "apps"}
         >
           {t("home.allApps")}
+        </HomeControl>
+        <HomeControl
+          env={env}
+          id="family-tab"
+          controlKey="family-tab"
+          className={styles.tab}
+          title={t("home.family")}
+          pressed={page === "family"}
+        >
+          {t("home.family")}
         </HomeControl>
       </nav>
       <HeaderStatus settings={env.settings} status={env.status} clock={env.runtime.clock} />
