@@ -1,4 +1,4 @@
-import { House, Settings } from "lucide-preact";
+import { House, LayoutGrid, Settings } from "lucide-preact";
 
 import { useStore, useStoreSelector } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
@@ -47,10 +47,30 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
         >
           <Icon icon={House} />
         </HomeControl>
+        <HomeControl
+          env={env}
+          id="apps-tab"
+          controlKey="apps-tab"
+          className={styles.shortcut}
+          title={t("home.allApps")}
+          pressed={page === "apps"}
+        >
+          <Icon icon={LayoutGrid} />
+        </HomeControl>
         <NetworkStatus status={env.status} />
       </div>
       <nav class={styles.tabs} data-header-tabs aria-label={t("home.views")}>
         <HeaderFocusIndicator env={env} group="tabs" theme={settings.theme} />
+        <HomeControl
+          env={env}
+          id="family-tab"
+          controlKey="family-tab"
+          className={styles.tab}
+          title={t("home.family")}
+          pressed={page === "family"}
+        >
+          {t("home.family")}
+        </HomeControl>
         <HomeControl
           env={env}
           id="home-tab"
@@ -60,16 +80,6 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
           pressed={page === "home"}
         >
           {t("home.home")}
-        </HomeControl>
-        <HomeControl
-          env={env}
-          id="apps-tab"
-          controlKey="apps-tab"
-          className={styles.tab}
-          title={t("home.allApps")}
-          pressed={page === "apps"}
-        >
-          {t("home.allApps")}
         </HomeControl>
       </nav>
       <HeaderStatus settings={env.settings} status={env.status} clock={env.runtime.clock} />

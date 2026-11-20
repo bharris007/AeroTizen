@@ -2,7 +2,7 @@ import type { InstalledApp } from "../../../contracts/launcher";
 import type { SettingsSnapshot } from "../../../contracts/preferences";
 import { getAppGridColumns } from "../../../shared/apps/appCardSizes";
 import { useStoreSelector } from "../../../shared/hooks/useStore";
-import type { HomeEnvironment, Page } from "../../types";
+import type { HomeEnvironment } from "../../types";
 import { AppCard } from "../AppCard";
 import { AppStoreCard } from "../AppStoreCard/AppStoreCard";
 import { FireplaceCard } from "../FireplaceCard/FireplaceCard";
@@ -24,7 +24,7 @@ export const AppGrid = ({
   ids: readonly string[];
   apps: readonly InstalledApp[];
   settings: SettingsSnapshot;
-  page: Page;
+  page: "apps" | "home";
   shown: boolean;
   active: boolean;
   label: string;

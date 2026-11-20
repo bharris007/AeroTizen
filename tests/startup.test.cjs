@@ -65,6 +65,7 @@ function harness(mode = "deferred", saved = ["youtube.id"]) {
     clock: { start() {}, tick: () => calls.push("clock-tick") },
     network: { start() {} },
     weather: { start() {} },
+    familyForecast: { start() {} },
     inputs: { start() {} },
     settingsUi: { isOpen: () => false },
     homewatch: { start() {}, reportApps() {}, reportStartup() {} },

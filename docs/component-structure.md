@@ -10,6 +10,7 @@ screens need the same behavior, rather than because they have a similar shape.
 | `backgrounds/BackgroundLayer`                                        | Render the fixed wallpaper container and its visibility                         | Background snapshots; document background and shared text contrast hooks     |
 | `home/components/Home`                                               | Compose the screen and refresh focus when its inventory or layout changes       | Shared settings/inventory and Home controller                                |
 | `HomeHeader`                                                         | Shortcuts, page tabs and status placement                                       | Home navigation and shared status stores                                     |
+| `FamilyBoard`, `FamilyWeather`, `FamilyCalendar`                     | Family tab weather and today's empty hour grid                                  | Family forecast service, saved location and the clock. No calendar events.   |
 | `HeaderFocusIndicator`                                               | Measure a registered shortcut/tab and render its focus position                 | Explicit `shortcuts` or `tabs` group                                         |
 | `AppGrid`                                                            | Render one keyed page of apps, preserving artwork while another page is active  | Ordered IDs, app records, layout settings and visibility                     |
 | `AppCard`, `FireplaceCard`                                           | Launchable Home app and fireplace presentation                                  | Existing app commands through `HomeControl`                                  |
@@ -479,6 +480,9 @@ keys and values also remain compatible.
 | `backgrounds/BackgroundLayer/BackgroundLayer.module.css`                                         | Fixed wallpaper container geometry                                            |
 | `home/components/Home/Home.module.css`                                                           | Home viewport, fades, page reveals, section spacing and content clearance     |
 | `home/components/HomeHeader/HomeHeader.module.css`                                               | Header layout, shortcuts, tabs and expanded clock clearance                   |
+| `home/components/FamilyBoard/FamilyBoard.module.css`                                              | Family columns, dark panel surface and focus ring                            |
+| `home/components/FamilyWeather/FamilyWeather.module.css`                                          | Current conditions, high/low and hourly strip                                 |
+| `home/components/FamilyCalendar/FamilyCalendar.module.css`                                        | Today hour grid, current-time mark and empty state                            |
 | `home/components/HeaderFocusIndicator/HeaderFocusIndicator.module.css`                           | Measured shortcut/tab focus plates and shared motion durations                |
 | `status/Clock/Clock.module.css`                                                                  | Compact, vertical, horizontal, minimal and bold time/date layouts             |
 | `status/HeaderStatus/HeaderStatus.module.css`                                                    | Compact/expanded status placement                                             |

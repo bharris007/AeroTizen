@@ -117,9 +117,7 @@
   cursor: pointer;
   transition: color var(--motion-duration-focus) ease-out;
   outline: none;
-  &:last-child {
-    min-width: 205px;
-  }
+  white-space: nowrap;
   &[aria-pressed="true"],
   &[data-focused="true"] {
     color: var(--fg);
@@ -133,4 +131,8 @@
   [data-header-focus="tabs"]:not([data-focused="true"]) ~ &[aria-pressed="true"] {
     color: var(--header-tab-plate-text, var(--fg));
   }
+}
+
+.wide {
+  min-width: 205px;
 }

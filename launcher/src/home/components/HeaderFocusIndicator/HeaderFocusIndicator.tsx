@@ -8,8 +8,8 @@ import type { HomeEnvironment } from "../../types";
 import styles from "./HeaderFocusIndicator.module.css";
 
 const GROUP_KEYS: Record<"tabs" | "shortcuts", readonly string[]> = {
-  tabs: ["home-tab", "apps-tab"],
-  shortcuts: ["gear", "samsung-home-shortcut"],
+  tabs: ["family-tab", "home-tab"],
+  shortcuts: ["gear", "samsung-home-shortcut", "apps-tab"],
 };
 
 interface PlateBox {

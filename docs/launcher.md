@@ -2,9 +2,13 @@
 
 These controls are for launcher 2.7.0.
 
-Use **Home** for favourites and **All apps** for the installed apps. Hold **OK**
-on a tile to move it or add it to or remove it from Home. AeroTizen uses artwork
-from the TV. If artwork is unavailable, the tile shows the app icon and name.
+Use **Home** for favourites and **All apps** for the installed apps. **Family**
+shows today's weather and an empty day calendar. Weather uses the place saved in
+Settings. With no place saved, it uses Franklin, TN in the America/Chicago time
+zone. The calendar lists today's hours and stays empty; it does not sign in to a
+calendar or add events. Hold **OK** on a tile to move it or add it to or remove
+it from Home. AeroTizen uses artwork from the TV. If artwork is unavailable, the
+tile shows the app icon and name.
 
 | All apps | Settings |
 | --- | --- |

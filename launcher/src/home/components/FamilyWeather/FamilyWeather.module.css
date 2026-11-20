@@ -1,0 +1,96 @@
+.location {
+  font-size: 28px;
+  line-height: 1.2;
+  color: var(--family-muted);
+}
+
+.current {
+  display: flex;
+  align-items: flex-end;
+  margin-top: 8px;
+}
+
+.temperature {
+  font-size: 112px;
+  font-weight: 500;
+  line-height: 0.92;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+  -webkit-margin-start: 28px;
+}
+
+.currentIcon {
+  display: flex;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+
+  > svg {
+    width: 54px;
+    height: 54px;
+  }
+}
+
+.condition {
+  font-size: 32px;
+  line-height: 1.2;
+  -webkit-margin-start: 12px;
+}
+
+.range {
+  display: flex;
+  margin-top: 18px;
+  font-size: 28px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.rangeItem + .rangeItem {
+  -webkit-margin-start: 28px;
+}
+
+.hourly {
+  display: flex;
+  margin-top: auto;
+  padding-top: 28px;
+}
+
+.hour {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}
+
+.hour + .hour {
+  -webkit-margin-start: 8px;
+}
+
+.hourTime {
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--family-muted);
+}
+
+.hourIcon {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  margin-bottom: 8px;
+
+  > svg {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.hourTemperature {
+  font-size: 24px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}

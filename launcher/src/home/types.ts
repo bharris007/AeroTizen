@@ -13,7 +13,7 @@ export interface Inventory {
   readonly items: readonly ContinueItem[];
   readonly ready: boolean;
 }
-export type Page = "home" | "apps";
+export type Page = "apps" | "family" | "home";
 export interface HomeMenuChoice {
   readonly action: "add" | "remove" | "move";
   readonly label: MessageKey;

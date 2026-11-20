@@ -2,6 +2,7 @@ import type { AppsService } from "../../contracts/apps";
 import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
 import type { ContinueWatchingService } from "../../contracts/continueWatching";
 import type { LauncherStartup, UiDiagnostics } from "../../contracts/diagnostics";
+import type { FamilyForecastService } from "../../contracts/familyForecast";
 import type { FireplaceControls } from "../../contracts/fireplace";
 import type { HomeWatcherService } from "../../contracts/homeWatcher";
 import type { InputsService } from "../../contracts/inputs";
@@ -25,6 +26,7 @@ export interface LauncherRuntime {
   clock: ClockService;
   config: LauncherConfig;
   continueWatching: ContinueWatchingService;
+  familyForecast: FamilyForecastService;
   hideToast(): void;
   homeScreen?: HomeBridge;
   homewatch: HomeWatcherService & Partial<NativeNavigationCommands>;
