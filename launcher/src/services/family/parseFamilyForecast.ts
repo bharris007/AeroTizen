@@ -1,8 +1,10 @@
-import type { FamilyForecastSnapshot, FamilyHour } from "../../contracts/familyForecast";
+import type { FamilyDay, FamilyForecastSnapshot, FamilyHour } from "../../contracts/familyForecast";
 import { zonedDate } from "../../shared/time/zonedDate";
 import { finiteNumber, record, text } from "../weather/readings";
 
 const HOURLY_STRIP_LENGTH = 8;
+const DAILY_DATE = /^(\d{4})-(\d{2})-(\d{2})/;
+const DAILY_TIME = /T(\d{2}):(\d{2})/;
 const HOURLY_TIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/;
 
 interface WallClock {
@@ -14,9 +16,12 @@ interface WallClock {
 
 export interface FamilyForecastReading {
   readonly code: number | null;
+  readonly days: readonly FamilyDay[];
   readonly high: number | null;
   readonly hours: readonly FamilyHour[];
   readonly low: number | null;
+  readonly sunriseMinute: number | null;
+  readonly sunsetMinute: number | null;
   readonly temperature: number | null;
   readonly timeZone: string;
 }
@@ -76,6 +81,38 @@ const firstNumber = (value: unknown) => {
   return finiteNumber(items[0]) ? items[0] : null;
 };
 
+const minuteOfDay = (value: unknown) => {
+  const match = typeof value === "string" ? DAILY_TIME.exec(value) : null;
+  if (!match) {
+    return null;
+  }
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  return hour > 23 || minute > 59 ? null : hour * 60 + minute;
+};
+
+const parseDays = (daily: Record<string, unknown> | null): readonly FamilyDay[] => {
+  const dates = list(daily?.time);
+  const codes = list(daily?.weather_code);
+  const highs = list(daily?.temperature_2m_max);
+  const lows = list(daily?.temperature_2m_min);
+  const count = Math.min(dates.length, codes.length, highs.length, lows.length);
+  const days: FamilyDay[] = [];
+  for (let index = 0; index < count; index++) {
+    const stamp = dates[index];
+    const match = typeof stamp === "string" ? DAILY_DATE.exec(stamp) : null;
+    const code = codes[index];
+    const high = highs[index];
+    const low = lows[index];
+    if (!match || !finiteNumber(code) || !finiteNumber(high) || !finiteNumber(low)) {
+      continue;
+    }
+    const weekday = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))).getUTCDay();
+    days.push(Object.freeze({ code, high, low, weekday }));
+  }
+  return Object.freeze(days);
+};
+
 // Open-Meteo hourly stamps are local wall times in the requested zone, not UTC.
 export const parseFamilyForecast = (
   data: unknown,
@@ -125,7 +162,17 @@ export const parseFamilyForecast = (
       }),
     ),
   );
-  return Object.freeze({ code, high, hours, low, temperature, timeZone });
+  return Object.freeze({
+    code,
+    days: parseDays(daily),
+    high,
+    hours,
+    low,
+    sunriseMinute: minuteOfDay(list(daily?.sunrise)[0]),
+    sunsetMinute: minuteOfDay(list(daily?.sunset)[0]),
+    temperature,
+    timeZone,
+  });
 };
 
 export const familyForecastSignature = (
@@ -142,4 +189,6 @@ export const familyForecastSignature = (
     status === "ready" ? reading.high : null,
     status === "ready" ? reading.low : null,
     status === "ready" ? reading.hours.map((hour) => [hour.hour, hour.temperature, hour.code]) : [],
+    status === "ready" ? reading.days.map((day) => [day.weekday, day.high, day.low, day.code]) : [],
+    status === "ready" ? [reading.sunriseMinute, reading.sunsetMinute] : [],
   ]);

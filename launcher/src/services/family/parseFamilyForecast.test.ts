@@ -44,3 +44,40 @@ test("returns null when the forecast has no temperatures", () => {
   expect(parseFamilyForecast({ error: true }, LATE_EVENING, "America/Chicago")).toBeNull();
   expect(parseFamilyForecast({ current: {} }, LATE_EVENING, "America/Chicago")).toBeNull();
 });
+
+test("parses the five-day strip and today's sunrise and sunset", () => {
+  const reading = parseFamilyForecast(
+    {
+      current: { temperature_2m: 60, weather_code: 3 },
+      daily: {
+        sunrise: ["2026-01-15T07:05", "2026-01-16T07:05"],
+        sunset: ["2026-01-15T16:55", "2026-01-16T16:56"],
+        temperature_2m_max: [61, 55, "bad"],
+        temperature_2m_min: [40, 38, 30],
+        time: ["2026-01-15", "2026-01-16", "2026-01-17"],
+        weather_code: [3, 61, 0],
+      },
+    },
+    LATE_EVENING,
+    "America/Chicago",
+  );
+
+  expect(reading?.sunriseMinute).toBe(7 * 60 + 5);
+  expect(reading?.sunsetMinute).toBe(16 * 60 + 55);
+  expect(reading?.days).toEqual([
+    { code: 3, high: 61, low: 40, weekday: 4 },
+    { code: 61, high: 55, low: 38, weekday: 5 },
+  ]);
+});
+
+test("leaves days and sun times empty when the daily block lacks them", () => {
+  const reading = parseFamilyForecast(
+    { current: { temperature_2m: 60, weather_code: 3 }, daily: { temperature_2m_max: [61], temperature_2m_min: [40] } },
+    LATE_EVENING,
+    "America/Chicago",
+  );
+
+  expect(reading?.days).toEqual([]);
+  expect(reading?.sunriseMinute).toBeNull();
+  expect(reading?.sunsetMinute).toBeNull();
+});

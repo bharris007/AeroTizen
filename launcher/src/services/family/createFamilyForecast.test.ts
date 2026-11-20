@@ -80,6 +80,8 @@ test("uses Franklin when the saved place is missing and ignores a stale reply", 
   expect(missing.requests[0].url).toContain("longitude=-86.8689");
   expect(missing.requests[0].url).toContain("timezone=America%2FChicago");
   expect(missing.requests[0].url).toContain("temperature_unit=fahrenheit");
+  expect(missing.requests[0].url).toContain("forecast_days=5");
+  expect(missing.requests[0].url).toContain("sunrise,sunset");
 
   missing.setPreferences({ tempUnit: "C", weatherLocation: london });
   expect(missing.requests[0].abort).toHaveBeenCalled();

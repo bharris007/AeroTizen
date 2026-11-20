@@ -13,6 +13,11 @@ const BEFORE_DAWN = Date.UTC(2026, 0, 15, 9, 0);
 
 const ready: FamilyForecastSnapshot = {
   code: 2,
+  days: [
+    { code: 2, high: 75, low: 51, weekday: 4 },
+    { code: 61, high: 66, low: 48, weekday: 5 },
+    { code: 71, high: 33, low: 20, weekday: 6 },
+  ],
   high: 75,
   hours: [
     { code: 2, hour: 15, temperature: 70 },
@@ -21,6 +26,8 @@ const ready: FamilyForecastSnapshot = {
   locationLabel: "Franklin, TN",
   low: 51,
   status: "ready",
+  sunriseMinute: 7 * 60 + 30,
+  sunsetMinute: 17 * 60,
   temperature: 72.4,
   timeZone: "America/Chicago",
 };
@@ -47,6 +54,11 @@ test("shows the saved forecast and an empty today calendar", () => {
   expect(screen.getAllByText("3 PM")).toHaveLength(2);
   expect(screen.getAllByText("4 PM")).toHaveLength(2);
   expect(screen.getByText("70°")).toBeDefined();
+  expect(container.querySelector("[data-family-photo]")?.getAttribute("data-family-photo")).toBe("partly");
+  expect(container.querySelectorAll("[data-family-day]")).toHaveLength(3);
+  expect(screen.getAllByText("Today").length).toBeGreaterThan(1);
+  expect(screen.getByText("Fri")).toBeDefined();
+  expect(screen.getByText("Sat")).toBeDefined();
   expect(screen.getByText("No events")).toBeDefined();
   expect(screen.getByText("Thursday, January 15")).toBeDefined();
   expect(screen.getByRole("button", { name: /No events/ })).toBeDefined();
@@ -61,6 +73,7 @@ test("keeps the calendar empty and hides the time line outside the day grid", ()
   const loading: FamilyForecastSnapshot = {
     ...ready,
     code: null,
+    days: [],
     high: null,
     hours: [],
     low: null,
@@ -78,4 +91,6 @@ test("keeps the calendar empty and hides the time line outside the day grid", ()
   expect(screen.getByText("No events")).toBeDefined();
   expect(container.querySelector("[data-family-now]")).toBeNull();
   expect(container.querySelector("[data-family-hourly]")).toBeNull();
+  expect(container.querySelector("[data-family-days]")).toBeNull();
+  expect(container.querySelector("[data-family-photo]")?.getAttribute("data-family-photo")).toBe("night");
 });

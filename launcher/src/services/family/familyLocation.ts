@@ -3,7 +3,7 @@ import type { TemperatureUnit, WeatherLocation } from "../../contracts/preferenc
 export const FRANKLIN_LATITUDE = 35.9251;
 export const FRANKLIN_LONGITUDE = -86.8689;
 export const FRANKLIN_TIME_ZONE = "America/Chicago";
-const FORECAST_DAYS = 2;
+const FORECAST_DAYS = 5;
 const OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
 
 const FRANKLIN_LABEL = "Franklin, TN";
@@ -39,7 +39,7 @@ export const familyForecastUrl = (location: WeatherLocation, unit: TemperatureUn
     "longitude=" + location.longitude,
     "current=temperature_2m,weather_code",
     "hourly=temperature_2m,weather_code",
-    "daily=temperature_2m_max,temperature_2m_min",
+    "daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset",
     "timezone=" + encodeURIComponent(zone),
     "forecast_days=" + FORECAST_DAYS,
   ];
