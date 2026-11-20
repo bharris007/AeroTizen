@@ -1,4 +1,9 @@
-import type { FamilyForecastService, FamilyForecastSnapshot, FamilyHour } from "../../contracts/familyForecast";
+import type {
+  FamilyDay,
+  FamilyForecastService,
+  FamilyForecastSnapshot,
+  FamilyHour,
+} from "../../contracts/familyForecast";
 import type { SettingsStore, TemperatureUnit, WeatherLocation } from "../../contracts/preferences";
 import type { WeatherPlatform } from "../../contracts/status";
 import type { Store } from "../../shared/state/createStore";
@@ -8,15 +13,19 @@ import { type FamilyForecastReading, familyForecastSignature, parseFamilyForecas
 
 const REFRESH_INTERVAL_MS = 20 * 60 * 1000;
 const EMPTY_HOURS: readonly FamilyHour[] = Object.freeze([]);
+const EMPTY_DAYS: readonly FamilyDay[] = Object.freeze([]);
 
 const sourceKey = (location: WeatherLocation, unit: TemperatureUnit) =>
   JSON.stringify([location.latitude, location.longitude, location.name, location.timezone || "", unit]);
 
 const emptyReading = (): FamilyForecastReading => ({
   code: null,
+  days: EMPTY_DAYS,
   high: null,
   hours: EMPTY_HOURS,
   low: null,
+  sunriseMinute: null,
+  sunsetMinute: null,
   temperature: null,
   timeZone: "",
 });
@@ -56,11 +65,14 @@ export const createFamilyForecast = ({
     const location = place();
     return Object.freeze({
       code: ready ? reading.code : null,
+      days: ready ? reading.days : EMPTY_DAYS,
       high: ready ? reading.high : null,
       hours: ready ? reading.hours : EMPTY_HOURS,
       locationLabel: location.label || location.name,
       low: ready ? reading.low : null,
       status,
+      sunriseMinute: ready ? reading.sunriseMinute : null,
+      sunsetMinute: ready ? reading.sunsetMinute : null,
       temperature: ready ? reading.temperature : null,
       timeZone: reading.timeZone || location.timezone || FRANKLIN_TIME_ZONE,
     });

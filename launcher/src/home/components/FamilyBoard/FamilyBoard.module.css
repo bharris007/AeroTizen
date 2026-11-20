@@ -31,11 +31,29 @@
   background: var(--card);
   color: var(--family-text);
   font-family: var(--font-ui, "SamsungOne", "Roboto", Arial, sans-serif);
+  position: relative;
+  overflow: hidden;
   cursor: pointer;
   transition: border-color var(--motion-duration-focus) ease-out;
 
+  /* The focus ring sits above any photo layer inside the card. */
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 3;
+    border-radius: 22px;
+    pointer-events: none;
+  }
+
   &[data-focused="true"] {
     border-color: rgba(255, 255, 255, 0.95);
+  }
+
+  &[data-focused="true"]::after {
     box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.95);
   }
 }

@@ -24,6 +24,7 @@ export const FamilyBoard = ({
           cardClass={styles.card}
           env={env}
           forecast={forecast}
+          now={now}
           registered={shown}
           timeFormat={timeFormat}
         />
