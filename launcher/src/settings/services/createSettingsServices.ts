@@ -25,6 +25,7 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
     applyClock: () => runtime.clock.tick(),
     applyCardSize: () => runtime.homeScreen?.render(),
     openStore: () => runtime.apps.openStore(),
+    showPage: (page) => runtime.homeScreen?.showPage(page),
     useSamsungHome() {
       // Native navigation owns the acknowledged handoff, not physical HOME routing.
       // Keep the original escape available when that optional module is absent.
