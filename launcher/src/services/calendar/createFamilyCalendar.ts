@@ -32,7 +32,7 @@ export const CALENDAR_CACHE_KEY = "aerotizen.calendar.v1";
 export const CALENDAR_SECRET_KEY = "aerotizen.calendar.pairing.v1";
 // Google accounts removed on the TV whose relay sign-in still has to be deleted.
 export const CALENDAR_REMOVALS_KEY = "aerotizen.calendar.removals.v1";
-export const CALENDAR_REFRESH_INTERVAL_MS = 12 * 60 * 1000;
+export const CALENDAR_REFRESH_INTERVAL_MS = 2 * 60 * 1000;
 export const PAIRING_POLL_INTERVAL_MS = 3000;
 const PAIRING_RETRY_MS = 15 * 1000;
 // Start a new pairing code shortly before the current one expires.
