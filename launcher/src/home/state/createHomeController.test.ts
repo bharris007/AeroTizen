@@ -181,17 +181,17 @@ test("in RTL, Left moves the day control forward", () => {
   }
 });
 
-test("the full-screen calendar pages by its span and Up picks 1, 3 or 5 days", () => {
+test("the full-screen calendar moves one day at a time and Up picks 1, 3 or 5 days", () => {
   const home = controller();
   home.bridge.focus();
   home.expandPane("calendar");
   expect(home.state.getSnapshot()).toMatchObject({ calendarFocus: "grid", calendarSpan: 3, calendarStart: 0 });
   press(home, KEY.RIGHT);
-  expect(home.state.getSnapshot().calendarStart).toBe(3);
+  expect(home.state.getSnapshot().calendarStart).toBe(1);
   press(home, KEY.RIGHT);
-  expect(home.state.getSnapshot().calendarStart).toBe(6);
+  expect(home.state.getSnapshot().calendarStart).toBe(2);
   press(home, KEY.LEFT);
-  expect(home.state.getSnapshot().calendarStart).toBe(3);
+  expect(home.state.getSnapshot().calendarStart).toBe(1);
 
   press(home, KEY.UP);
   expect(home.state.getSnapshot().calendarFocus).toBe("span");
@@ -202,12 +202,12 @@ test("the full-screen calendar pages by its span and Up picks 1, 3 or 5 days", (
   press(home, KEY.DOWN);
   expect(home.state.getSnapshot().calendarFocus).toBe("grid");
   press(home, KEY.RIGHT);
-  expect(home.state.getSnapshot().calendarStart).toBe(8);
+  expect(home.state.getSnapshot().calendarStart).toBe(2);
 
   // OK goes back to today; paging stops at the end of the synced month.
   ok(home);
   expect(home.state.getSnapshot().calendarStart).toBe(0);
-  for (let index = 0; index < 10; index++) {
+  for (let index = 0; index < 40; index++) {
     press(home, KEY.RIGHT);
   }
   expect(home.state.getSnapshot().calendarStart).toBe(26);
