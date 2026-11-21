@@ -74,8 +74,8 @@ test("weather can be enabled, searched, saved and restored to automatic location
   await expect(page.getByRole("heading", { name: "Show weather", exact: true })).toBeVisible();
   const display = page.getByRole("switch", { name: "Show weather", exact: true });
   const locationName = page.getByRole("switch", { name: "Show location name", exact: true });
+  await expect(locationName).toHaveCount(0);
   await expect(display).toHaveAttribute("aria-checked", "false");
-  await expect(locationName).toBeHidden();
   await expect(page.locator("#units")).toBeHidden();
   await expect(summary).toBeHidden();
   await expect(change).toBeHidden();
@@ -85,9 +85,7 @@ test("weather can be enabled, searched, saved and restored to automatic location
   await display.click();
   await expect(page.locator("#weather b")).toHaveText("12°");
   await expect(page.locator("#weather span")).toHaveCount(0);
-  await expect(locationName).toHaveAttribute("aria-checked", "false");
-  await locationName.click();
-  await expect(page.locator("#weather span")).toHaveText("London");
+  await expect(locationName).toHaveCount(0);
   await page.locator('[data-key="units:F"]').click();
   await expect(page.locator("#weather b")).toHaveText("54°");
   await change.click();

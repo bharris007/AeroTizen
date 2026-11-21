@@ -40,18 +40,25 @@ test("Christmas Mode renders nothing until opened, then shows the countdown scen
   await act(() => christmas.bridge.open());
   expect(christmas.bridge.isOpen()).toBe(true);
   expect(host.querySelector("[data-christmas-scene]")?.getAttribute("data-christmas-scene")).toBe("countdown");
-  expect(host.querySelector('[data-christmas-unit="seconds"]')?.textContent).toContain("02");
+  expect(
+    [...host.querySelectorAll("[data-christmas-unit]")].map((unit) => unit.getAttribute("data-christmas-unit")),
+  ).toEqual(["days", "hours", "minutes"]);
+  expect(host.querySelector('[data-christmas-unit="minutes"]')?.textContent).toContain("00");
   const tabs = [...host.querySelectorAll('[role="tab"]')];
   expect(tabs.map((tab) => tab.getAttribute("data-christmas-tab"))).toEqual(["countdown", "fireplace", "northPole"]);
   expect(tabs.map((tab) => tab.getAttribute("aria-selected"))).toEqual(["true", "false", "false"]);
 });
 
-test("the owner ticks the countdown every second and celebrates at midnight", async ({ onTestFinished }) => {
+test("the owner checks the clock every second, re-renders only when a shown unit changes, and celebrates at midnight", async ({
+  onTestFinished,
+}) => {
   const { host, christmas, timers, tick } = await createHarness(onTestFinished);
   await act(() => christmas.bridge.open());
   expect(timers.setInterval).toHaveBeenCalledWith(expect.any(Function), 1000);
+  const tile = host.querySelector('[data-christmas-unit="minutes"]');
   await tick(1000);
-  expect(host.querySelector('[data-christmas-unit="seconds"]')?.textContent).toContain("01");
+  // 23:59:59 still shows 0 minutes, so the scene keeps the same nodes.
+  expect(host.querySelector('[data-christmas-unit="minutes"]')).toBe(tile);
   await tick(1000);
   expect(host.querySelector("[data-christmas-countdown]")?.getAttribute("data-christmas-countdown")).toBe("christmas");
   expect(host.textContent).toContain("christmas.merry");
@@ -89,4 +96,14 @@ test("scene steps do nothing while closed and a disposed mode cannot reopen", as
   christmas.bridge.open();
   expect(christmas.bridge.isOpen()).toBe(false);
   expect(host.innerHTML).toBe("");
+});
+
+test("the shown minute turns over exactly when the countdown's minutes change", async ({ onTestFinished }) => {
+  const { host, christmas, tick } = await createHarness(onTestFinished);
+  await act(() => christmas.bridge.open());
+  // Rewind to 23:58:00 so two minutes remain.
+  await tick(-118000);
+  expect(host.querySelector('[data-christmas-unit="minutes"]')?.textContent).toContain("02");
+  await tick(1000);
+  expect(host.querySelector('[data-christmas-unit="minutes"]')?.textContent).toContain("01");
 });

@@ -3,11 +3,20 @@ import { render } from "preact";
 import type { Translate } from "../shared/i18n/createTranslations";
 import { createStore } from "../shared/state/createStore";
 
+import { getChristmasCountdown } from "./christmasCountdown";
 import { stepChristmasScene } from "./christmasScenes";
 import type { ChristmasState } from "./ChristmasView/ChristmasView";
 import { ChristmasView } from "./ChristmasView/ChristmasView";
 
 const TICK_MS = 1000;
+
+// The countdown shows days, hours and minutes, so only a change in those needs a render.
+const shownCountdown = (time: number) => {
+  const countdown = getChristmasCountdown(new Date(time));
+  return countdown.kind === "christmas"
+    ? "christmas"
+    : countdown.days + ":" + countdown.hours + ":" + countdown.minutes;
+};
 
 interface ChristmasTimers {
   clearInterval(id: number): void;
@@ -51,8 +60,14 @@ export const mountChristmas = (
           return;
         }
         state.set({ open: true, scene: "countdown", now: now() });
-        // The owner ticks the countdown; scenes only render the snapshot.
-        ticker = timers.setInterval(() => state.set({ ...state.getSnapshot(), now: now() }), TICK_MS);
+        // The owner checks the clock each second but only re-renders when the shown minute changes.
+        ticker = timers.setInterval(() => {
+          const current = state.getSnapshot();
+          const time = now();
+          if (shownCountdown(current.now) !== shownCountdown(time)) {
+            state.set({ ...current, now: time });
+          }
+        }, TICK_MS);
       },
       close,
       isOpen: () => state.getSnapshot().open,

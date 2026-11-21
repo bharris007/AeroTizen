@@ -7,7 +7,7 @@ import type { HomeEnvironment, HomeMenuChoice, HomeState, Page } from "../types"
 
 import { revealHorizontalItem } from "./horizontalScroll";
 
-const HEADER_KEYS = ["gear", "family-tab", "home-tab", "xmas-tab"] as const;
+const HEADER_KEYS = ["gear", "christmas-shortcut", "family-tab", "home-tab"] as const;
 const FAMILY_ROW_KEYS = ["family-weather", "family-calendar"] as const;
 
 const tabForPage = (page: Page) => {
@@ -16,9 +16,6 @@ const tabForPage = (page: Page) => {
   }
   if (page === "family") {
     return "family-tab";
-  }
-  if (page === "xmas") {
-    return "xmas-tab";
   }
   return "home-tab";
 };
@@ -32,9 +29,6 @@ const pageForTab = (key: string): Page | null => {
   }
   if (key === "family-tab") {
     return "family";
-  }
-  if (key === "xmas-tab") {
-    return "xmas";
   }
   return null;
 };
@@ -214,10 +208,6 @@ export const createHomeController = (
     if (page === "family") {
       return [HEADER_KEYS, FAMILY_ROW_KEYS];
     }
-    // The Xmas countdown is a display-only page: the header is its only row.
-    if (page === "xmas") {
-      return [HEADER_KEYS];
-    }
     const columns = getAppGridColumns(settings.getSnapshot().homeCardColumns, page);
     const appKeys = ids().map((id) => "app:" + id);
     const all = state.getSnapshot().page === "apps" ? [ADD_APPS_KEY, ...appKeys] : appKeys;
@@ -281,7 +271,6 @@ export const createHomeController = (
     // Home's header and first row always use the top position. Avoid style/layout reads for each horizontal move.
     if (
       pending.page === "family" ||
-      pending.page === "xmas" ||
       (pending.page === "home" && (list[0].includes(selected) || list[1]?.includes(selected)))
     ) {
       update({ appsEndOffset: 0, scroll: 0 });
@@ -344,6 +333,9 @@ export const createHomeController = (
     if (key === "gear") {
       endMove();
       runtime.settingsUi?.open();
+    } else if (key === "christmas-shortcut") {
+      endMove();
+      window.Christmas?.open();
     } else if (key === "samsung-home-shortcut") {
       if (runtime.homewatch.openSamsungHome) {
         runtime.homewatch.openSamsungHome();

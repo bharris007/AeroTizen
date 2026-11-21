@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
 import { launcherConfig } from "../../launcherConfig";
 import { createStore } from "../../shared/state/createStore";
@@ -92,31 +92,28 @@ test("moves from the header to Family and between its columns", () => {
   expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "family-tab" });
 });
 
-test("the Xmas tab sits right of Watch and shows a header-only countdown page", () => {
+test("the Christmas shortcut sits between the gear and the tabs and opens Christmas Mode", () => {
   const home = controller();
-  home.bridge.focus();
-  press(home, KEY.UP);
-  press(home, KEY.RIGHT);
-  press(home, KEY.RIGHT);
-  expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "xmas-tab" });
+  const open = vi.fn();
+  window.Christmas = { close() {}, isOpen: () => false, nextScene() {}, open, previousScene() {} };
+  try {
+    home.bridge.focus();
+    press(home, KEY.UP);
+    expect(home.state.getSnapshot().selected).toBe("family-tab");
+    press(home, KEY.LEFT);
+    expect(home.state.getSnapshot().selected).toBe("christmas-shortcut");
+    press(home, KEY.LEFT);
+    expect(home.state.getSnapshot().selected).toBe("gear");
+    press(home, KEY.RIGHT);
+    expect(home.state.getSnapshot().selected).toBe("christmas-shortcut");
 
-  // Right stops at the last tab, like the other header rows.
-  press(home, KEY.RIGHT);
-  expect(home.state.getSnapshot().selected).toBe("xmas-tab");
+    ok(home);
+    expect(open).toHaveBeenCalledOnce();
+    expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "christmas-shortcut" });
 
-  ok(home);
-  expect(home.state.getSnapshot()).toMatchObject({ page: "xmas", selected: "xmas-tab" });
-
-  // The countdown has nothing to focus, so Down keeps focus on the tab.
-  press(home, KEY.DOWN);
-  expect(home.state.getSnapshot()).toMatchObject({ page: "xmas", selected: "xmas-tab", scroll: 0 });
-
-  press(home, KEY.LEFT);
-  expect(home.state.getSnapshot()).toMatchObject({ page: "xmas", selected: "home-tab" });
-  ok(home);
-  expect(home.state.getSnapshot()).toMatchObject({ page: "home", selected: "home-tab" });
-
-  home.showPage("xmas");
-  press(home, KEY.BACK);
-  expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "family-tab" });
+    press(home, KEY.RIGHT);
+    expect(home.state.getSnapshot().selected).toBe("family-tab");
+  } finally {
+    window.Christmas = undefined;
+  }
 });
