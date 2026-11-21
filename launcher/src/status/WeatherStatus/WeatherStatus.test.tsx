@@ -26,7 +26,7 @@ test.each([
 ])("renders $glyph for weather code $code without changing the temperature", ({ code, glyph }) => {
   const weather = { ...cloudy, code, showLocation: false };
   const { container } = renderWithEnglish(
-    <WeatherStatus layout="compact" only={false} weather={weather} showWeather showLocation={false} />,
+    <WeatherStatus layout="compact" only={false} weather={weather} showWeather />,
   );
 
   expect(container.querySelector(`svg.lucide-${glyph}`)).not.toBeNull();
@@ -34,24 +34,11 @@ test.each([
   expect(screen.queryByText("London")).toBeNull();
 });
 
-test.each(["compact", "vertical"] as const)("hides the location while keeping %s weather visible", (layout) => {
-  const view = (showLocation: boolean) => (
-    <WeatherStatus
-      layout={layout}
-      only={false}
-      weather={{ ...cloudy, showLocation }}
-      showWeather
-      showLocation={showLocation}
-    />
+test.each(["compact", "vertical"] as const)("%s header weather shows the temperature but never the city", (layout) => {
+  const { container } = renderWithEnglish(
+    <WeatherStatus layout={layout} only={false} weather={{ ...cloudy, showLocation: true }} showWeather />,
   );
-  const { rerender } = renderWithEnglish(view(true));
-  expect(screen.getByText("London").hidden).toBe(false);
-  if (layout === "vertical") {
-    expect(screen.getByText("Cloudy")).toBeDefined();
-  }
-
-  rerender(view(false));
-  const location = screen.queryByText("London");
-  expect(location === null || location.hidden).toBe(true);
   expect(screen.getByText("12°").hidden).toBe(false);
+  expect(container.querySelector("svg.lucide-cloud")).not.toBeNull();
+  expect(screen.queryByText("London")).toBeNull();
 });

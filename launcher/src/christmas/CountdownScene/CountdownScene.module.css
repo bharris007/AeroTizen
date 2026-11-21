@@ -207,10 +207,6 @@
   background: linear-gradient(160deg, #ffd43b 0%, #e67700 100%);
 }
 
-.seconds {
-  background: linear-gradient(160deg, #74c0fc 0%, #5f3dc4 100%);
-}
-
 .value {
   display: block;
   font-size: 190px;

@@ -6,6 +6,7 @@ import { Icon } from "../../../shared/icons/Icon/Icon";
 import { HeaderStatus } from "../../../status/HeaderStatus/HeaderStatus";
 import { NetworkStatus } from "../../../status/NetworkStatus/NetworkStatus";
 import type { HomeEnvironment } from "../../types";
+import { ChristmasTreeIcon } from "../ChristmasTreeIcon/ChristmasTreeIcon";
 import { HeaderFocusIndicator } from "../HeaderFocusIndicator/HeaderFocusIndicator";
 import { HomeControl } from "../HomeControl/HomeControl";
 
@@ -38,6 +39,16 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
           <Icon icon={Settings} />
           {unread && <span class={styles.notice} data-home-update-notice aria-hidden="true" />}
         </HomeControl>
+        <HomeControl
+          env={env}
+          id="christmas-shortcut"
+          controlKey="christmas-shortcut"
+          className={styles.shortcut + " " + styles.christmas}
+          preserveSelection
+          title={t("christmas.mode")}
+        >
+          <ChristmasTreeIcon />
+        </HomeControl>
         <NetworkStatus status={env.status} />
       </div>
       <nav class={styles.tabs} data-header-tabs aria-label={t("home.views")}>
@@ -61,16 +72,6 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
           pressed={page === "home"}
         >
           {t("home.home")}
-        </HomeControl>
-        <HomeControl
-          env={env}
-          id="xmas-tab"
-          controlKey="xmas-tab"
-          className={styles.tab + " " + styles.xmasTab}
-          title={t("home.xmas")}
-          pressed={page === "xmas"}
-        >
-          {t("home.xmas")}
         </HomeControl>
       </nav>
       <HeaderStatus settings={env.settings} status={env.status} clock={env.runtime.clock} />

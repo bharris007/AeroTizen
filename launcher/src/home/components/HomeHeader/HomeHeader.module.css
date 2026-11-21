@@ -62,6 +62,18 @@
   }
 }
 
+.christmas {
+  > svg {
+    width: 40px;
+    height: 40px;
+    transition: filter var(--motion-duration-focus) ease-out;
+  }
+
+  &[data-focused="true"] > svg {
+    filter: drop-shadow(0 0 6px rgba(255, 214, 102, 0.85)) drop-shadow(0 0 14px rgba(255, 82, 82, 0.55));
+  }
+}
+
 .nativeShortcut {
   border: 2px solid transparent;
   transition: color var(--motion-duration-feedback) linear;
@@ -135,10 +147,4 @@
 
 .wide {
   min-width: 205px;
-}
-
-.xmasTab {
-  min-width: 140px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
 }

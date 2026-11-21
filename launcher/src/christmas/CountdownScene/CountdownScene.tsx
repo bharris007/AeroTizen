@@ -12,7 +12,6 @@ const UNITS = [
   { unit: "days", label: "christmas.days", className: styles.days },
   { unit: "hours", label: "christmas.hours", className: styles.hours },
   { unit: "minutes", label: "christmas.minutes", className: styles.minutes },
-  { unit: "seconds", label: "christmas.seconds", className: styles.seconds },
 ] as const;
 
 const SPARKLES = [

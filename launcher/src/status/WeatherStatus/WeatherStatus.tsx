@@ -1,5 +1,4 @@
 import type { ClockLayout } from "../../contracts/status";
-import text from "../../shared/styles/text.module.css";
 import type { useWeather } from "../hooks/useWeather";
 import { WeatherIcon } from "../WeatherIcon";
 
@@ -10,13 +9,11 @@ export const WeatherStatus = ({
   only,
   weather,
   showWeather,
-  showLocation,
 }: {
   layout: ClockLayout;
   only: boolean;
   weather: ReturnType<typeof useWeather>;
   showWeather: boolean;
-  showLocation: boolean;
 }) =>
   layout === "compact" ? (
     <span
@@ -30,32 +27,19 @@ export const WeatherStatus = ({
         <>
           <WeatherIcon code={weather.code} />
           <b class={styles.compactTemperature}>{weather.text}</b>
-          {weather.showLocation ? (
-            <span class={styles.compactLocation + " " + text.truncate}>{weather.city}</span>
-          ) : null}
         </>
       ) : null}
     </span>
   ) : (
-    <>
-      <div class={styles.expanded} data-weather-part="expanded" data-clock-layout={layout} hidden={!showWeather}>
-        <span class={styles.icon} data-weather-part="icon">
-          {weather.visible ? <WeatherIcon code={weather.code} /> : null}
-        </span>
-        <span class={styles.temperature} data-weather-part="temperature">
-          {weather.text}
-        </span>
-        <span class={styles.condition} data-weather-part="condition">
-          {weather.condition}
-        </span>
-      </div>
-      <div
-        class={styles.location}
-        data-weather-part="location"
-        data-clock-layout={layout}
-        hidden={!showWeather || !showLocation || !weather.visible}
-      >
-        {weather.city}
-      </div>
-    </>
+    <div class={styles.expanded} data-weather-part="expanded" data-clock-layout={layout} hidden={!showWeather}>
+      <span class={styles.icon} data-weather-part="icon">
+        {weather.visible ? <WeatherIcon code={weather.code} /> : null}
+      </span>
+      <span class={styles.temperature} data-weather-part="temperature">
+        {weather.text}
+      </span>
+      <span class={styles.condition} data-weather-part="condition">
+        {weather.condition}
+      </span>
+    </div>
   );

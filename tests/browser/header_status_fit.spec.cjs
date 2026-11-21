@@ -33,7 +33,9 @@ const openHome = async (page, settings, city, day) => {
   await page.goto("/");
   await page.waitForFunction(() => AeroTizen.apps.getSnapshot().ready);
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
-  await expect(page.locator(CITY)).toHaveText(city);
+  await expect(page.locator(TEMPERATURE)).toHaveText(/^\d+°$/);
+  // The header shows only the temperature, never the city, even with the old location setting on.
+  await expect(page.locator(CITY)).toHaveCount(0);
 };
 
 const headerFit = (page) =>

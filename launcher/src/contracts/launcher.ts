@@ -128,5 +128,5 @@ export interface HomeBridge {
   keyup(code: number): void;
   refreshApps(): void;
   render(): void;
-  showPage(page: "apps" | "family" | "home" | "xmas"): void;
+  showPage(page: "apps" | "family" | "home"): void;
 }

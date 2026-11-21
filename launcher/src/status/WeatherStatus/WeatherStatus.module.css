@@ -37,12 +37,6 @@
   font-weight: 700;
 }
 
-.compactLocation {
-  color: var(--muted);
-  font-weight: 400;
-  unicode-bidi: plaintext;
-}
-
 .expanded {
   margin-top: 14px;
   display: flex;
@@ -97,16 +91,4 @@
 
 .condition {
   white-space: nowrap;
-}
-
-.location {
-  font-size: 18px;
-  line-height: 1.2;
-  margin-top: 5px;
-  color: var(--weather-location-text);
-  white-space: nowrap;
-
-  &[data-clock-layout="minimal"] {
-    font-size: 17px;
-  }
 }

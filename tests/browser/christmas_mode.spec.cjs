@@ -52,39 +52,31 @@ test("Christmas Mode opens from the Settings badge and is driven entirely by the
   expect(await page.evaluate(() => window.Christmas.isOpen())).toBe(false);
 });
 
-test("the Xmas tab sits right of Watch and shows the countdown under the launcher header", async ({ page }) => {
+test("the header Christmas icon sits between the gear and Wi-Fi and opens the countdown", async ({ page }) => {
   await page.goto("/");
-  await page.waitForFunction(() => window.AeroTizen?.settingsUi);
-  const tabs = page.locator("[data-header-tabs] [role=button]");
-  await expect(tabs).toHaveText(["Home", "Watch", "Xmas"]);
-  await expect(page.locator("[data-xmas-board]")).toHaveCount(0);
+  await page.waitForFunction(() => window.AeroTizen?.settingsUi && window.Christmas);
+  const icon = page.locator("#christmas-shortcut");
+  await expect(icon).toBeVisible();
+  await expect(icon).toHaveAttribute("aria-label", "Christmas Mode");
+  const order = await page.evaluate(() =>
+    [...document.querySelector("[data-header-shortcuts]").children].map((node) => node.id).filter(Boolean),
+  );
+  expect(order.slice(0, 3)).toEqual(["gear", "christmas-shortcut", "network"]);
+  await expect(page.locator("[data-header-tabs] [role=button]")).toHaveText(["Home", "Watch"]);
 
   await page.keyboard.press("ArrowUp");
   await expect(page.locator("#family-tab")).toHaveAttribute("data-focused", "true");
-  await page.keyboard.press("ArrowRight");
-  await page.keyboard.press("ArrowRight");
-  const xmas = page.locator("#xmas-tab");
-  await expect(xmas).toHaveAttribute("data-focused", "true");
-  await page.keyboard.press("Enter");
-
-  const board = page.locator("[data-xmas-board]");
-  await expect(board).toBeVisible();
-  await expect(xmas).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator("[data-home-header]")).toBeVisible();
-  await expect(board.locator("[data-christmas-countdown]")).toBeVisible();
-  await expect(page.locator("#christmas-mode")).toHaveCount(0);
-
-  // The countdown is display-only: Down keeps focus in the tab bar, and Left walks back to Watch.
-  await page.keyboard.press("ArrowDown");
-  await expect(xmas).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("ArrowLeft");
-  await expect(page.locator("#home-tab")).toHaveAttribute("data-focused", "true");
+  await expect(icon).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("Enter");
-  await expect(board).toHaveCount(0);
 
-  await page.evaluate(() => AeroTizen.homeScreen.showPage("xmas"));
-  await expect(board).toBeVisible();
+  const mode = page.locator("#christmas-mode");
+  await expect(mode).toBeVisible();
+  await expect(mode).toHaveAttribute("data-christmas-scene", "countdown");
+  await expect(mode.locator("[data-christmas-unit]")).toHaveCount(3);
+  await expect(mode.locator('[data-christmas-unit="seconds"]')).toHaveCount(0);
+
   await page.keyboard.press("Escape");
-  await expect(board).toHaveCount(0);
-  await expect(page.locator("#family-tab")).toHaveAttribute("aria-pressed", "true");
+  await expect(mode).toBeHidden();
+  expect(await page.evaluate(() => window.Christmas.isOpen())).toBe(false);
 });

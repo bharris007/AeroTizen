@@ -31,7 +31,6 @@ export const HeaderStatus = ({
           only={!settings.showTime && !isDateVisible(settings)}
           weather={weather}
           showWeather={settings.showWeather}
-          showLocation={settings.weatherShowLocation}
         />
       </Clock>
     </div>

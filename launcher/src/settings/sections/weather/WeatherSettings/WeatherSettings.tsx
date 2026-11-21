@@ -43,14 +43,6 @@ export const WeatherSettings = ({ settings, actions, active }: Props) => {
           onChange={actions.setWeatherVisible}
         />
       </SettingsField>
-      <SettingsField title={t("weather.showLocationName")} hidden={!settings.showWeather}>
-        <SettingsToggle
-          focusKey="weather-visibility"
-          label={t("weather.showLocationName")}
-          checked={settings.weatherShowLocation}
-          onChange={actions.setLocationVisible}
-        />
-      </SettingsField>
       <SettingsField title={t("weather.unit")} hidden={!settings.showWeather}>
         <ChoiceGroup
           id="units"
