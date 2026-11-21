@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#0f1420" />
+    <title>Add calendars to your TV</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0f1420;
+        --card: #182033;
+        --line: #2a3550;
+        --text: #f4f6fb;
+        --muted: #9aa6c2;
+        --accent: #6ea8ff;
+        --ok: #4cd18a;
+        --bad: #ff7a7a;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(120% 60% at 50% 0%, #1d2a4a 0%, var(--bg) 60%);
+        color: var(--text);
+        font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        padding: max(20px, env(safe-area-inset-top)) 18px 40px;
+      }
+      main { max-width: 480px; margin: 0 auto; }
+      header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+      .logo {
+        width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+        background: linear-gradient(135deg, #4285f4, #7b5cff); font-size: 24px;
+      }
+      h1 { font-size: 22px; margin: 0; }
+      .sub { color: var(--muted); font-size: 14px; margin: 2px 0 0; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; margin-bottom: 16px; }
+      .steps { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; }
+      .steps b { color: var(--text); font-weight: 600; }
+      label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 14px 0 6px; letter-spacing: 0.3px; }
+      input[type="text"], input[type="url"], textarea {
+        width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--line);
+        background: #0f1626; color: var(--text); font: inherit; font-size: 16px;
+      }
+      textarea { resize: vertical; min-height: 84px; word-break: break-all; }
+      input:focus, textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+      .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+      .swatch {
+        width: 38px; height: 38px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; padding: 0;
+        box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.25);
+      }
+      .swatch[aria-checked="true"] { border-color: #fff; }
+      button.primary {
+        width: 100%; margin-top: 18px; padding: 15px; border: 0; border-radius: 14px; font: inherit; font-weight: 700;
+        font-size: 17px; color: #08101f; background: linear-gradient(135deg, #8ab8ff, #6ea8ff); cursor: pointer;
+      }
+      button.primary:disabled { opacity: 0.55; }
+      .row { display: flex; gap: 8px; }
+      .row input { flex: 1; text-transform: uppercase; letter-spacing: 3px; text-align: center; font-weight: 700; }
+      .row button { width: auto; margin: 0; padding: 0 18px; }
+      .msg { margin-top: 12px; font-size: 14px; min-height: 20px; }
+      .msg.ok { color: var(--ok); }
+      .msg.bad { color: var(--bad); }
+      .added { list-style: none; margin: 0; padding: 0; }
+      .added li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+      .added li:first-child { border-top: 0; }
+      .dot { width: 14px; height: 14px; border-radius: 50%; flex: 0 0 14px; }
+      .muted { color: var(--muted); font-size: 13px; }
+      .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; background: #0f1626; border: 1px solid var(--line); font-size: 13px; font-weight: 700; letter-spacing: 2px; }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="logo" aria-hidden="true">📅</div>
+        <div>
+          <h1>Add calendars to your TV</h1>
+          <p class="sub" id="pairing-line">AeroTizen · Family calendar</p>
+        </div>
+      </header>
+
+      <section class="card" id="code-card" hidden>
+        <strong>Enter the code shown on your TV</strong>
+        <p class="muted">On the TV: Settings → Calendars.</p>
+        <form class="row" id="code-form">
+          <input id="code-input" type="text" inputmode="text" autocomplete="off" maxlength="9" placeholder="ABCD-2345" aria-label="TV code" />
+          <button class="primary" type="submit">Go</button>
+        </form>
+        <div class="msg bad" id="code-msg"></div>
+      </section>
+
+      <section class="card" id="how-card" hidden>
+        <ol class="steps">
+          <li>On a computer, open <b>calendar.google.com</b> → <b>Settings</b> (gear) → pick your calendar on the left → <b>Integrate calendar</b>.</li>
+          <li>Copy <b>Secret address in iCal format</b> (it ends in <b>basic.ics</b>) and send it to this phone, or open Google Calendar in your phone's browser in desktop mode.</li>
+          <li>Paste it below. Repeat for each calendar you want on the TV.</li>
+        </ol>
+      </section>
+
+      <form class="card" id="add-form" hidden autocomplete="off">
+        <label for="name">Display name</label>
+        <input id="name" type="text" maxlength="40" placeholder="Family, Work, Kids…" />
+        <label for="url">Secret address in iCal format</label>
+        <textarea id="url" inputmode="url" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" required></textarea>
+        <label id="colour-label">Colour</label>
+        <div class="swatches" role="radiogroup" aria-labelledby="colour-label" id="swatches"></div>
+        <button class="primary" type="submit" id="add-button">Add to TV</button>
+        <div class="msg" id="add-msg" role="status"></div>
+      </form>
+
+      <section class="card" id="added-card" hidden>
+        <strong>Sent to your TV</strong>
+        <p class="muted">Your TV picks these up within a few seconds. Keep Settings → Calendars open on the TV.</p>
+        <ul class="added" id="added"></ul>
+      </section>
+
+      <p class="muted" style="text-align: center">Calendar addresses go straight to your TV and are deleted from this relay as soon as the TV collects them.</p>
+    </main>
+    <script>
+      (function () {
+        var COLOURS = ["#4285f4", "#33b679", "#f4511e", "#e67c73", "#f6bf26", "#8e24aa", "#039be5", "#0b8043", "#d50000", "#616161"];
+        var colour = COLOURS[0];
+        var $ = function (id) { return document.getElementById(id); };
+        var normalize = function (value) {
+          return String(value || "").toUpperCase().replace(/[^0-9A-Z]/g, "").replace(/O/g, "0").replace(/I/g, "1");
+        };
+        var pretty = function (code) { return code.slice(0, 4) + "-" + code.slice(4); };
+        var match = location.pathname.match(/^\/c\/([^/]+)/i);
+        var code = normalize(match ? decodeURIComponent(match[1]) : new URLSearchParams(location.search).get("code"));
+
+        var swatches = $("swatches");
+        COLOURS.forEach(function (value, index) {
+          var button = document.createElement("button");
+          button.type = "button";
+          button.className = "swatch";
+          button.style.background = value;
+          button.setAttribute("role", "radio");
+          button.setAttribute("aria-label", "Colour " + (index + 1));
+          button.setAttribute("aria-checked", String(index === 0));
+          button.addEventListener("click", function () {
+            colour = value;
+            Array.prototype.forEach.call(swatches.children, function (child) {
+              child.setAttribute("aria-checked", String(child === button));
+            });
+          });
+          swatches.appendChild(button);
+        });
+
+        var showCode = function (message) {
+          $("code-card").hidden = false;
+          $("how-card").hidden = true;
+          $("add-form").hidden = true;
+          $("code-msg").textContent = message || "";
+        };
+        var showForm = function () {
+          $("code-card").hidden = true;
+          $("how-card").hidden = false;
+          $("add-form").hidden = false;
+          $("pairing-line").innerHTML = "";
+          $("pairing-line").appendChild(document.createTextNode("Connected to TV "));
+          var pill = document.createElement("span");
+          pill.className = "pill";
+          pill.textContent = pretty(code);
+          $("pairing-line").appendChild(pill);
+        };
+        var check = function () {
+          if (code.length !== 8) {
+            showCode(code ? "That code doesn't look right. It has 8 letters and numbers." : "");
+            return;
+          }
+          fetch("/api/session/" + code, { cache: "no-store" })
+            .then(function (response) {
+              if (response.ok) {
+                showForm();
+              } else {
+                showCode("That code has expired. On the TV, open Settings → Calendars for a new one.");
+              }
+            })
+            .catch(function () { showCode("Can't reach the relay. Check your connection and try again."); });
+        };
+
+        $("code-form").addEventListener("submit", function (event) {
+          event.preventDefault();
+          code = normalize($("code-input").value);
+          history.replaceState(null, "", "/c/" + code);
+          check();
+        });
+
+        var ERRORS = {
+          "bad-url": "That doesn't look like a calendar address. Paste the full https:// link that ends in .ics.",
+          unreachable: "Couldn't read that calendar. Check you copied the whole Secret address in iCal format.",
+          expired: "This TV code has expired. On the TV, open Settings → Calendars for a new one.",
+          "too-many": "That's a lot of calendars at once. Wait for the TV to pick these up, then add more."
+        };
+        $("add-form").addEventListener("submit", function (event) {
+          event.preventDefault();
+          var msg = $("add-msg");
+          var url = $("url").value.trim();
+          var name = $("name").value.trim();
+          if (!url) {
+            msg.className = "msg bad";
+            msg.textContent = "Paste the calendar's iCal address first.";
+            return;
+          }
+          $("add-button").disabled = true;
+          msg.className = "msg";
+          msg.textContent = "Checking the calendar…";
+          fetch("/api/session/" + code + "/calendars", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: name, url: url, color: colour })
+          })
+            .then(function (response) {
+              return response.json().then(function (body) { return { ok: response.ok, body: body }; });
+            })
+            .then(function (result) {
+              if (!result.ok) {
+                msg.className = "msg bad";
+                msg.textContent = ERRORS[result.body.error] || "Something went wrong. Try again.";
+                return;
+              }
+              msg.className = "msg ok";
+              msg.textContent = "Added “" + result.body.name + "”. Add another, or look at your TV.";
+              var item = document.createElement("li");
+              var dot = document.createElement("span");
+              dot.className = "dot";
+              dot.style.background = colour;
+              var label = document.createElement("span");
+              label.textContent = result.body.name;
+              var count = document.createElement("span");
+              count.className = "muted";
+              count.textContent = " · " + result.body.events + " events";
+              item.appendChild(dot);
+              item.appendChild(label);
+              item.appendChild(count);
+              $("added").appendChild(item);
+              $("added-card").hidden = false;
+              $("url").value = "";
+              $("name").value = "";
+            })
+            .catch(function () {
+              msg.className = "msg bad";
+              msg.textContent = "Can't reach the relay. Check your connection and try again.";
+            })
+            .then(function () { $("add-button").disabled = false; });
+        });
+
+        check();
+      })();
+    </script>
+  </body>
+</html>

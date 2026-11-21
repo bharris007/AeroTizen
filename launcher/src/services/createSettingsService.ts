@@ -7,6 +7,7 @@ import type {
 import { createStore } from "../shared/state/createStore";
 import { equalRecord } from "../shared/state/equalRecord";
 
+import { sameCalendars } from "./calendar/calendarSources";
 import { DEFAULT_SETTINGS } from "./preferences/defaults";
 import { normalizeSettings } from "./preferences/normalizeSettings";
 
@@ -26,6 +27,10 @@ const snapshot = (values: SettingsPreferences, previous?: SettingsSnapshot): Set
       previous && equalRecord(previous.customGradient, values.customGradient)
         ? previous.customGradient
         : Object.freeze({ ...values.customGradient }),
+    calendars:
+      previous && sameCalendars(previous.calendars, values.calendars)
+        ? previous.calendars
+        : Object.freeze(values.calendars.map((calendar) => Object.freeze({ ...calendar }))),
     home:
       previous && equalRecord(previous.home, values.home || [])
         ? previous.home
