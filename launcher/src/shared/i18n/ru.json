@@ -318,5 +318,20 @@
   "inputs.ipProbe.readFailed": "Сопряжение выполнено, но не удалось определить активный вход.",
   "inputs.ipProbe.scanFailed": "Дождитесь загрузки входов телевизора и повторите попытку.",
   "inputs.ipProbe.storageFailed": "{{appName}} не удалось сохранить вход.",
-  "inputs.ipProbe.unavailable": "Фоновая служба телевизора не ответила."
+  "inputs.ipProbe.unavailable": "Фоновая служба телевизора не ответила.",
+  "christmas.mode": "Рождественский режим",
+  "christmas.badgeHint": "Превратите ТВ в Северный полюс",
+  "christmas.scenes": "Рождественские сцены",
+  "christmas.countdown": "Обратный отсчёт",
+  "christmas.fireplace": "Камин",
+  "christmas.northPole": "Северный полюс",
+  "christmas.coming": "Рождество уже близко!",
+  "christmas.untilChristmas": "до рождественского утра",
+  "christmas.days": "Дни",
+  "christmas.hours": "Часы",
+  "christmas.minutes": "Минуты",
+  "christmas.seconds": "Секунды",
+  "christmas.merry": "С Рождеством!",
+  "christmas.merryDetail": "Хо-хо-хо! Санта уже здесь.",
+  "christmas.exit": "Назад — выход"
 }

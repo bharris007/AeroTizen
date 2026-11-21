@@ -1,0 +1,70 @@
+@keyframes fallA {
+  from {
+    transform: translate3d(0, -40px, 0);
+  }
+  50% {
+    transform: translate3d(40px, 540px, 0);
+  }
+  to {
+    transform: translate3d(-10px, 1120px, 0);
+  }
+}
+
+@keyframes fallB {
+  from {
+    transform: translate3d(0, -40px, 0);
+  }
+  50% {
+    transform: translate3d(-50px, 540px, 0);
+  }
+  to {
+    transform: translate3d(20px, 1120px, 0);
+  }
+}
+
+@keyframes fallC {
+  from {
+    transform: translate3d(0, -40px, 0);
+  }
+  33% {
+    transform: translate3d(30px, 360px, 0);
+  }
+  66% {
+    transform: translate3d(-30px, 740px, 0);
+  }
+  to {
+    transform: translate3d(10px, 1120px, 0);
+  }
+}
+
+.snowfall {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.flake {
+  position: absolute;
+  top: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, #fff 45%, rgba(255, 255, 255, 0) 72%);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.driftA {
+  animation-name: fallA;
+}
+
+.driftB {
+  animation-name: fallB;
+}
+
+.driftC {
+  animation-name: fallC;
+}

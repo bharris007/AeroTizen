@@ -25,6 +25,7 @@ const createHarness = (onTestFinished: TestContext["onTestFinished"]) => {
     }),
   };
   const fireplace = { isActive: vi.fn(() => false), keydown: vi.fn() };
+  const christmas = { isActive: vi.fn(() => false), keydown: vi.fn() };
   const settings = { isOpen: vi.fn(() => false), keydown: vi.fn() };
   const inputs = { isActive: vi.fn(() => false), keydown: vi.fn() };
   const inputScope = createInputScope({
@@ -36,7 +37,7 @@ const createHarness = (onTestFinished: TestContext["onTestFinished"]) => {
       return "native";
     },
   });
-  const targets = { home, fireplace, settings: { ...settings, inputScope }, inputs };
+  const targets = { home, christmas, fireplace, settings: { ...settings, inputScope }, inputs };
   const dispose = bindLauncherKeys(document, KEY, createLauncherInputScopes(targets));
   onTestFinished(dispose);
   const dispatch = (type: "keydown" | "keyup", code: number) => {
@@ -57,6 +58,20 @@ test("Home receives a complete press when no overlay is active", ({ onTestFinish
   expect(h.fireplace.keydown).not.toHaveBeenCalled();
   expect(h.inputs.keydown).not.toHaveBeenCalled();
   expect(h.settings.keydown).not.toHaveBeenCalled();
+});
+
+test("Christmas Mode captures remote keys ahead of every other overlay", ({ onTestFinished }) => {
+  const h = createHarness(onTestFinished);
+  h.christmas.isActive.mockReturnValue(true);
+  h.fireplace.isActive.mockReturnValue(true);
+  h.settings.isOpen.mockReturnValue(true);
+  const event = h.dispatch("keydown", KEY.RIGHT);
+  h.dispatch("keyup", KEY.RIGHT);
+
+  expect(h.christmas.keydown).toHaveBeenCalledExactlyOnceWith(KEY.RIGHT, event);
+  expect(h.fireplace.keydown).not.toHaveBeenCalled();
+  expect(h.settings.keydown).not.toHaveBeenCalled();
+  expect(h.home.keydown).not.toHaveBeenCalled();
 });
 
 test("an active Fireplace receives keys before input playback and Settings", ({ onTestFinished }) => {
