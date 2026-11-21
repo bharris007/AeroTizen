@@ -7,14 +7,17 @@ import { mountChristmas } from "./mountChristmas";
 
 const translate = (key: MessageKey) => key;
 
-const createHarness = async (onTestFinished: (fn: () => void) => void) => {
+const createHarness = async (onTestFinished: (fn: () => void) => void, start = new Date(2026, 11, 24, 23, 59, 58)) => {
   const host = document.createElement("div");
   document.body.append(host);
-  let now = new Date(2026, 11, 24, 23, 59, 58).getTime();
-  const callbacks: (() => void)[] = [];
+  let now = start.getTime();
+  let pending: (() => void) | undefined;
   const timers = {
-    setInterval: vi.fn((callback: () => void) => callbacks.push(callback)),
-    clearInterval: vi.fn(),
+    setTimeout: vi.fn((callback: () => void) => {
+      pending = callback;
+      return 1;
+    }),
+    clearTimeout: vi.fn(),
   };
   let mounted: ReturnType<typeof mountChristmas> | undefined;
   // Mount inside act so the view's store subscription is live before the bridge is used.
@@ -26,16 +29,18 @@ const createHarness = async (onTestFinished: (fn: () => void) => void) => {
     christmas.dispose();
     host.remove();
   });
-  const tick = async (ms: number) =>
+  // Advance the clock to when the scheduled timeout fires and run it.
+  const fire = async (ms: number) =>
     await act(() => {
       now += ms;
-      callbacks.forEach((callback) => callback());
+      pending?.();
     });
-  return { host, christmas, timers, tick };
+  const minutes = () => host.querySelector('[data-christmas-unit="minutes"]')?.textContent;
+  return { host, christmas, timers, fire, minutes };
 };
 
 test("Christmas Mode renders nothing until opened, then shows the countdown scene", async ({ onTestFinished }) => {
-  const { host, christmas } = await createHarness(onTestFinished);
+  const { host, christmas, minutes } = await createHarness(onTestFinished);
   expect(host.innerHTML).toBe("");
   await act(() => christmas.bridge.open());
   expect(christmas.bridge.isOpen()).toBe(true);
@@ -43,25 +48,40 @@ test("Christmas Mode renders nothing until opened, then shows the countdown scen
   expect(
     [...host.querySelectorAll("[data-christmas-unit]")].map((unit) => unit.getAttribute("data-christmas-unit")),
   ).toEqual(["days", "hours", "minutes"]);
-  expect(host.querySelector('[data-christmas-unit="minutes"]')?.textContent).toContain("00");
+  expect(minutes()).toContain("01");
   const tabs = [...host.querySelectorAll('[role="tab"]')];
   expect(tabs.map((tab) => tab.getAttribute("data-christmas-tab"))).toEqual(["countdown", "fireplace", "northPole"]);
   expect(tabs.map((tab) => tab.getAttribute("aria-selected"))).toEqual(["true", "false", "false"]);
 });
 
-test("the owner checks the clock every second, re-renders only when a shown unit changes, and celebrates at midnight", async ({
-  onTestFinished,
-}) => {
-  const { host, christmas, timers, tick } = await createHarness(onTestFinished);
+test("the owner wakes on the next minute boundary and celebrates at midnight", async ({ onTestFinished }) => {
+  const { host, christmas, timers, fire } = await createHarness(onTestFinished);
   await act(() => christmas.bridge.open());
-  expect(timers.setInterval).toHaveBeenCalledWith(expect.any(Function), 1000);
-  const tile = host.querySelector('[data-christmas-unit="minutes"]');
-  await tick(1000);
-  // 23:59:59 still shows 0 minutes, so the scene keeps the same nodes.
-  expect(host.querySelector('[data-christmas-unit="minutes"]')).toBe(tile);
-  await tick(1000);
+  expect(timers.setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 2000);
+  await fire(2000);
   expect(host.querySelector("[data-christmas-countdown]")?.getAttribute("data-christmas-countdown")).toBe("christmas");
   expect(host.textContent).toContain("christmas.merry");
+  expect(timers.setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 60000);
+});
+
+test("the shown minute turns over exactly on the boundary and an early wake-up changes nothing", async ({
+  onTestFinished,
+}) => {
+  const { host, christmas, timers, fire, minutes } = await createHarness(
+    onTestFinished,
+    new Date(2026, 11, 24, 23, 57, 30),
+  );
+  await act(() => christmas.bridge.open());
+  expect(minutes()).toContain("03");
+  expect(timers.setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 30000);
+  const tile = host.querySelector('[data-christmas-unit="minutes"]');
+  await fire(29999);
+  expect(host.querySelector('[data-christmas-unit="minutes"]')).toBe(tile);
+  expect(minutes()).toContain("03");
+  expect(timers.setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 1);
+  await fire(1);
+  expect(minutes()).toContain("02");
+  expect(timers.setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 60000);
 });
 
 test("scene steps move the selected tab and wrap", async ({ onTestFinished }) => {
@@ -82,7 +102,7 @@ test("closing stops the ticker, unmounts the scene and reopens on the countdown"
   await act(() => christmas.bridge.open());
   await act(() => christmas.bridge.nextScene());
   await act(() => christmas.bridge.close());
-  expect(timers.clearInterval).toHaveBeenCalledOnce();
+  expect(timers.clearTimeout).toHaveBeenCalledOnce();
   expect(christmas.bridge.isOpen()).toBe(false);
   expect(host.innerHTML).toBe("");
   await act(() => christmas.bridge.open());
@@ -96,14 +116,4 @@ test("scene steps do nothing while closed and a disposed mode cannot reopen", as
   christmas.bridge.open();
   expect(christmas.bridge.isOpen()).toBe(false);
   expect(host.innerHTML).toBe("");
-});
-
-test("the shown minute turns over exactly when the countdown's minutes change", async ({ onTestFinished }) => {
-  const { host, christmas, tick } = await createHarness(onTestFinished);
-  await act(() => christmas.bridge.open());
-  // Rewind to 23:58:00 so two minutes remain.
-  await tick(-118000);
-  expect(host.querySelector('[data-christmas-unit="minutes"]')?.textContent).toContain("02");
-  await tick(1000);
-  expect(host.querySelector('[data-christmas-unit="minutes"]')?.textContent).toContain("01");
 });
