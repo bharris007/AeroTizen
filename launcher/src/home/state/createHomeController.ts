@@ -377,7 +377,7 @@ export const createHomeController = (
   };
   const pageCalendar = (direction: number) => {
     const { calendarSpan, calendarStart } = state.getSnapshot();
-    update({ calendarStart: clampDay(calendarStart + direction * calendarSpan, calendarSpan) });
+    update({ calendarStart: clampDay(calendarStart + direction, calendarSpan) });
   };
   const calendarToday = () => update({ calendarStart: 0 });
   const activate = (key: string) => {
