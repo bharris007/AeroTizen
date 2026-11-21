@@ -270,12 +270,16 @@
   padding-bottom: 0;
 }
 
+/* In one-line blocks the title keeps its room and the time gives way first. */
 .eventTitle {
+  flex: 0 1 auto;
+  min-width: 0;
   font-weight: 600;
 }
 
 .eventTime {
-  flex: 0 0 auto;
+  flex: 0 10 auto;
+  min-width: 0;
   color: var(--family-muted);
   font-size: 17px;
 

@@ -135,6 +135,7 @@ export const FamilyCalendarFull = ({
                     class={styles.chip + " " + text.truncate}
                     style={{ background: eventTint(event.color, EVENT_TINT_ALPHA), borderColor: event.color }}
                     data-family-event="all-day"
+                    dir="auto"
                   >
                     {event.title || t("family.untitled")}
                   </li>
@@ -172,7 +173,9 @@ export const FamilyCalendarFull = ({
                     }}
                     data-family-event="timed"
                   >
-                    <span class={styles.eventTitle + " " + text.truncate}>{event.title || t("family.untitled")}</span>
+                    <span class={styles.eventTitle + " " + text.truncate} dir="auto">
+                      {event.title || t("family.untitled")}
+                    </span>
                     <span class={styles.eventTime + " " + text.truncate}>
                       {event.end > event.start ? time(event.start) + " – " + time(event.end) : time(event.start)}
                     </span>

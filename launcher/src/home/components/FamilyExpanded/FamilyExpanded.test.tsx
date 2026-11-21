@@ -25,7 +25,7 @@ const forecast: FamilyForecastSnapshot = {
   high: 75,
   hours: [
     { code: 61, hour: 12, precipitation: 60, temperature: 70 },
-    { code: 2, hour: 13, temperature: 71 },
+    { code: 2, hour: 13, precipitation: 5, temperature: 71 },
   ],
   locationLabel: "Franklin, TN",
   low: 51,
@@ -107,6 +107,7 @@ test("full-screen weather shows current conditions, details, hours and days", ()
   expect(screen.getByText("Sunset 5:02 PM")).toBeDefined();
   expect(screen.getByText("Now")).toBeDefined();
   expect(screen.getByText("60%")).toBeDefined();
+  expect(screen.queryByText("5%")).toBeNull();
   expect(screen.getByText("2-day forecast")).toBeDefined();
   expect(container.querySelectorAll("[data-family-days] [data-family-day]")).toHaveLength(2);
   expect(screen.getByText("Press Back to close")).toBeDefined();

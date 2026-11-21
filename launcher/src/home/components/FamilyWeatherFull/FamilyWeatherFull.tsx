@@ -15,6 +15,11 @@ import { temperatureText, WEEKDAY_KEYS } from "../FamilyWeather/FamilyWeather";
 
 import styles from "./FamilyWeatherFull.module.css";
 
+// Small chances are noise on the hourly and daily rows.
+const MIN_SHOWN_CHANCE = 10;
+const chanceText = (value: number | undefined, t: Translate) =>
+  value !== undefined && value >= MIN_SHOWN_CHANCE ? t("family.percent", { value }) : "";
+
 const padded = (value: number) => (value < 10 ? "0" + value : String(value));
 
 const minuteText = (minute: number, format: TimeFormat, t: Translate) => {
@@ -140,9 +145,7 @@ export const FamilyWeatherFull = ({
                     <div class={styles.icon}>
                       <WeatherIcon code={hour.code} />
                     </div>
-                    <div class={styles.chance}>
-                      {hour.precipitation ? t("family.percent", { value: hour.precipitation }) : ""}
-                    </div>
+                    <div class={styles.chance}>{chanceText(hour.precipitation, t)}</div>
                     <div class={styles.hourTemperature}>{temperatureText(hour.temperature, t)}</div>
                   </div>
                 ))}
@@ -162,9 +165,7 @@ export const FamilyWeatherFull = ({
                   <span class={styles.icon}>
                     <WeatherIcon code={day.code} />
                   </span>
-                  <span class={styles.dayChance}>
-                    {day.precipitation ? t("family.percent", { value: day.precipitation }) : ""}
-                  </span>
+                  <span class={styles.dayChance}>{chanceText(day.precipitation, t)}</span>
                   <span class={styles.dayLow}>{temperatureText(day.low, t)}</span>
                   <span class={styles.bar}>
                     <span
