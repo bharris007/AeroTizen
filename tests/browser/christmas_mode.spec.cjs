@@ -33,18 +33,21 @@ test("Christmas Mode opens from the Settings badge and is driven entirely by the
   const mode = page.locator("#christmas-mode");
   await expect(mode).toBeVisible();
   await expect(page.locator("#editor")).toBeHidden();
-  await expect(mode).toHaveAttribute("data-christmas-scene", "countdown");
-  await expect(page.locator('[data-christmas-tab="countdown"]')).toHaveAttribute("aria-selected", "true");
+  await expect(mode.locator('[data-christmas-countdown="countdown"]')).toBeVisible();
+  await expect(mode.locator('[role="tab"]')).toHaveCount(0);
+
+  await test.step("the countdown typography renders from the packaged fonts", async () => {
+    const loaded = await page.evaluate(async () => {
+      const fonts = ['italic 400 64px "Playfair Display"', '300 64px "Jost"'];
+      const faces = await Promise.all(fonts.map((font) => document.fonts.load(font, "Merry 0123")));
+      return faces.map((matches) => matches.map((face) => face.family.replace(/"/g, "") + " " + face.status));
+    });
+    expect(loaded).toEqual([["Playfair Display loaded"], ["Jost loaded"]]);
+  });
 
   await page.keyboard.press("ArrowRight");
-  await expect(mode).toHaveAttribute("data-christmas-scene", "fireplace");
-  await expect(mode.locator("canvas")).toBeVisible();
-  await page.keyboard.press("ArrowRight");
-  await expect(mode).toHaveAttribute("data-christmas-scene", "northPole");
-  await page.keyboard.press("ArrowRight");
-  await expect(mode).toHaveAttribute("data-christmas-scene", "countdown");
   await page.keyboard.press("ArrowLeft");
-  await expect(mode).toHaveAttribute("data-christmas-scene", "northPole");
+  await expect(mode.locator('[data-christmas-countdown="countdown"]')).toBeVisible();
 
   await page.keyboard.press("Escape");
   await expect(mode).toBeHidden();
@@ -72,7 +75,6 @@ test("the header Christmas icon sits between the gear and Wi-Fi and opens the co
 
   const mode = page.locator("#christmas-mode");
   await expect(mode).toBeVisible();
-  await expect(mode).toHaveAttribute("data-christmas-scene", "countdown");
   await expect(mode.locator("[data-christmas-unit]")).toHaveCount(3);
   await expect(mode.locator('[data-christmas-unit="seconds"]')).toHaveCount(0);
 

@@ -1,12 +1,12 @@
 @keyframes twinkle {
   from {
-    opacity: 0.2;
+    opacity: 0.25;
   }
   50% {
     opacity: 1;
   }
   to {
-    opacity: 0.2;
+    opacity: 0.25;
   }
 }
 
@@ -19,9 +19,54 @@
   pointer-events: none;
 }
 
+.still {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 680px;
+}
+
 .star {
   position: absolute;
   border-radius: 50%;
-  background: #fff8dc;
-  animation: twinkle 3s ease-in-out infinite;
+  background: radial-gradient(circle closest-side, #fff 0%, #fff6dc 45%, rgba(255, 246, 220, 0) 100%);
+  animation: twinkle ease-in-out infinite;
+  will-change: opacity;
+}
+
+.twinkleA {
+  animation-duration: 3.4s;
+}
+
+.twinkleB {
+  animation-duration: 4.6s;
+}
+
+.twinkleC {
+  animation-duration: 5.8s;
+}
+
+/* A soft four-point flare on the brightest stars, painted once with the star. */
+.glint {
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 34px;
+    height: 1px;
+    margin: -0.5px 0 0 -17px;
+    background: linear-gradient(
+      to right,
+      rgba(255, 246, 220, 0) 0%,
+      rgba(255, 246, 220, 0.85) 50%,
+      rgba(255, 246, 220, 0) 100%
+    );
+  }
+
+  &::after {
+    transform: rotate(90deg);
+  }
 }

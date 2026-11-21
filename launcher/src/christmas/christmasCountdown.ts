@@ -6,11 +6,13 @@ const DECEMBER = 11;
 const CHRISTMAS_DAY = 25;
 
 export type ChristmasCountdown =
-  | { readonly kind: "countdown"; days: number; hours: number; minutes: number; seconds: number }
+  | { readonly kind: "countdown"; readonly days: number; readonly hours: number; readonly minutes: number }
   | { readonly kind: "christmas" };
 
 // Christmas Day through New Year's Eve celebrates; from January 1 the clock
-// counts down to this year's December 25 at local midnight.
+// counts down to this year's December 25 at local midnight. The remaining time
+// rounds up to a whole minute so the countdown agrees with the wall clock: at
+// 18:30 on Christmas Eve it reads 5 h 30 min and turns over as the clock does.
 export const getChristmasCountdown = (now: Date): ChristmasCountdown => {
   const year = now.getFullYear();
   if (now.getMonth() === DECEMBER && now.getDate() >= CHRISTMAS_DAY) {
@@ -18,14 +20,16 @@ export const getChristmasCountdown = (now: Date): ChristmasCountdown => {
   }
   const target = new Date(year, DECEMBER, CHRISTMAS_DAY);
   const remaining = Math.max(0, target.getTime() - now.getTime());
-  const wholeSeconds = Math.ceil(remaining / SECOND_MS) * SECOND_MS;
+  const wholeMinutes = Math.ceil(remaining / MINUTE_MS) * MINUTE_MS;
   return {
     kind: "countdown",
-    days: Math.floor(wholeSeconds / DAY_MS),
-    hours: Math.floor((wholeSeconds % DAY_MS) / HOUR_MS),
-    minutes: Math.floor((wholeSeconds % HOUR_MS) / MINUTE_MS),
-    seconds: Math.floor((wholeSeconds % MINUTE_MS) / SECOND_MS),
+    days: Math.floor(wholeMinutes / DAY_MS),
+    hours: Math.floor((wholeMinutes % DAY_MS) / HOUR_MS),
+    minutes: Math.floor((wholeMinutes % HOUR_MS) / MINUTE_MS),
   };
 };
+
+// The shown countdown can only change on a local minute boundary.
+export const msUntilNextMinute = (now: Date) => MINUTE_MS - (now.getSeconds() * SECOND_MS + now.getMilliseconds());
 
 export const padCountdownUnit = (value: number) => (value < 10 ? "0" + value : String(value));

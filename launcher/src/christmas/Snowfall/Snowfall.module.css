@@ -1,39 +1,39 @@
 @keyframes fallA {
   from {
-    transform: translate3d(0, -40px, 0);
+    transform: translate3d(0, -60px, 0);
   }
   50% {
-    transform: translate3d(40px, 540px, 0);
+    transform: translate3d(46px, 540px, 0);
   }
   to {
-    transform: translate3d(-10px, 1120px, 0);
+    transform: translate3d(-8px, 1140px, 0);
   }
 }
 
 @keyframes fallB {
   from {
-    transform: translate3d(0, -40px, 0);
+    transform: translate3d(0, -60px, 0);
   }
   50% {
-    transform: translate3d(-50px, 540px, 0);
+    transform: translate3d(-54px, 540px, 0);
   }
   to {
-    transform: translate3d(20px, 1120px, 0);
+    transform: translate3d(18px, 1140px, 0);
   }
 }
 
 @keyframes fallC {
   from {
-    transform: translate3d(0, -40px, 0);
+    transform: translate3d(0, -60px, 0);
   }
   33% {
-    transform: translate3d(30px, 360px, 0);
+    transform: translate3d(32px, 340px, 0);
   }
   66% {
     transform: translate3d(-30px, 740px, 0);
   }
   to {
-    transform: translate3d(10px, 1120px, 0);
+    transform: translate3d(12px, 1140px, 0);
   }
 }
 
@@ -51,10 +51,23 @@
   position: absolute;
   top: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, #fff 0%, #fff 45%, rgba(255, 255, 255, 0) 72%);
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   will-change: transform;
+}
+
+.far,
+.mid {
+  background: radial-gradient(circle closest-side, #fff 0%, #f4f8ff 55%, rgba(244, 248, 255, 0) 100%);
+}
+
+.near {
+  background: radial-gradient(
+    circle closest-side,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(240, 246, 255, 0.55) 45%,
+    rgba(240, 246, 255, 0) 100%
+  );
 }
 
 .driftA {
