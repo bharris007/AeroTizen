@@ -62,6 +62,16 @@ export const HomeHeader = ({ env }: { env: HomeEnvironment }) => {
         >
           {t("home.home")}
         </HomeControl>
+        <HomeControl
+          env={env}
+          id="xmas-tab"
+          controlKey="xmas-tab"
+          className={styles.tab + " " + styles.xmasTab}
+          title={t("home.xmas")}
+          pressed={page === "xmas"}
+        >
+          {t("home.xmas")}
+        </HomeControl>
       </nav>
       <HeaderStatus settings={env.settings} status={env.status} clock={env.runtime.clock} />
     </header>

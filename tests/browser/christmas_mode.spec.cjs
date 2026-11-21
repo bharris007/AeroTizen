@@ -51,3 +51,40 @@ test("Christmas Mode opens from the Settings badge and is driven entirely by the
   await expect(page.locator("#editor")).toBeHidden();
   expect(await page.evaluate(() => window.Christmas.isOpen())).toBe(false);
 });
+
+test("the Xmas tab sits right of Watch and shows the countdown under the launcher header", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForFunction(() => window.AeroTizen?.settingsUi);
+  const tabs = page.locator("[data-header-tabs] [role=button]");
+  await expect(tabs).toHaveText(["Home", "Watch", "Xmas"]);
+  await expect(page.locator("[data-xmas-board]")).toHaveCount(0);
+
+  await page.keyboard.press("ArrowUp");
+  await expect(page.locator("#family-tab")).toHaveAttribute("data-focused", "true");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  const xmas = page.locator("#xmas-tab");
+  await expect(xmas).toHaveAttribute("data-focused", "true");
+  await page.keyboard.press("Enter");
+
+  const board = page.locator("[data-xmas-board]");
+  await expect(board).toBeVisible();
+  await expect(xmas).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("[data-home-header]")).toBeVisible();
+  await expect(board.locator("[data-christmas-countdown]")).toBeVisible();
+  await expect(page.locator("#christmas-mode")).toHaveCount(0);
+
+  // The countdown is display-only: Down keeps focus in the tab bar, and Left walks back to Watch.
+  await page.keyboard.press("ArrowDown");
+  await expect(xmas).toHaveAttribute("data-focused", "true");
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.locator("#home-tab")).toHaveAttribute("data-focused", "true");
+  await page.keyboard.press("Enter");
+  await expect(board).toHaveCount(0);
+
+  await page.evaluate(() => AeroTizen.homeScreen.showPage("xmas"));
+  await expect(board).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(board).toHaveCount(0);
+  await expect(page.locator("#family-tab")).toHaveAttribute("aria-pressed", "true");
+});

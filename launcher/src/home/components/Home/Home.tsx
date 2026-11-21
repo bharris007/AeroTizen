@@ -12,6 +12,7 @@ import { FamilyBoard } from "../FamilyBoard/FamilyBoard";
 import { HomeControl } from "../HomeControl/HomeControl";
 import { HomeHeader } from "../HomeHeader/HomeHeader";
 import { InputDock } from "../InputDock/InputDock";
+import { XmasBoard } from "../XmasBoard/XmasBoard";
 
 import styles from "./Home.module.css";
 
@@ -54,7 +55,13 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
     settings.aeroClockStyle,
   ]);
   return (
-    <div class={styles.home} data-home data-expanded={settings.clockLayout === "custom" ? "true" : "false"}>
+    <div
+      class={styles.home}
+      data-home
+      data-page={page}
+      data-expanded={settings.clockLayout === "custom" ? "true" : "false"}
+    >
+      {page === "xmas" && <XmasBoard paused={!active} />}
       <HomeHeader env={env} />
       <div
         class={styles.viewport}
