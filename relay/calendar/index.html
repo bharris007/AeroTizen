@@ -29,45 +29,54 @@
       }
       main { max-width: 480px; margin: 0 auto; }
       header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-      .logo {
-        width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
-        background: linear-gradient(135deg, #4285f4, #7b5cff); font-size: 24px;
-      }
+      .logo { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg, #4285f4, #7b5cff); font-size: 24px; }
       h1 { font-size: 22px; margin: 0; }
+      h2 { font-size: 19px; margin: 0 0 6px; }
       .sub { color: var(--muted); font-size: 14px; margin: 2px 0 0; }
       .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; margin-bottom: 16px; }
-      .steps { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; }
-      .steps b { color: var(--text); font-weight: 600; }
-      label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 14px 0 6px; letter-spacing: 0.3px; }
-      input[type="text"], input[type="url"], textarea {
-        width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--line);
-        background: #0f1626; color: var(--text); font: inherit; font-size: 16px;
+      .muted { color: var(--muted); font-size: 14px; }
+      .small { font-size: 13px; }
+      .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; background: #0f1626; border: 1px solid var(--line); font-size: 13px; font-weight: 700; letter-spacing: 2px; }
+      .google {
+        display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; margin: 16px 0 12px;
+        padding: 16px; border-radius: 14px; border: 0; background: #fff; color: #1f1f1f; font: inherit; font-size: 18px;
+        font-weight: 600; text-decoration: none; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
       }
-      textarea { resize: vertical; min-height: 84px; word-break: break-all; }
-      input:focus, textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
-      .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
-      .swatch {
-        width: 38px; height: 38px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; padding: 0;
-        box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.25);
-      }
-      .swatch[aria-checked="true"] { border-color: #fff; }
+      .google svg { width: 24px; height: 24px; flex: 0 0 24px; }
       button.primary {
-        width: 100%; margin-top: 18px; padding: 15px; border: 0; border-radius: 14px; font: inherit; font-weight: 700;
+        width: 100%; margin-top: 16px; padding: 15px; border: 0; border-radius: 14px; font: inherit; font-weight: 700;
         font-size: 17px; color: #08101f; background: linear-gradient(135deg, #8ab8ff, #6ea8ff); cursor: pointer;
       }
-      button.primary:disabled { opacity: 0.55; }
+      button.primary:disabled { opacity: 0.5; }
+      .secondary {
+        display: block; width: 100%; margin-top: 12px; padding: 13px; border-radius: 14px; border: 1px solid var(--line);
+        background: transparent; color: var(--text); font: inherit; font-weight: 600; text-align: center; text-decoration: none;
+      }
+      .calendars { list-style: none; margin: 8px 0 0; padding: 0; }
+      .calendars label { display: flex; align-items: center; gap: 12px; padding: 13px 4px; border-top: 1px solid var(--line); cursor: pointer; }
+      .calendars li:first-child label { border-top: 0; }
+      .calendars input { width: 22px; height: 22px; flex: 0 0 22px; accent-color: var(--accent); }
+      .dot { width: 14px; height: 14px; border-radius: 50%; flex: 0 0 14px; }
+      .calname { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+      .tag { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+      .banner { border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; font-size: 14px; }
+      .banner.bad { background: rgba(255, 122, 122, 0.12); border: 1px solid rgba(255, 122, 122, 0.4); color: #ffd0d0; }
+      .done-mark { font-size: 40px; line-height: 1; margin-bottom: 8px; }
       .row { display: flex; gap: 8px; }
       .row input { flex: 1; text-transform: uppercase; letter-spacing: 3px; text-align: center; font-weight: 700; }
       .row button { width: auto; margin: 0; padding: 0 18px; }
+      .link { background: none; border: 0; padding: 0; color: var(--muted); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
+      label.field { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 14px 0 6px; }
+      input[type="text"], textarea { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--line); background: #0f1626; color: var(--text); font: inherit; font-size: 16px; }
+      textarea { resize: vertical; min-height: 84px; word-break: break-all; }
+      .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+      .swatch { width: 34px; height: 34px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; padding: 0; }
+      .swatch[aria-checked="true"] { border-color: #fff; }
+      .steps { margin: 0 0 4px; padding-left: 20px; color: var(--muted); font-size: 14px; }
       .msg { margin-top: 12px; font-size: 14px; min-height: 20px; }
       .msg.ok { color: var(--ok); }
       .msg.bad { color: var(--bad); }
-      .added { list-style: none; margin: 0; padding: 0; }
-      .added li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
-      .added li:first-child { border-top: 0; }
-      .dot { width: 14px; height: 14px; border-radius: 50%; flex: 0 0 14px; }
-      .muted { color: var(--muted); font-size: 13px; }
-      .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; background: #0f1626; border: 1px solid var(--line); font-size: 13px; font-weight: 700; letter-spacing: 2px; }
+      .footer { text-align: center; margin-top: 18px; }
       [hidden] { display: none !important; }
     </style>
   </head>
@@ -81,55 +90,221 @@
         </div>
       </header>
 
+      <div class="banner bad" id="banner" role="alert" hidden></div>
+
       <section class="card" id="code-card" hidden>
-        <strong>Enter the code shown on your TV</strong>
+        <h2>Enter the code shown on your TV</h2>
         <p class="muted">On the TV: Settings → Calendars.</p>
         <form class="row" id="code-form">
-          <input id="code-input" type="text" inputmode="text" autocomplete="off" maxlength="9" placeholder="ABCD-2345" aria-label="TV code" />
+          <input id="code-input" type="text" autocomplete="off" maxlength="9" placeholder="ABCD-2345" aria-label="TV code" />
           <button class="primary" type="submit">Go</button>
         </form>
-        <div class="msg bad" id="code-msg"></div>
       </section>
 
-      <section class="card" id="how-card" hidden>
-        <ol class="steps">
-          <li>On a computer, open <b>calendar.google.com</b> → <b>Settings</b> (gear) → pick your calendar on the left → <b>Integrate calendar</b>.</li>
-          <li>Copy <b>Secret address in iCal format</b> (it ends in <b>basic.ics</b>) and send it to this phone, or open Google Calendar in your phone's browser in desktop mode.</li>
-          <li>Paste it below. Repeat for each calendar you want on the TV.</li>
-        </ol>
+      <section class="card" id="signin-card" hidden>
+        <h2>Pick calendars from your Google account</h2>
+        <p class="muted">Sign in, tick the calendars you want, and they appear on the TV. AeroTizen can only read your calendars.</p>
+        <a class="google" id="google-button" href="#">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+          <span>Sign in with Google</span>
+        </a>
+        <p class="muted small">If Google says the app isn't verified, tap <b>Advanced</b> → <b>Go to AeroTizen Calendar</b> (it's yours).</p>
       </section>
+
+      <section class="card" id="picker-card" hidden>
+        <h2>Choose calendars</h2>
+        <p class="muted" id="picker-account"></p>
+        <ul class="calendars" id="calendar-list"></ul>
+        <button class="primary" type="button" id="add-google">Add to TV</button>
+        <div class="msg" id="picker-msg" role="status"></div>
+      </section>
+
+      <section class="card" id="done-card" hidden>
+        <div class="done-mark" aria-hidden="true">✅</div>
+        <h2 id="done-title">Added to your TV</h2>
+        <p class="muted">They appear on the TV in a few seconds. Keep Settings → Calendars open on the TV until they do.</p>
+        <a class="secondary" id="another-account" href="#">Add another Google account</a>
+      </section>
+
+      <div class="footer" id="advanced-toggle-row" hidden>
+        <button class="link" type="button" id="advanced-toggle">Advanced: paste an iCal link</button>
+      </div>
 
       <form class="card" id="add-form" hidden autocomplete="off">
-        <label for="name">Display name</label>
+        <ol class="steps">
+          <li>In Google Calendar on the web: Settings → your calendar → Integrate calendar.</li>
+          <li>Copy <b>Secret address in iCal format</b> and paste it below.</li>
+        </ol>
+        <label class="field" for="name">Display name</label>
         <input id="name" type="text" maxlength="40" placeholder="Family, Work, Kids…" />
-        <label for="url">Secret address in iCal format</label>
+        <label class="field" for="url">iCal address</label>
         <textarea id="url" inputmode="url" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" required></textarea>
-        <label id="colour-label">Colour</label>
+        <label class="field" id="colour-label">Colour</label>
         <div class="swatches" role="radiogroup" aria-labelledby="colour-label" id="swatches"></div>
         <button class="primary" type="submit" id="add-button">Add to TV</button>
         <div class="msg" id="add-msg" role="status"></div>
       </form>
 
-      <section class="card" id="added-card" hidden>
-        <strong>Sent to your TV</strong>
-        <p class="muted">Your TV picks these up within a few seconds. Keep Settings → Calendars open on the TV.</p>
-        <ul class="added" id="added"></ul>
-      </section>
-
-      <p class="muted" style="text-align: center">Calendar addresses go straight to your TV and are deleted from this relay as soon as the TV collects them.</p>
+      <p class="muted small footer">Calendar sign-ins are encrypted and only your TV can read them. Remove a calendar on the TV to delete it here too.</p>
     </main>
     <script>
       (function () {
         var COLOURS = ["#4285f4", "#33b679", "#f4511e", "#e67c73", "#f6bf26", "#8e24aa", "#039be5", "#0b8043", "#d50000", "#616161"];
         var colour = COLOURS[0];
         var $ = function (id) { return document.getElementById(id); };
+        var params = new URLSearchParams(location.search);
         var normalize = function (value) {
           return String(value || "").toUpperCase().replace(/[^0-9A-Z]/g, "").replace(/O/g, "0").replace(/I/g, "1");
         };
         var pretty = function (code) { return code.slice(0, 4) + "-" + code.slice(4); };
         var match = location.pathname.match(/^\/c\/([^/]+)/i);
-        var code = normalize(match ? decodeURIComponent(match[1]) : new URLSearchParams(location.search).get("code"));
+        var code = normalize(match ? decodeURIComponent(match[1]) : params.get("code"));
+        var SECTIONS = ["code-card", "signin-card", "picker-card", "done-card", "add-form", "advanced-toggle-row"];
+        var show = function (ids) {
+          SECTIONS.forEach(function (id) { $(id).hidden = ids.indexOf(id) < 0; });
+        };
+        var banner = function (text) {
+          $("banner").textContent = text || "";
+          $("banner").hidden = !text;
+        };
+        var ERRORS = {
+          denied: "Google sign-in was cancelled. Try again when you're ready.",
+          signin: "Google sign-in didn't finish. Please try again.",
+          expired: "This TV code has expired. On the TV, open Settings → Calendars for a new one.",
+          unavailable: "Google sign-in isn't ready yet. You can paste an iCal link instead (Advanced, below)."
+        };
+        var signedIn = function () {
+          $("pairing-line").innerHTML = "";
+          $("pairing-line").appendChild(document.createTextNode("Connected to TV "));
+          var pill = document.createElement("span");
+          pill.className = "pill";
+          pill.textContent = pretty(code);
+          $("pairing-line").appendChild(pill);
+          var start = "/api/google/start?code=" + code;
+          $("google-button").href = start;
+          $("another-account").href = start;
+          // The link is single-use; drop it from the address bar.
+          history.replaceState(null, "", "/c/" + code);
+        };
+        var showSignIn = function () { show(["signin-card", "advanced-toggle-row"]); };
 
+        var renderPicker = function (data, link) {
+          $("picker-account").textContent = data.email ? "Signed in as " + data.email : "";
+          var list = $("calendar-list");
+          list.innerHTML = "";
+          data.calendars.forEach(function (calendar) {
+            var item = document.createElement("li");
+            var label = document.createElement("label");
+            var box = document.createElement("input");
+            box.type = "checkbox";
+            box.value = calendar.id;
+            box.checked = calendar.primary;
+            var dot = document.createElement("span");
+            dot.className = "dot";
+            dot.style.background = calendar.color;
+            var name = document.createElement("span");
+            name.className = "calname";
+            name.textContent = calendar.name;
+            label.appendChild(box);
+            label.appendChild(dot);
+            label.appendChild(name);
+            if (calendar.primary) {
+              var tag = document.createElement("span");
+              tag.className = "tag";
+              tag.textContent = "Primary";
+              label.appendChild(tag);
+            }
+            item.appendChild(label);
+            list.appendChild(item);
+          });
+          show(["picker-card"]);
+          $("add-google").onclick = function () {
+            var ids = Array.prototype.filter
+              .call(list.querySelectorAll("input"), function (box) { return box.checked; })
+              .map(function (box) { return box.value; });
+            var msg = $("picker-msg");
+            if (!ids.length) {
+              msg.className = "msg bad";
+              msg.textContent = "Tick at least one calendar.";
+              return;
+            }
+            $("add-google").disabled = true;
+            msg.className = "msg";
+            msg.textContent = "Sending to your TV…";
+            fetch("/api/google/link/" + code + "/" + link + "/add", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ calendarIds: ids })
+            })
+              .then(function (response) { return response.json().then(function (body) { return { ok: response.ok, body: body }; }); })
+              .then(function (result) {
+                if (!result.ok) {
+                  msg.className = "msg bad";
+                  msg.textContent = result.body.error === "expired" ? ERRORS.expired : "Something went wrong. Try again.";
+                  return;
+                }
+                var count = result.body.added;
+                $("done-title").textContent = "Added " + count + (count === 1 ? " calendar" : " calendars") + (result.body.email ? " from " + result.body.email : "");
+                show(["done-card", "advanced-toggle-row"]);
+              })
+              .catch(function () { msg.className = "msg bad"; msg.textContent = "Can't reach the relay. Check your connection."; })
+              .then(function () { $("add-google").disabled = false; });
+          };
+        };
+
+        var check = function () {
+          if (code.length !== 8) {
+            show(["code-card"]);
+            if (code) banner("That code doesn't look right. It has 8 letters and numbers.");
+            return;
+          }
+          var link = params.get("link");
+          banner(ERRORS[params.get("error")] || "");
+          fetch("/api/session/" + code, { cache: "no-store" })
+            .then(function (response) { return response.json().then(function (body) { return { ok: response.ok, body: body }; }); })
+            .then(function (session) {
+              if (!session.ok) {
+                show(["code-card"]);
+                banner(ERRORS.expired);
+                return;
+              }
+              signedIn();
+              if (!session.body.google) {
+                banner(ERRORS.unavailable);
+                show(["add-form"]);
+                return;
+              }
+              if (!link) {
+                showSignIn();
+                return;
+              }
+              fetch("/api/google/link/" + code + "/" + encodeURIComponent(link), { cache: "no-store" })
+                .then(function (response) { return response.ok ? response.json() : null; })
+                .then(function (data) {
+                  if (data && data.calendars) {
+                    renderPicker(data, link);
+                  } else {
+                    banner(ERRORS.signin);
+                    showSignIn();
+                  }
+                });
+            })
+            .catch(function () { show(["code-card"]); banner("Can't reach the relay. Check your connection and try again."); });
+        };
+
+        $("code-form").addEventListener("submit", function (event) {
+          event.preventDefault();
+          code = normalize($("code-input").value);
+          params = new URLSearchParams();
+          history.replaceState(null, "", "/c/" + code);
+          banner("");
+          check();
+        });
+        $("advanced-toggle").addEventListener("click", function () {
+          $("add-form").hidden = !$("add-form").hidden;
+        });
+
+        // Advanced: paste an iCal link.
         var swatches = $("swatches");
         COLOURS.forEach(function (value, index) {
           var button = document.createElement("button");
@@ -147,58 +322,16 @@
           });
           swatches.appendChild(button);
         });
-
-        var showCode = function (message) {
-          $("code-card").hidden = false;
-          $("how-card").hidden = true;
-          $("add-form").hidden = true;
-          $("code-msg").textContent = message || "";
-        };
-        var showForm = function () {
-          $("code-card").hidden = true;
-          $("how-card").hidden = false;
-          $("add-form").hidden = false;
-          $("pairing-line").innerHTML = "";
-          $("pairing-line").appendChild(document.createTextNode("Connected to TV "));
-          var pill = document.createElement("span");
-          pill.className = "pill";
-          pill.textContent = pretty(code);
-          $("pairing-line").appendChild(pill);
-        };
-        var check = function () {
-          if (code.length !== 8) {
-            showCode(code ? "That code doesn't look right. It has 8 letters and numbers." : "");
-            return;
-          }
-          fetch("/api/session/" + code, { cache: "no-store" })
-            .then(function (response) {
-              if (response.ok) {
-                showForm();
-              } else {
-                showCode("That code has expired. On the TV, open Settings → Calendars for a new one.");
-              }
-            })
-            .catch(function () { showCode("Can't reach the relay. Check your connection and try again."); });
-        };
-
-        $("code-form").addEventListener("submit", function (event) {
-          event.preventDefault();
-          code = normalize($("code-input").value);
-          history.replaceState(null, "", "/c/" + code);
-          check();
-        });
-
-        var ERRORS = {
+        var ICS_ERRORS = {
           "bad-url": "That doesn't look like a calendar address. Paste the full https:// link that ends in .ics.",
-          unreachable: "Couldn't read that calendar. Check you copied the whole Secret address in iCal format.",
-          expired: "This TV code has expired. On the TV, open Settings → Calendars for a new one.",
+          unreachable: "Couldn't read that calendar. Check you copied the whole address.",
+          expired: ERRORS.expired,
           "too-many": "That's a lot of calendars at once. Wait for the TV to pick these up, then add more."
         };
         $("add-form").addEventListener("submit", function (event) {
           event.preventDefault();
           var msg = $("add-msg");
           var url = $("url").value.trim();
-          var name = $("name").value.trim();
           if (!url) {
             msg.className = "msg bad";
             msg.textContent = "Paste the calendar's iCal address first.";
@@ -210,40 +343,21 @@
           fetch("/api/session/" + code + "/calendars", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: name, url: url, color: colour })
+            body: JSON.stringify({ name: $("name").value.trim(), url: url, color: colour })
           })
-            .then(function (response) {
-              return response.json().then(function (body) { return { ok: response.ok, body: body }; });
-            })
+            .then(function (response) { return response.json().then(function (body) { return { ok: response.ok, body: body }; }); })
             .then(function (result) {
               if (!result.ok) {
                 msg.className = "msg bad";
-                msg.textContent = ERRORS[result.body.error] || "Something went wrong. Try again.";
+                msg.textContent = ICS_ERRORS[result.body.error] || "Something went wrong. Try again.";
                 return;
               }
               msg.className = "msg ok";
-              msg.textContent = "Added “" + result.body.name + "”. Add another, or look at your TV.";
-              var item = document.createElement("li");
-              var dot = document.createElement("span");
-              dot.className = "dot";
-              dot.style.background = colour;
-              var label = document.createElement("span");
-              label.textContent = result.body.name;
-              var count = document.createElement("span");
-              count.className = "muted";
-              count.textContent = " · " + result.body.events + " events";
-              item.appendChild(dot);
-              item.appendChild(label);
-              item.appendChild(count);
-              $("added").appendChild(item);
-              $("added-card").hidden = false;
+              msg.textContent = "Added “" + result.body.name + "” (" + result.body.events + " events).";
               $("url").value = "";
               $("name").value = "";
             })
-            .catch(function () {
-              msg.className = "msg bad";
-              msg.textContent = "Can't reach the relay. Check your connection and try again.";
-            })
+            .catch(function () { msg.className = "msg bad"; msg.textContent = "Can't reach the relay. Check your connection."; })
             .then(function () { $("add-button").disabled = false; });
         });
 

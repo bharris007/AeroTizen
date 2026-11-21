@@ -341,7 +341,7 @@
   "settings.calendars.title": "Agendas",
   "settings.calendars.hint": "Adicione agendas do Google pelo celular.",
   "settings.calendars.addTitle": "Adicionar pelo celular",
-  "settings.calendars.scan": "Escaneie com a câmera do celular e cole o endereço iCal secreto de cada agenda.",
+  "settings.calendars.scan": "Escaneie com a câmera do celular, entre com o Google e marque as agendas que quiser.",
   "settings.calendars.orVisit": "Ou abra {{url}} e digite",
   "settings.calendars.connecting": "Obtendo um código de pareamento…",
   "settings.calendars.offline": "Não foi possível acessar o serviço de pareamento. Verifique a internet da TV.",
@@ -356,8 +356,12 @@
   "settings.calendars.off": "Oculta da página Família",
   "settings.calendars.errorNetwork": "Falha na sincronização. Mostrando eventos salvos.",
   "settings.calendars.errorInvalid": "Esse endereço não é um feed de agenda.",
-  "settings.calendars.errorNotFound": "O Google não compartilha mais esta agenda. Copie o endereço secreto de novo.",
+  "settings.calendars.errorNotFound": "Esta agenda não está mais compartilhada com você.",
   "settings.calendars.show": "Mostrar {{name}}",
+  "settings.calendars.removeAccount": "Remover conta",
+  "settings.calendars.googleAccount": "Conta do Google",
+  "settings.calendars.reconnectAccount": "Reconecte pelo celular: escaneie o código e entre novamente.",
+  "settings.calendars.reconnect": "O login do Google expirou. Reconecte pelo celular.",
   "family.oneEvent": "1 evento hoje",
   "family.untitled": "(Sem título)"
 }

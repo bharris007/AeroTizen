@@ -341,7 +341,7 @@
   "settings.calendars.title": "Calendars",
   "settings.calendars.hint": "Add Google calendars from your phone.",
   "settings.calendars.addTitle": "Add from your phone",
-  "settings.calendars.scan": "Scan with your phone's camera, then paste each calendar's secret iCal address.",
+  "settings.calendars.scan": "Scan with your phone's camera, sign in with Google and tick the calendars you want.",
   "settings.calendars.orVisit": "Or open {{url}} and enter",
   "settings.calendars.connecting": "Getting a pairing code…",
   "settings.calendars.offline": "Can't reach the pairing service. Check the TV's internet connection.",
@@ -356,8 +356,12 @@
   "settings.calendars.off": "Hidden from the Family page",
   "settings.calendars.errorNetwork": "Couldn't sync. Showing saved events.",
   "settings.calendars.errorInvalid": "That address isn't a calendar feed.",
-  "settings.calendars.errorNotFound": "Google no longer shares this calendar. Copy its secret address again.",
+  "settings.calendars.errorNotFound": "This calendar is no longer shared with you.",
   "settings.calendars.show": "Show {{name}}",
+  "settings.calendars.removeAccount": "Remove account",
+  "settings.calendars.googleAccount": "Google account",
+  "settings.calendars.reconnectAccount": "Reconnect on phone: scan the code and sign in again.",
+  "settings.calendars.reconnect": "Google sign-in expired. Reconnect on your phone.",
   "family.oneEvent": "1 event today",
   "family.untitled": "(No title)"
 }
