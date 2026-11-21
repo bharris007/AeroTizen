@@ -36,6 +36,15 @@ test("Christmas Mode opens from the Settings badge and is driven entirely by the
   await expect(mode).toHaveAttribute("data-christmas-scene", "countdown");
   await expect(page.locator('[data-christmas-tab="countdown"]')).toHaveAttribute("aria-selected", "true");
 
+  await test.step("the countdown typography renders from the packaged fonts", async () => {
+    const loaded = await page.evaluate(async () => {
+      const fonts = ['italic 400 64px "Playfair Display"', '300 64px "Jost"'];
+      const faces = await Promise.all(fonts.map((font) => document.fonts.load(font, "Merry 0123")));
+      return faces.map((matches) => matches.map((face) => face.family.replace(/"/g, "") + " " + face.status));
+    });
+    expect(loaded).toEqual([["Playfair Display loaded"], ["Jost loaded"]]);
+  });
+
   await page.keyboard.press("ArrowRight");
   await expect(mode).toHaveAttribute("data-christmas-scene", "fireplace");
   await expect(mode.locator("canvas")).toBeVisible();
