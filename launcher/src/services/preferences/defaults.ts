@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS: SettingsDefaults = {
   homeCardColumns: 3,
   homeAppLayout: "grid",
   background: "aurora",
+  calendars: [],
   customColour: DEFAULT_CUSTOM_COLOUR,
   customGradient: DEFAULT_CUSTOM_GRADIENT,
   weatherPhoto: false,

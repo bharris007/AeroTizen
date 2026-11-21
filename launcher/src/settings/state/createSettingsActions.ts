@@ -97,6 +97,14 @@ export const createSettingsActions = (
     setBackground: (background) => commit({ background, weatherPhoto: false }, services.applyBackground),
     setWeatherVisible: (showWeather) => commit({ showWeather }),
     setLocationVisible: (weatherShowLocation) => commit({ weatherShowLocation }),
+    setCalendarEnabled: (id, enabled) =>
+      commit({
+        calendars: settings
+          .getSnapshot()
+          .calendars.map((calendar) => (calendar.id === id ? { ...calendar, enabled } : calendar)),
+      }),
+    removeCalendar: (id) =>
+      commit({ calendars: settings.getSnapshot().calendars.filter((calendar) => calendar.id !== id) }),
     setTempUnit: (tempUnit) => commit({ tempUnit }),
     setClockLayout: (layout) =>
       commit(

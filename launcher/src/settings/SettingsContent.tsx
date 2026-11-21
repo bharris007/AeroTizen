@@ -11,6 +11,7 @@ import { AppearanceSettings } from "./sections/AppearanceSettings";
 import { HomeAppsSettings } from "./sections/apps/HomeAppsSettings/HomeAppsSettings";
 import { ColourPicker } from "./sections/backgrounds/ColourPicker/ColourPicker";
 import { BackgroundSettings } from "./sections/BackgroundSettings/BackgroundSettings";
+import { CalendarSettings } from "./sections/calendars/CalendarSettings/CalendarSettings";
 import { ClockSettings } from "./sections/ClockSettings";
 import { ContinueWatchingSettings } from "./sections/ContinueWatchingSettings/ContinueWatchingSettings";
 import { InputSettings } from "./sections/inputs/InputSettings";
@@ -86,6 +87,7 @@ export const SettingsContent = ({ active, openedAt }: { active: boolean; openedA
             ),
             status: <ClockSettings settings={settings} actions={actions} clock={services.clock} openedAt={openedAt} />,
             weather: <WeatherSettings settings={settings} actions={actions} active={active} />,
+            calendars: <CalendarSettings settings={settings} actions={actions} active={active} />,
             sources: <InputSettings settings={settings} actions={actions} inputs={inputs} />,
             language: <LanguageSettings language={settings.language} />,
             about: <AboutSettings active={active} />,

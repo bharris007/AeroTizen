@@ -1,6 +1,7 @@
 import { normalizeColour } from "../../backgrounds/colours";
 import { normalizeGradient } from "../../backgrounds/gradients";
 import type { SettingsDefaults, SettingsPreferences, WeatherLocation } from "../../contracts/preferences";
+import { normalizeCalendars } from "../calendar/calendarSources";
 
 const record = (value: unknown): Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
@@ -69,6 +70,7 @@ export const normalizeSettings = (
     homeCardColumns: typeof columns === "number" && [3, 4, 5].includes(columns) ? columns : defaults.homeCardColumns,
     homeAppLayout: choice(data.homeAppLayout, ["grid", "scroll"], defaults.homeAppLayout),
     background: text(data.background, defaults.background),
+    calendars: normalizeCalendars(data.calendars),
     customColour: normalizeColour(data.customColour, defaults.customColour),
     customGradient: normalizeGradient(data.customGradient, defaults.customGradient),
     weatherPhoto: boolean(data.weatherPhoto, defaults.weatherPhoto),

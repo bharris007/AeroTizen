@@ -12,6 +12,7 @@ import { createChristmasKeyHandler } from "./christmas/createChristmasKeyHandler
 import { mountChristmas } from "./christmas/mountChristmas";
 import type { AppsService } from "./contracts/apps";
 import type { ContinueWatchingService } from "./contracts/continueWatching";
+import type { FamilyCalendarService } from "./contracts/familyCalendar";
 import type { FamilyForecastService } from "./contracts/familyForecast";
 import type { HomeWatcherService } from "./contracts/homeWatcher";
 import type { InputsService } from "./contracts/inputs";
@@ -25,6 +26,7 @@ import { mountHome } from "./home/index";
 import { createInputPlaybackKeyHandler } from "./inputs/createInputPlaybackKeyHandler";
 import { mountInputPlayback } from "./inputs/mountInputPlayback";
 import { createAppsPlatform } from "./platform/tizen/createAppsPlatform";
+import { createCalendarPlatform } from "./platform/tizen/createCalendarPlatform";
 import { createClockPlatform } from "./platform/tizen/createClockPlatform";
 import { createContinueWatchingPlatform } from "./platform/tizen/createContinueWatchingPlatform";
 import { createHomeWatcherPlatform } from "./platform/tizen/createHomeWatcherPlatform";
@@ -35,6 +37,8 @@ import { createSamsungContinueWatchingProvider } from "./platform/tizen/createSa
 import { createStremioContinueWatchingProvider } from "./platform/tizen/createStremioContinueWatchingProvider";
 import { createWeatherPlatform } from "./platform/tizen/createWeatherPlatform";
 import { defaultTemperatureUnit } from "./platform/tizen/defaultTemperatureUnit";
+import { CALENDAR_RELAY_URL } from "./services/calendar/calendarRelay";
+import { createFamilyCalendar } from "./services/calendar/createFamilyCalendar";
 import { createAppsService } from "./services/createAppsService";
 import { createClockService } from "./services/createClockService";
 import { createContinueWatchingService } from "./services/createContinueWatchingService";
@@ -45,6 +49,7 @@ import { createNetworkService } from "./services/createNetworkService";
 import { createSettingsService } from "./services/createSettingsService";
 import { createWeatherService } from "./services/createWeatherService";
 import { createFamilyForecast } from "./services/family/createFamilyForecast";
+import { FRANKLIN_TIME_ZONE, resolveFamilyLocation } from "./services/family/familyLocation";
 import { mountSettings } from "./settings/index";
 import { appCatalog } from "./shared/apps/appCatalog";
 
@@ -84,6 +89,7 @@ const hotData = import.meta.hot
       nativeNavigation?: NativeNavigation;
       network?: NetworkService;
       preferences?: SettingsService;
+      familyCalendar?: FamilyCalendarService;
       familyForecast?: FamilyForecastService;
       stopBoot?: () => void;
       weather?: WeatherService;
@@ -187,6 +193,24 @@ const familyForecast =
     timers: window,
   });
 runtime.familyForecast = familyForecast;
+const familyCalendar =
+  hotData?.familyCalendar ||
+  createFamilyCalendar({
+    now: () => Date.now(),
+    platform: createCalendarPlatform(window),
+    random: (bytes) => {
+      window.crypto.getRandomValues(bytes);
+    },
+    relayUrl: CALENDAR_RELAY_URL,
+    settings,
+    storage: {
+      getItem: (key) => localStorage.getItem(key),
+      setItem: (key, value) => localStorage.setItem(key, value),
+    },
+    timeZone: () => resolveFamilyLocation(settings.getSnapshot().weatherLocation).timezone || FRANKLIN_TIME_ZONE,
+    timers: window,
+  });
+runtime.familyCalendar = familyCalendar;
 const continueWatching =
   hotData?.continueWatching ||
   runtime.continueWatching ||
@@ -288,6 +312,7 @@ try {
       hotData.clock = clock;
       hotData.preferences = settings;
       hotData.network = network;
+      hotData.familyCalendar = familyCalendar;
       hotData.familyForecast = familyForecast;
       hotData.weather = weather;
       hotData.continueWatching = continueWatching;

@@ -1,5 +1,7 @@
 import type { Store } from "../shared/state/createStore";
 
+import type { CalendarSource } from "./familyCalendar";
+
 export type TimeFormat = "12" | "24";
 export type TemperatureUnit = "C" | "F";
 export type DateFormat = "compact" | "short" | "long" | "numeric-short" | "numeric" | "iso" | "none";
@@ -22,6 +24,7 @@ export interface WeatherLocation {
 export interface SettingsValues {
   aeroClockStyle: "vertical" | "horizontal" | "minimal" | "bold";
   background: string;
+  calendars: CalendarSource[];
   clockLayout: "classic" | "custom";
   continueWatching: boolean;
   continueWatchingApps: string[];
@@ -54,8 +57,12 @@ export interface SettingsValues {
   weatherShowLocation: boolean;
 }
 export type SettingsSnapshot = Readonly<
-  Omit<SettingsValues, "home" | "inputNames" | "weatherLocation" | "continueWatchingApps" | "hdmiKeepVisible">
+  Omit<
+    SettingsValues,
+    "calendars" | "home" | "inputNames" | "weatherLocation" | "continueWatchingApps" | "hdmiKeepVisible"
+  >
 > & {
+  readonly calendars: readonly Readonly<CalendarSource>[];
   readonly home: readonly string[];
   readonly homeInitialized: boolean;
   readonly continueWatchingApps: readonly string[];

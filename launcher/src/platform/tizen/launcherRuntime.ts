@@ -3,6 +3,7 @@ import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgr
 import type { ChristmasControls } from "../../contracts/christmas";
 import type { ContinueWatchingService } from "../../contracts/continueWatching";
 import type { LauncherStartup, UiDiagnostics } from "../../contracts/diagnostics";
+import type { FamilyCalendarService } from "../../contracts/familyCalendar";
 import type { FamilyForecastService } from "../../contracts/familyForecast";
 import type { FireplaceControls } from "../../contracts/fireplace";
 import type { HomeWatcherService } from "../../contracts/homeWatcher";
@@ -27,6 +28,7 @@ export interface LauncherRuntime {
   clock: ClockService;
   config: LauncherConfig;
   continueWatching: ContinueWatchingService;
+  familyCalendar: FamilyCalendarService;
   familyForecast: FamilyForecastService;
   hideToast(): void;
   homeScreen?: HomeBridge;

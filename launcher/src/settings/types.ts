@@ -1,6 +1,7 @@
 import type { RefObject } from "preact";
 
 import type { BackgroundGraphics, BackgroundPreview } from "../contracts/backgrounds";
+import type { FamilyCalendarService } from "../contracts/familyCalendar";
 import type { LearnIpControlResult } from "../contracts/ipControl";
 import type {
   AppPresentation,
@@ -52,6 +53,7 @@ export interface SettingsServices {
   clock: ClockFormatter;
   config: LauncherConfig;
   describeApp(app: InstalledApp): AppPresentation;
+  familyCalendar: FamilyCalendarService;
   finishEditing(): void;
   learnIpControlInput(): Promise<LearnIpControlResult>;
   openChristmas(): void;
@@ -69,8 +71,10 @@ export interface SettingsActions {
   openColourPicker(): void;
   openGradientPicker(): void;
   openStore(): void;
+  removeCalendar(id: string): void;
   saveInputName(port: string, value: string): void;
   setBackground(background: string): void;
+  setCalendarEnabled(id: string, enabled: boolean): void;
   setClockLayout(layout: "classic" | SettingsValues["aeroClockStyle"]): void;
   setContinueWatching(enabled: boolean): void;
   setContinueWatchingHeadingVisible(visible: boolean): void;
