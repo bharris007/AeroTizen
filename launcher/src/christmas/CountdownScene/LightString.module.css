@@ -1,0 +1,107 @@
+@keyframes pulse {
+  from {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+
+.string {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 120px;
+  pointer-events: none;
+}
+
+.wire {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 90px;
+}
+
+/* The element's origin is the socket on the wire; the glass hangs below it. */
+.bulb {
+  position: absolute;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -6px;
+    width: 12px;
+    height: 10px;
+    border-radius: 2px;
+    background: linear-gradient(to right, #3a3122 0%, #8c7a52 50%, #3a3122 100%);
+  }
+}
+
+/* The glow is painted after the glass so no static paint sits above an animated
+   layer, which would force every bulb into its own composited layer. */
+.glass {
+  position: absolute;
+  top: 7px;
+  left: -9px;
+  width: 18px;
+  height: 28px;
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+  background: radial-gradient(circle at 38% 34%, #fff 0%, var(--bulb-tint) 34%, var(--bulb-deep) 100%);
+}
+
+.ruby {
+  --bulb-tint: #ff5a64;
+  --bulb-deep: #8c0f1f;
+  --bulb-glow: rgba(255, 70, 80, 0.55);
+}
+
+.gold {
+  --bulb-tint: #ffd36e;
+  --bulb-deep: #a8701c;
+  --bulb-glow: rgba(255, 200, 100, 0.55);
+}
+
+.emerald {
+  --bulb-tint: #5fe39a;
+  --bulb-deep: #146a3c;
+  --bulb-glow: rgba(80, 230, 150, 0.45);
+}
+
+.ivory {
+  --bulb-tint: #fff4dc;
+  --bulb-deep: #c9b28a;
+  --bulb-glow: rgba(255, 240, 210, 0.5);
+}
+
+.glow {
+  position: absolute;
+  top: -12px;
+  left: -34px;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: radial-gradient(circle closest-side, var(--bulb-glow) 0%, rgba(0, 0, 0, 0) 100%);
+  animation: pulse ease-in-out infinite;
+  will-change: opacity;
+}
+
+.pulseA {
+  animation-duration: 2.4s;
+}
+
+.pulseB {
+  animation-duration: 3.3s;
+}
+
+.pulseC {
+  animation-duration: 4.1s;
+}

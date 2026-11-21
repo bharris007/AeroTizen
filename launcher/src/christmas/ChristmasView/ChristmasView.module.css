@@ -7,19 +7,21 @@
   }
 }
 
-@keyframes shine {
+/* After a quiet spell the chrome steps back so the scene can be left running. */
+@keyframes recede {
   from {
-    opacity: 0.7;
-  }
-  50% {
     opacity: 1;
   }
   to {
-    opacity: 0.7;
+    opacity: 0.6;
   }
 }
 
 .christmas {
+  --christmas-display: "Playfair Display", "Alexandria", Georgia, serif;
+  --christmas-numerals: "Jost", "Alexandria", var(--font-ui, sans-serif);
+  --christmas-gold: #f3d9a4;
+
   position: fixed;
   top: 0;
   left: 0;
@@ -27,10 +29,10 @@
   bottom: 0;
   z-index: 110;
   overflow: hidden;
-  background: #050816;
-  color: #fff;
-  font-family: var(--font-ui, inherit);
-  animation: enter 0.4s ease-out both;
+  background: #03060f;
+  color: #fff8ec;
+  font-family: var(--christmas-numerals);
+  animation: enter 0.5s ease-out backwards;
 }
 
 .stage {
@@ -39,111 +41,68 @@
   left: 0;
   width: 1920px;
   height: 1080px;
+  animation: enter 0.9s ease-out backwards;
 }
 
-.bar {
-  position: absolute;
-  top: 34px;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
+.chrome {
+  animation: recede 1.4s ease-in-out 9s both;
+
+  [data-performance-mode="true"] & {
+    animation: none;
+  }
 }
 
 .brand {
   position: absolute;
-  top: 18px;
-  left: 70px;
+  left: 72px;
+  bottom: 52px;
   display: flex;
   align-items: center;
-  font-size: 30px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  color: #ffe8a3;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
-  animation: shine 2.4s ease-in-out infinite;
-
-  > svg {
-    width: 34px;
-    height: 34px;
-    -webkit-margin-end: 12px;
-  }
-
-  [dir="rtl"] & {
-    left: auto;
-    right: 70px;
-  }
-}
-
-.tabs {
-  display: flex;
-  align-items: center;
-  padding: 10px 14px;
-  border: 2px solid rgba(255, 255, 255, 0.22);
-  border-radius: 999px;
-  background: rgba(8, 10, 30, 0.55);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-}
-
-.arrow {
-  width: 30px;
-  height: 30px;
-  margin: 0 6px;
-  opacity: 0.6;
-}
-
-.tab {
-  display: flex;
-  align-items: center;
-  margin: 0 6px;
-  padding: 14px 30px;
-  border: 3px solid transparent;
-  border-radius: 999px;
-  font-size: 28px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.78);
-  transition:
-    background-color var(--motion-duration-focus) ease-out,
-    color var(--motion-duration-focus) ease-out,
-    transform var(--motion-duration-focus) ease-out;
+  font-family: var(--christmas-display);
+  font-size: 34px;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--christmas-gold);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7);
 
   > svg {
     width: 30px;
     height: 30px;
-    -webkit-margin-end: 12px;
+    -webkit-margin-end: 14px;
   }
 
-  &[data-focused="true"] {
-    border-color: #fff;
-    background: linear-gradient(135deg, #e03131 0%, #b5121b 100%);
-    color: #fff;
-    transform: scale(1.06);
-    box-shadow:
-      0 0 0 4px rgba(255, 212, 59, 0.55),
-      0 8px 26px rgba(224, 49, 49, 0.55);
+  [dir="rtl"] & {
+    font-style: normal;
   }
 }
 
+/* The art is not mirrored in RTL, so the chrome keeps clear of the tree on the
+   right in both directions: the hint sits under the countdown column. */
 .hint {
   position: absolute;
-  right: 70px;
-  bottom: 36px;
+  left: 710px;
+  bottom: 44px;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
-  padding: 10px 22px;
+  padding: 12px 24px;
+  border: 1px solid rgba(233, 207, 152, 0.24);
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(6, 10, 24, 0.5);
   font-size: 22px;
-  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.03em;
+  color: rgba(255, 248, 236, 0.82);
 
   > svg {
     width: 24px;
     height: 24px;
-    -webkit-margin-end: 10px;
+    color: var(--christmas-gold);
+    -webkit-margin-end: 12px;
   }
+}
 
-  [dir="rtl"] & {
-    right: auto;
-    left: 70px;
+@media (prefers-reduced-motion: reduce) {
+  .christmas .stage * {
+    animation-play-state: paused;
   }
 }
