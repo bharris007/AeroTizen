@@ -91,3 +91,32 @@ test("moves from the header to Family and between its columns", () => {
   press(home, KEY.BACK);
   expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "family-tab" });
 });
+
+test("the XMAS tab sits right of Watch and shows a header-only countdown page", () => {
+  const home = controller();
+  home.bridge.focus();
+  press(home, KEY.UP);
+  press(home, KEY.RIGHT);
+  press(home, KEY.RIGHT);
+  expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "xmas-tab" });
+
+  // Right stops at the last tab, like the other header rows.
+  press(home, KEY.RIGHT);
+  expect(home.state.getSnapshot().selected).toBe("xmas-tab");
+
+  ok(home);
+  expect(home.state.getSnapshot()).toMatchObject({ page: "xmas", selected: "xmas-tab" });
+
+  // The countdown has nothing to focus, so Down keeps focus on the tab.
+  press(home, KEY.DOWN);
+  expect(home.state.getSnapshot()).toMatchObject({ page: "xmas", selected: "xmas-tab", scroll: 0 });
+
+  press(home, KEY.LEFT);
+  expect(home.state.getSnapshot()).toMatchObject({ page: "xmas", selected: "home-tab" });
+  ok(home);
+  expect(home.state.getSnapshot()).toMatchObject({ page: "home", selected: "home-tab" });
+
+  home.showPage("xmas");
+  press(home, KEY.BACK);
+  expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "family-tab" });
+});

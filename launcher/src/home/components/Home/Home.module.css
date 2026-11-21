@@ -4,6 +4,7 @@
   --home-bottom-fade: 80px;
   --home-top-fade: 112px;
 
+  position: relative;
   height: 1080px;
   display: flex;
   flex-direction: column;
