@@ -11,6 +11,7 @@ import { SettingsPanel } from "../../components/SettingsPanel/SettingsPanel";
 import { useSettingsEnvironment } from "../../hooks/useSettingsEnvironment";
 import type { Category } from "../categories";
 import { categories } from "../categories";
+import { ChristmasBadge } from "../ChristmasBadge/ChristmasBadge";
 import { SettingsCategory } from "../SettingsCategory/SettingsCategory";
 import { SettingsFocusIndicator } from "../SettingsFocusIndicator/SettingsFocusIndicator";
 import { SettingsHelp } from "../SettingsHelp/SettingsHelp";
@@ -38,6 +39,11 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
     bridge.close();
     services.showPage(page);
   };
+  const openChristmas = () => {
+    bridge.close();
+    services.showPage("family");
+    services.openChristmas();
+  };
   const expanded = state.expanded ? "true" : "false";
   return (
     <SettingsPanel class={styles.frame} data-settings-drawer="frame" data-expanded={expanded}>
@@ -50,6 +56,7 @@ export const SettingsDrawer = ({ panes }: { panes: Record<Category, ComponentChi
         </div>
         <div class={styles.menu} data-settings-drawer="menu" ref={categoryMenu}>
           <SettingsFocusIndicator container={categoryMenu} sidebar />
+          <ChristmasBadge label={t("christmas.mode")} hint={t("christmas.badgeHint")} onSelect={openChristmas} />
           {categories.map((category) => {
             const hasUpdate = category.id === "about" && unread;
             const current = state.category === category.id;

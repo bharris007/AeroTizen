@@ -1,5 +1,6 @@
 import type { AppsService } from "../../contracts/apps";
 import type { BackgroundBridge, BackgroundPreview } from "../../contracts/backgrounds";
+import type { ChristmasControls } from "../../contracts/christmas";
 import type { ContinueWatchingService } from "../../contracts/continueWatching";
 import type { LauncherStartup, UiDiagnostics } from "../../contracts/diagnostics";
 import type { FamilyForecastService } from "../../contracts/familyForecast";
@@ -54,6 +55,7 @@ declare global {
     AeroStartup: LauncherStartup;
     AeroTizen: LauncherRuntime;
     Backgrounds: LauncherPlatform["backgrounds"];
+    Christmas?: ChristmasControls;
     Fireplace?: FireplaceControls;
   }
 }

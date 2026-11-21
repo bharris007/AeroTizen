@@ -318,5 +318,20 @@
   "inputs.ipProbe.readFailed": "A TV foi pareada, mas não foi possível ler a entrada ativa.",
   "inputs.ipProbe.scanFailed": "Aguarde as entradas da TV carregarem e tente novamente.",
   "inputs.ipProbe.storageFailed": "O {{appName}} não conseguiu salvar a entrada.",
-  "inputs.ipProbe.unavailable": "O serviço em segundo plano da TV não respondeu."
+  "inputs.ipProbe.unavailable": "O serviço em segundo plano da TV não respondeu.",
+  "christmas.mode": "Modo Natal",
+  "christmas.badgeHint": "Transforme a TV no Polo Norte",
+  "christmas.scenes": "Cenas de Natal",
+  "christmas.countdown": "Contagem regressiva",
+  "christmas.fireplace": "Lareira",
+  "christmas.northPole": "Polo Norte",
+  "christmas.coming": "O Natal está chegando!",
+  "christmas.untilChristmas": "até a manhã de Natal",
+  "christmas.days": "Dias",
+  "christmas.hours": "Horas",
+  "christmas.minutes": "Minutos",
+  "christmas.seconds": "Segundos",
+  "christmas.merry": "Feliz Natal!",
+  "christmas.merryDetail": "Ho ho ho! O Papai Noel chegou.",
+  "christmas.exit": "Voltar para sair"
 }

@@ -20,6 +20,8 @@ interface Layout extends SettingsInventorySnapshot {
 }
 const SPACE_KEY = 32;
 const SIDEBAR_EDGE_TOLERANCE_PX = 64;
+// Sidebar rows that run a command instead of opening a settings section.
+const SIDEBAR_COMMANDS = ["christmas-mode-badge", "settings-home", "settings-apps", "escape"];
 const FIELD_CONTROLS_SELECTOR = "[data-settings-field-controls], [data-settings-field-details]";
 
 export const useSettingsNavigation = (
@@ -144,7 +146,7 @@ export const useSettingsNavigation = (
                 drawer.set({ category: next.id, expanded: false });
               }
             });
-          } else if (current?.id === "escape" || current?.id === "settings-home" || current?.id === "settings-apps") {
+          } else if (current && SIDEBAR_COMMANDS.includes(current.id)) {
             if (code === K.ENTER || code === SPACE_KEY) {
               current.click();
             }

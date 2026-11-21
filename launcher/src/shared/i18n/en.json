@@ -318,5 +318,20 @@
   "inputs.ipProbe.readFailed": "The TV paired, but the active input could not be read.",
   "inputs.ipProbe.scanFailed": "Wait for the TV inputs to load, then try again.",
   "inputs.ipProbe.storageFailed": "{{appName}} could not save the input.",
-  "inputs.ipProbe.unavailable": "The TV background service did not respond."
+  "inputs.ipProbe.unavailable": "The TV background service did not respond.",
+  "christmas.mode": "Christmas Mode",
+  "christmas.badgeHint": "Turn the TV into the North Pole",
+  "christmas.scenes": "Christmas scenes",
+  "christmas.countdown": "Countdown",
+  "christmas.fireplace": "Fireplace",
+  "christmas.northPole": "North Pole",
+  "christmas.coming": "Christmas is coming!",
+  "christmas.untilChristmas": "until Christmas morning",
+  "christmas.days": "Days",
+  "christmas.hours": "Hours",
+  "christmas.minutes": "Minutes",
+  "christmas.seconds": "Seconds",
+  "christmas.merry": "Merry Christmas!",
+  "christmas.merryDetail": "Ho ho ho! Santa made it.",
+  "christmas.exit": "Back to exit"
 }

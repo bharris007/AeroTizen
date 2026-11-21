@@ -1,0 +1,289 @@
+@keyframes drift {
+  from {
+    transform: translate3d(-120px, 0, 0) scale(1, 1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate3d(120px, -20px, 0) scale(1.15, 0.9);
+    opacity: 0.9;
+  }
+  to {
+    transform: translate3d(-120px, 0, 0) scale(1, 1);
+    opacity: 0.45;
+  }
+}
+
+@keyframes twinkle {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.2;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes halo {
+  from {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  to {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(-6deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+  to {
+    transform: rotate(-6deg);
+  }
+}
+
+@keyframes smoke {
+  from {
+    transform: translate3d(0, 0, 0) scale(0.5);
+    opacity: 0.7;
+  }
+  to {
+    transform: translate3d(40px, -220px, 0) scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes wobble {
+  from {
+    transform: rotate(-1.5deg);
+  }
+  50% {
+    transform: rotate(1.5deg);
+  }
+  to {
+    transform: rotate(-1.5deg);
+  }
+}
+
+.scene {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  background: linear-gradient(to bottom, #020617 0%, #0b1f4a 55%, #1d5b80 100%);
+}
+
+.aurora {
+  position: absolute;
+  width: 1500px;
+  height: 420px;
+  border-radius: 50%;
+  will-change: transform, opacity;
+}
+
+.auroraGreen {
+  top: 60px;
+  left: 120px;
+  background: radial-gradient(ellipse at center, rgba(80, 255, 170, 0.5) 0%, rgba(80, 255, 170, 0) 65%);
+  animation: drift 16s ease-in-out infinite;
+}
+
+.auroraTeal {
+  top: 150px;
+  left: 520px;
+  background: radial-gradient(ellipse at center, rgba(60, 200, 255, 0.42) 0%, rgba(60, 200, 255, 0) 65%);
+  animation: drift 21s ease-in-out -6s infinite;
+}
+
+.auroraViolet {
+  top: 20px;
+  left: 700px;
+  background: radial-gradient(ellipse at center, rgba(190, 110, 255, 0.36) 0%, rgba(190, 110, 255, 0) 65%);
+  animation: drift 26s ease-in-out -12s infinite;
+}
+
+.moon {
+  position: absolute;
+  top: 150px;
+  left: 1480px;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #ffffff 0%, #e9f1ff 55%, #c3d4f2 100%);
+  box-shadow: 0 0 120px 40px rgba(200, 220, 255, 0.35);
+}
+
+.hills {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1920px;
+  height: 460px;
+}
+
+.tree {
+  position: absolute;
+  left: 560px;
+  bottom: 110px;
+  width: 640px;
+  height: 780px;
+}
+
+.treeArt {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 640px;
+  height: 780px;
+}
+
+.light {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: 0 0 18px 6px currentcolor;
+}
+
+.lightA {
+  animation: twinkle 1.4s ease-in-out infinite;
+}
+
+.lightB {
+  animation: twinkle 1.9s ease-in-out -0.4s infinite;
+}
+
+.lightC {
+  animation: twinkle 1.2s ease-in-out -0.8s infinite;
+}
+
+.lightD {
+  animation: twinkle 2.3s ease-in-out -1.3s infinite;
+}
+
+.starHalo {
+  position: absolute;
+  top: -40px;
+  left: 220px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 236, 140, 0.85) 0%, rgba(255, 236, 140, 0) 65%);
+  animation: halo 2.2s ease-in-out infinite;
+}
+
+.star {
+  position: absolute;
+  top: 0;
+  left: 260px;
+  width: 120px;
+  height: 120px;
+  animation: spin 3s ease-in-out infinite;
+}
+
+.gifts {
+  position: absolute;
+  left: 580px;
+  bottom: 90px;
+  width: 600px;
+  height: 170px;
+}
+
+.snowman {
+  position: absolute;
+  left: 1280px;
+  bottom: 100px;
+  width: 260px;
+  height: 380px;
+  transform-origin: 50% 100%;
+  animation: wobble 5s ease-in-out infinite;
+}
+
+.cabin {
+  position: absolute;
+  left: 1540px;
+  bottom: 250px;
+  width: 360px;
+  height: 280px;
+}
+
+.cabinArt {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 360px;
+  height: 280px;
+}
+
+.windowGlow {
+  position: absolute;
+  top: 110px;
+  left: 30px;
+  width: 160px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 212, 59, 0.45) 0%, rgba(255, 212, 59, 0) 70%);
+}
+
+.smoke {
+  position: absolute;
+  top: 0;
+  left: 246px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(220, 228, 240, 0.6);
+  animation: smoke 6s ease-out infinite;
+}
+
+.signpost {
+  position: absolute;
+  left: 210px;
+  bottom: 170px;
+  width: 280px;
+  height: 360px;
+}
+
+.pole {
+  position: absolute;
+  left: 124px;
+  bottom: 0;
+  width: 32px;
+  height: 340px;
+  border-radius: 16px 16px 4px 4px;
+  background: repeating-linear-gradient(45deg, #f8f9fa 0, #f8f9fa 18px, #e03131 18px, #e03131 36px);
+}
+
+.sign {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  width: 280px;
+  padding: 18px 0;
+  border: 6px solid #5c3d1e;
+  border-radius: 14px;
+  background: #8a5530;
+  color: #fff3bf;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}

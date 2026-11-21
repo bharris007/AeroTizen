@@ -54,6 +54,7 @@ export interface SettingsServices {
   describeApp(app: InstalledApp): AppPresentation;
   finishEditing(): void;
   learnIpControlInput(): Promise<LearnIpControlResult>;
+  openChristmas(): void;
   openStore(): void;
   previewBackground(preview: BackgroundPreview | null): void;
   searchLocations(query: string, done: (results: WeatherLocation[] | null) => void): () => void;

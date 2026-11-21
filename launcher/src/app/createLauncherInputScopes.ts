@@ -2,6 +2,7 @@ import type { HomeBridge, RemoteKeyHandler, SettingsBridge } from "../contracts/
 import { createInputScope } from "../shared/input/createInputScope";
 
 interface KeyTargets {
+  christmas: RemoteKeyHandler;
   fireplace: RemoteKeyHandler;
   home: Pick<HomeBridge, "inputScope">;
   inputs: RemoteKeyHandler;
@@ -9,7 +10,7 @@ interface KeyTargets {
 }
 
 // Existing screen controllers remain adapters while their controls adopt scoped actions.
-export const createLauncherInputScopes = ({ fireplace, home, inputs, settings }: KeyTargets) => {
+export const createLauncherInputScopes = ({ christmas, fireplace, home, inputs, settings }: KeyTargets) => {
   const overlay = (handler: RemoteKeyHandler) =>
     createInputScope({
       isActive: handler.isActive,
@@ -21,5 +22,5 @@ export const createLauncherInputScopes = ({ fireplace, home, inputs, settings }:
         return "native";
       },
     });
-  return [overlay(fireplace), overlay(inputs), settings.inputScope, home.inputScope];
+  return [overlay(christmas), overlay(fireplace), overlay(inputs), settings.inputScope, home.inputScope];
 };
