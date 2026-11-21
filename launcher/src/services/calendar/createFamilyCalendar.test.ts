@@ -4,12 +4,38 @@ import type { CalendarRequest, CalendarSource } from "../../contracts/familyCale
 import type { SettingsSnapshot } from "../../contracts/preferences";
 import { createStore } from "../../shared/state/createStore";
 
-import { CALENDAR_CACHE_KEY, CALENDAR_SECRET_KEY, createFamilyCalendar } from "./createFamilyCalendar";
+import {
+  CALENDAR_CACHE_KEY,
+  CALENDAR_REMOVALS_KEY,
+  CALENDAR_SECRET_KEY,
+  createFamilyCalendar,
+} from "./createFamilyCalendar";
 
 const NOW = Date.UTC(2026, 10, 21, 15); // 9:00 AM in Chicago
 const RELAY = "https://relay.test";
 const FEED = "https://calendar.google.com/calendar/ical/family/private-abc/basic.ics";
-const family: CalendarSource = { color: "#33b679", enabled: true, id: "family", name: "Family", url: FEED };
+const NONE = { account: "", accountId: "", calendarId: "" };
+const family: CalendarSource = {
+  ...NONE,
+  color: "#33b679",
+  enabled: true,
+  id: "family",
+  kind: "ics",
+  name: "Family",
+  url: FEED,
+};
+const ACCOUNT = "AccountAbc123456789xyz00";
+const google = (id: string, calendarId: string, color: string): CalendarSource => ({
+  account: "bryan@example.com",
+  accountId: ACCOUNT,
+  calendarId,
+  color,
+  enabled: true,
+  id,
+  kind: "google",
+  name: id,
+  url: "",
+});
 const ics = (summary: string) =>
   [
     "BEGIN:VCALENDAR",
@@ -153,4 +179,108 @@ test("pairs with a phone: shows a code, collects sent calendars and syncs them",
   h.service.stopPairing();
   h.requests[4].done(200, JSON.stringify({ code: "AAAA2222", expiresAt: NOW + 60 * 60 * 1000 }));
   expect(h.service.getSnapshot().pairing.code).toBe("");
+});
+
+const DAY = 24 * 60 * 60 * 1000;
+const named = (title: string) => title;
+const timed = (id: string, start: number, end: number, title: string) => ({ allDay: false, end, id, start, title });
+const googleReply = (calendars: Record<string, unknown>) => JSON.stringify({ calendars });
+
+test("syncs a Google account's calendars in one relay request and recolours them", () => {
+  const h = harness([
+    family,
+    google("home", "home@group.calendar.google.com", "#16a765"),
+    google("me", "me", "#9fc6e7"),
+  ]);
+  h.service.start();
+  const request = h.requests.find((item) => item.options.url === RELAY + "/api/events");
+  expect(request).toBeDefined();
+  const body = JSON.parse(request?.options.body || "{}") as Record<string, unknown>;
+  expect(body).toEqual({
+    accountId: ACCOUNT,
+    calendarIds: ["home@group.calendar.google.com", "me"],
+    from: NOW - DAY,
+    secret: h.storage.get(CALENDAR_SECRET_KEY),
+    to: NOW + 4 * DAY,
+  });
+  request?.done(
+    200,
+    googleReply({
+      "home@group.calendar.google.com": {
+        events: [
+          timed("a", NOW + 3600000, NOW + 2 * 3600000, "Dentist"),
+          { allDay: true, endDay: 20414, id: "b", startDay: 20413, title: named("Trip") },
+          timed("bad", 5, 1, "Backwards"),
+        ],
+      },
+      me: { error: "not-found" },
+    }),
+  );
+  const events = h.service.getSnapshot().events;
+  expect(events.map((event) => event.title)).toEqual(["Trip", "Dentist"]);
+  expect(events[1]).toMatchObject({ calendarId: "home", color: "#16a765", id: "home:a" });
+  expect(h.service.getSnapshot().statuses.home).toMatchObject({ eventCount: 2, state: "ok" });
+  expect(h.service.getSnapshot().statuses.me).toMatchObject({ error: "notFound", state: "error" });
+  expect(h.storage.get(CALENDAR_CACHE_KEY)).toContain("Dentist");
+});
+
+test("asks to reconnect on the phone when Google access was revoked", () => {
+  const h = harness([google("home", "home", "#16a765")]);
+  h.service.start();
+  h.requests[0].done(401, JSON.stringify({ error: "reconnect" }));
+  expect(h.service.getSnapshot().statuses.home).toMatchObject({ error: "reconnect", state: "error" });
+});
+
+test("adds a Google sign-in from the phone, replacing that account's earlier selection", () => {
+  const h = harness([google("home", "home", "#16a765"), family]);
+  h.service.start();
+  h.service.startPairing();
+  const session = h.requests.find((item) => item.options.url === RELAY + "/api/session");
+  session?.done(200, JSON.stringify({ code: "K7P29QXM", expiresAt: NOW + 15 * 60 * 1000 }));
+  h.runTimers();
+  const claim = h.requests.find((item) => item.options.url.endsWith("/claim"));
+  claim?.done(
+    200,
+    JSON.stringify({
+      calendars: [
+        {
+          accountId: ACCOUNT,
+          calendars: [
+            { color: "#9fc6e7", id: "me", name: "Me" },
+            { color: "#16a765", id: "home", name: "Home" },
+          ],
+          email: "bryan@example.com",
+          type: "google",
+        },
+      ],
+    }),
+  );
+  const calendars = h.settings.getSnapshot().calendars;
+  expect(calendars.map((source) => [source.kind, source.calendarId, source.name])).toEqual([
+    ["google", "me", "Me"],
+    ["google", "home", "Home"],
+    ["ics", "", "Family"],
+  ]);
+  expect(calendars[1].id).toBe("home");
+});
+
+test("removing a Google account deletes it on the relay and retries until it succeeds", () => {
+  const h = harness([google("home", "home", "#16a765"), family]);
+  h.service.start();
+  h.service.removeAccount(ACCOUNT);
+  expect(h.settings.getSnapshot().calendars.map((source) => source.id)).toEqual(["family"]);
+  const removal = h.requests.filter((item) => item.options.url === RELAY + "/api/accounts/remove");
+  expect(removal).toHaveLength(1);
+  expect(JSON.parse(removal[0].options.body || "{}")).toEqual({
+    accountId: ACCOUNT,
+    secret: h.storage.get(CALENDAR_SECRET_KEY),
+  });
+  removal[0].done(0, "");
+  expect(JSON.parse(h.storage.get(CALENDAR_REMOVALS_KEY) || "[]")).toEqual([ACCOUNT]);
+
+  const later = harness([family], { [CALENDAR_REMOVALS_KEY]: JSON.stringify([ACCOUNT]) });
+  later.service.start();
+  const retry = later.requests.find((item) => item.options.url === RELAY + "/api/accounts/remove");
+  retry?.done(200, JSON.stringify({ ok: true, removed: true }));
+  expect(JSON.parse(later.storage.get(CALENDAR_REMOVALS_KEY) || "null")).toEqual([]);
 });

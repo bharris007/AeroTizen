@@ -336,7 +336,7 @@
   "settings.calendars.title": "Календари",
   "settings.calendars.hint": "Добавляйте календари Google с телефона.",
   "settings.calendars.addTitle": "Добавить с телефона",
-  "settings.calendars.scan": "Отсканируйте камерой телефона и вставьте секретный адрес iCal каждого календаря.",
+  "settings.calendars.scan": "Отсканируйте код камерой телефона, войдите в Google и отметьте нужные календари.",
   "settings.calendars.orVisit": "Или откройте {{url}} и введите",
   "settings.calendars.connecting": "Получение кода сопряжения…",
   "settings.calendars.offline": "Сервис сопряжения недоступен. Проверьте подключение телевизора к интернету.",
@@ -351,8 +351,12 @@
   "settings.calendars.off": "Скрыт со страницы «Семья»",
   "settings.calendars.errorNetwork": "Не удалось синхронизировать. Показаны сохранённые события.",
   "settings.calendars.errorInvalid": "Этот адрес не является календарём.",
-  "settings.calendars.errorNotFound": "Google больше не делится этим календарём. Скопируйте секретный адрес снова.",
+  "settings.calendars.errorNotFound": "Этот календарь больше не доступен вам.",
   "settings.calendars.show": "Показывать {{name}}",
+  "settings.calendars.removeAccount": "Удалить аккаунт",
+  "settings.calendars.googleAccount": "Аккаунт Google",
+  "settings.calendars.reconnectAccount": "Подключитесь заново с телефона: отсканируйте код и снова войдите.",
+  "settings.calendars.reconnect": "Вход в Google истёк. Подключитесь заново с телефона.",
   "family.oneEvent": "1 событие сегодня",
   "family.untitled": "(Без названия)"
 }

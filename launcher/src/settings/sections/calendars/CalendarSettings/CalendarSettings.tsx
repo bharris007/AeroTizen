@@ -4,6 +4,7 @@ import type { CalendarSource, CalendarSyncStatus } from "../../../../contracts/f
 import type { SettingsSnapshot } from "../../../../contracts/preferences";
 import { formatEventTime } from "../../../../home/family/calendarEvents";
 import { CALENDAR_RELAY_HOST, formatPairingCode } from "../../../../services/calendar/calendarRelay";
+import { googleAccounts } from "../../../../services/calendar/calendarSources";
 import { FRANKLIN_TIME_ZONE, resolveFamilyLocation } from "../../../../services/family/familyLocation";
 import { useStore } from "../../../../shared/hooks/useStore";
 import type { MessageKey } from "../../../../shared/i18n/catalogues";
@@ -24,6 +25,7 @@ const ERROR_MESSAGES: Readonly<Record<Exclude<CalendarSyncStatus["error"], "">, 
   invalid: "settings.calendars.errorInvalid",
   network: "settings.calendars.errorNetwork",
   notFound: "settings.calendars.errorNotFound",
+  reconnect: "settings.calendars.reconnect",
 };
 
 const statusText = (
@@ -77,6 +79,50 @@ export const CalendarSettings = ({
   const timeZone = resolveFamilyLocation(settings.weatherLocation).timezone || FRANKLIN_TIME_ZONE;
   const format = (instant: number) => formatEventTime(instant, timeZone, settings.timeFormat, t);
   const { pairing } = calendar;
+  const renderSource = (source: CalendarSource, removable: boolean) => {
+    const status = calendar.statuses[source.id];
+    const failed = source.enabled && status?.state === "error";
+    return (
+      <SettingsField
+        key={source.id}
+        title={source.name}
+        description={
+          <span class={styles.status} data-calendar-status={source.enabled ? status?.state : "off"}>
+            <span class={styles.dot} style={{ background: source.color }} aria-hidden="true" />
+            <span class={failed ? styles.error : undefined}>
+              {status ? statusText(source, status, format, t) : t("settings.calendars.pending")}
+            </span>
+          </span>
+        }
+      >
+        <ControlGroup id={"calendar-" + source.id}>
+          <SettingsToggle
+            focusKey={"calendar:" + source.id + ":enabled"}
+            checked={source.enabled}
+            label={t("settings.calendars.show", { name: source.name })}
+            onChange={(enabled) => actions.setCalendarEnabled(source.id, enabled)}
+          />
+          {removable ? (
+            <ChoiceOption
+              id={"calendar:" + source.id + ":remove"}
+              inline
+              selected={confirming === source.id}
+              onSelect={() => {
+                if (confirming === source.id) {
+                  setConfirming("");
+                  actions.removeCalendar(source.id);
+                } else {
+                  setConfirming(source.id);
+                }
+              }}
+            >
+              {t(confirming === source.id ? "settings.calendars.confirmRemove" : "settings.calendars.remove")}
+            </ChoiceOption>
+          ) : null}
+        </ControlGroup>
+      </SettingsField>
+    );
+  };
   const ready = pairing.state === "ready" && Boolean(pairing.code);
   return (
     <>
@@ -121,48 +167,52 @@ export const CalendarSettings = ({
           </ChoiceOption>
         </ControlGroup>
       </SettingsField>
-      {settings.calendars.map((source) => {
-        const status = calendar.statuses[source.id];
-        const failed = source.enabled && status?.state === "error";
+      {googleAccounts(settings.calendars).map((account) => {
+        const accountSources = settings.calendars.filter(
+          (source) => source.kind === "google" && source.accountId === account.accountId,
+        );
+        const signedOut = accountSources.some(
+          (source) => source.enabled && calendar.statuses[source.id]?.error === "reconnect",
+        );
+        const removeKey = "account:" + account.accountId;
         return (
-          <SettingsField
-            key={source.id}
-            title={source.name}
-            description={
-              <span class={styles.status} data-calendar-status={source.enabled ? status?.state : "off"}>
-                <span class={styles.dot} style={{ background: source.color }} aria-hidden="true" />
-                <span class={failed ? styles.error : undefined}>
-                  {status ? statusText(source, status, format, t) : t("settings.calendars.pending")}
+          <div key={account.accountId} class={styles.account} data-calendar-account={account.accountId}>
+            <SettingsField
+              title={account.account || t("settings.calendars.googleAccount")}
+              description={
+                <span
+                  class={signedOut ? styles.error : undefined}
+                  data-calendar-account-state={signedOut ? "reconnect" : "ok"}
+                >
+                  {t(signedOut ? "settings.calendars.reconnectAccount" : "settings.calendars.googleAccount")}
                 </span>
-              </span>
-            }
-          >
-            <ControlGroup id={"calendar-" + source.id}>
-              <SettingsToggle
-                focusKey={"calendar:" + source.id + ":enabled"}
-                checked={source.enabled}
-                label={t("settings.calendars.show", { name: source.name })}
-                onChange={(enabled) => actions.setCalendarEnabled(source.id, enabled)}
-              />
-              <ChoiceOption
-                id={"calendar:" + source.id + ":remove"}
-                inline
-                selected={confirming === source.id}
-                onSelect={() => {
-                  if (confirming === source.id) {
-                    setConfirming("");
-                    actions.removeCalendar(source.id);
-                  } else {
-                    setConfirming(source.id);
-                  }
-                }}
-              >
-                {t(confirming === source.id ? "settings.calendars.confirmRemove" : "settings.calendars.remove")}
-              </ChoiceOption>
-            </ControlGroup>
-          </SettingsField>
+              }
+            >
+              <ControlGroup id={"calendar-account-" + account.accountId}>
+                <ChoiceOption
+                  id={"calendar-account:" + account.accountId + ":remove"}
+                  inline
+                  selected={confirming === removeKey}
+                  onSelect={() => {
+                    if (confirming === removeKey) {
+                      setConfirming("");
+                      services.familyCalendar.removeAccount(account.accountId);
+                    } else {
+                      setConfirming(removeKey);
+                    }
+                  }}
+                >
+                  {t(
+                    confirming === removeKey ? "settings.calendars.confirmRemove" : "settings.calendars.removeAccount",
+                  )}
+                </ChoiceOption>
+              </ControlGroup>
+            </SettingsField>
+            {accountSources.map((source) => renderSource(source, false))}
+          </div>
         );
       })}
+      {settings.calendars.filter((source) => source.kind !== "google").map((source) => renderSource(source, true))}
     </>
   );
 };

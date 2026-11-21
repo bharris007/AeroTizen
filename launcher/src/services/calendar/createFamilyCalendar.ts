@@ -14,19 +14,24 @@ import {
   createPairingSecret,
   type FillRandom,
   parseClaimReply,
+  parseEventsReply,
   parseSessionReply,
   relayClaimUrl,
+  relayEventsUrl,
   relayPairingUrl,
   relayProxyUrl,
+  relayRemoveAccountUrl,
   relaySessionUrl,
   validPairingSecret,
 } from "./calendarRelay";
-import { mergeIncomingCalendars, sameCalendars } from "./calendarSources";
+import { accountId as validAccountId, calendarKey, mergeIncomingCalendars, sameCalendars } from "./calendarSources";
 import { DAY_MS } from "./icsTime";
 import { parseCalendar } from "./parseCalendar";
 
 export const CALENDAR_CACHE_KEY = "aerotizen.calendar.v1";
 export const CALENDAR_SECRET_KEY = "aerotizen.calendar.pairing.v1";
+// Google accounts removed on the TV whose relay sign-in still has to be deleted.
+export const CALENDAR_REMOVALS_KEY = "aerotizen.calendar.removals.v1";
 export const CALENDAR_REFRESH_INTERVAL_MS = 12 * 60 * 1000;
 export const PAIRING_POLL_INTERVAL_MS = 3000;
 const PAIRING_RETRY_MS = 15 * 1000;
@@ -34,6 +39,10 @@ const PAIRING_RETRY_MS = 15 * 1000;
 const PAIRING_RENEW_MARGIN_MS = 60 * 1000;
 const WINDOW_PAST_MS = 2 * DAY_MS;
 const WINDOW_FUTURE_MS = 14 * DAY_MS;
+// The relay reads at most eight days of Google events per request.
+const GOOGLE_WINDOW_PAST_MS = DAY_MS;
+const GOOGLE_WINDOW_FUTURE_MS = 4 * DAY_MS;
+const HTTP_UNAUTHORIZED = 401;
 const HTTP_OK = 200;
 const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
@@ -42,6 +51,7 @@ const MISSING_FEED_STATUSES = [401, 403, 404, 410];
 interface CachedCalendar {
   readonly at: number;
   readonly events: readonly CalendarEvent[];
+  // The source's calendarKey: its iCal address, or its Google account and calendar.
   readonly url: string;
 }
 
@@ -85,6 +95,24 @@ const syncError = (status: number, text: string): CalendarSyncError => {
 
 const eventStart = (event: CalendarEvent) => (event.allDay ? event.startDay * DAY_MS : event.start);
 
+const googleError = (error: string): CalendarSyncError => {
+  if (error === "revoked") {
+    return "reconnect";
+  }
+  return error === "not-found" ? "notFound" : "network";
+};
+
+const readRemovals = (raw: string | null): string[] => {
+  try {
+    const data = raw ? (JSON.parse(raw) as unknown) : [];
+    return Array.isArray(data) ? data.filter((item): item is string => Boolean(validAccountId(item))) : [];
+  } catch {
+    return [];
+  }
+};
+
+const accountSyncKey = (accountId: string) => "account:" + accountId;
+
 export const createFamilyCalendar = ({
   now,
   platform,
@@ -120,13 +148,14 @@ export const createFamilyCalendar = ({
   let pairingRequested = false;
   let pairingTimer: number | undefined;
   let cancelPairingRequest: (() => void) | undefined;
+  const removals = new Map<string, () => void>();
 
   const enabledSources = () => sources.filter((source) => source.enabled);
   const build = (): FamilyCalendarSnapshot => {
     const events: CalendarEvent[] = [];
     enabledSources().forEach((source) => {
       const cached = cache[source.id];
-      if (cached && cached.url === source.url) {
+      if (cached && cached.url === calendarKey(source)) {
         cached.events.forEach((event) =>
           events.push(event.color === source.color ? event : { ...event, color: source.color }),
         );
@@ -195,7 +224,7 @@ export const createFamilyCalendar = ({
             )
           : null;
       if (events) {
-        cache = { ...cache, [source.id]: { at, events, url: source.url } };
+        cache = { ...cache, [source.id]: { at, events, url: calendarKey(source) } };
         persistCache();
         setStatus(source.id, { error: "", eventCount: events.length, lastSyncedAt: at, state: "ok" });
       } else {
@@ -228,7 +257,130 @@ export const createFamilyCalendar = ({
     }
     publish();
   };
-  const syncAll = () => enabledSources().forEach(sync);
+
+  // One relay request reads every enabled calendar of a Google account.
+  const syncAccount = (accountId: string) => {
+    const key = accountSyncKey(accountId);
+    const requested = enabledSources().filter((source) => source.kind === "google" && source.accountId === accountId);
+    if (disposed || !requested.length) {
+      return;
+    }
+    cancelSync(key);
+    let finished = false;
+    requested.forEach((source) => setStatus(source.id, { state: "syncing" }));
+    const at = now();
+    const abort = platform.request(
+      {
+        body: JSON.stringify({
+          accountId,
+          calendarIds: requested.map((source) => source.calendarId),
+          from: at - GOOGLE_WINDOW_PAST_MS,
+          secret: secret(),
+          to: at + GOOGLE_WINDOW_FUTURE_MS,
+        }),
+        method: "POST",
+        url: relayEventsUrl(relayUrl),
+      },
+      (status, text) => {
+        if (finished || disposed) {
+          return;
+        }
+        finished = true;
+        syncs.delete(key);
+        const replies = status === HTTP_OK ? parseEventsReply(text) : null;
+        const signedOut = status === HTTP_UNAUTHORIZED || status === HTTP_NOT_FOUND;
+        const done = now();
+        let changed = false;
+        requested.forEach((requestedSource) => {
+          // The source may have changed or gone while the request was running.
+          const source = sources.find((item) => item.id === requestedSource.id);
+          if (!source || calendarKey(source) !== calendarKey(requestedSource)) {
+            return;
+          }
+          const reply = replies ? replies[source.calendarId] : undefined;
+          if (reply && "events" in reply) {
+            const events = reply.events.map((event): CalendarEvent => ({
+              ...event,
+              calendarId: source.id,
+              color: source.color,
+              id: source.id + ":" + event.id,
+            }));
+            cache = { ...cache, [source.id]: { at: done, events, url: calendarKey(source) } };
+            changed = true;
+            setStatus(source.id, { error: "", eventCount: events.length, lastSyncedAt: done, state: "ok" });
+            return;
+          }
+          let error: CalendarSyncError = "network";
+          if (signedOut) {
+            error = "reconnect";
+          } else if (replies) {
+            error = reply ? googleError(reply.error) : "notFound";
+          }
+          setStatus(source.id, { error, state: "error" });
+        });
+        if (changed) {
+          persistCache();
+        }
+        publish();
+      },
+    );
+    syncs.set(key, () => {
+      finished = true;
+      abort();
+    });
+    publish();
+  };
+
+  const syncSources = (list: readonly CalendarSource[]) => {
+    const accounts: string[] = [];
+    list.forEach((source) => {
+      if (source.kind !== "google") {
+        sync(source);
+      } else if (!accounts.includes(source.accountId)) {
+        accounts.push(source.accountId);
+      }
+    });
+    accounts.forEach(syncAccount);
+  };
+
+  const saveRemovals = (list: readonly string[]) => {
+    try {
+      storage.setItem(CALENDAR_REMOVALS_KEY, JSON.stringify(list));
+    } catch {
+      // Retried while the TV stays on.
+    }
+  };
+  let pendingRemovals: string[] = [];
+  const dropRemoval = (accountId: string) => {
+    if (pendingRemovals.includes(accountId)) {
+      pendingRemovals = pendingRemovals.filter((item) => item !== accountId);
+      saveRemovals(pendingRemovals);
+    }
+    removals.get(accountId)?.();
+    removals.delete(accountId);
+  };
+  const flushRemovals = () => {
+    pendingRemovals.forEach((accountId) => {
+      if (disposed || removals.has(accountId)) {
+        return;
+      }
+      const abort = platform.request(
+        { body: JSON.stringify({ accountId, secret: secret() }), method: "POST", url: relayRemoveAccountUrl(relayUrl) },
+        (status) => {
+          removals.delete(accountId);
+          if (status === HTTP_OK) {
+            dropRemoval(accountId);
+          }
+        },
+      );
+      removals.set(accountId, abort);
+    });
+  };
+
+  const syncAll = () => {
+    flushRemovals();
+    syncSources(enabledSources());
+  };
 
   const reconcile = () => {
     const next = settings.getSnapshot().calendars;
@@ -242,6 +394,9 @@ export const createFamilyCalendar = ({
       if (!ids.has(source.id)) {
         cancelSync(source.id);
       }
+      if (source.kind === "google" && !next.some((item) => item.accountId === source.accountId)) {
+        cancelSync(accountSyncKey(source.accountId));
+      }
     });
     const keptCache: Record<string, CachedCalendar> = {};
     Object.keys(cache).forEach((id) => {
@@ -254,13 +409,15 @@ export const createFamilyCalendar = ({
       persistCache();
     }
     if (started) {
-      next
-        .filter((source) => {
+      syncSources(
+        next.filter((source) => {
           const before = previous.find((item) => item.id === source.id);
           const cached = cache[source.id];
-          return source.enabled && (!before || !before.enabled || before.url !== source.url || !cached);
-        })
-        .forEach(sync);
+          return (
+            source.enabled && (!before || !before.enabled || calendarKey(before) !== calendarKey(source) || !cached)
+          );
+        }),
+      );
     }
     publish();
   };
@@ -332,6 +489,12 @@ export const createFamilyCalendar = ({
       }
       const incoming = status === HTTP_OK ? parseClaimReply(text) : null;
       if (incoming && incoming.length) {
+        // Signing in again restores an account that is still waiting to be deleted.
+        incoming.forEach((item) => {
+          if (item.type === "google" && typeof item.accountId === "string") {
+            dropRemoval(item.accountId);
+          }
+        });
         const current = settings.getSnapshot().calendars;
         settings.update({ calendars: mergeIncomingCalendars(current, incoming, createId) });
       }
@@ -389,10 +552,11 @@ export const createFamilyCalendar = ({
       sources = settings.getSnapshot().calendars;
       Object.keys(cache).forEach((id) => {
         const source = sources.find((item) => item.id === id);
-        if (source && cache[id].url === source.url) {
+        if (source && cache[id].url === calendarKey(source)) {
           setStatus(id, { eventCount: cache[id].events.length, lastSyncedAt: cache[id].at, state: "ok" });
         }
       });
+      pendingRemovals = readRemovals(storage.getItem(CALENDAR_REMOVALS_KEY));
       unsubscribe = settings.subscribe(reconcile);
       interval = timers.setInterval(syncAll, CALENDAR_REFRESH_INTERVAL_MS);
       publish();
@@ -414,6 +578,20 @@ export const createFamilyCalendar = ({
       pairingRequested = false;
       clearPairingWork();
     },
+    removeAccount(accountId) {
+      if (disposed || !validAccountId(accountId)) {
+        return;
+      }
+      const current = settings.getSnapshot().calendars;
+      settings.update({
+        calendars: current.filter((source) => source.kind !== "google" || source.accountId !== accountId),
+      });
+      if (!pendingRemovals.includes(accountId)) {
+        pendingRemovals = [...pendingRemovals, accountId];
+        saveRemovals(pendingRemovals);
+      }
+      flushRemovals();
+    },
     dispose() {
       if (disposed) {
         return;
@@ -421,6 +599,8 @@ export const createFamilyCalendar = ({
       pairingRequested = false;
       clearPairingWork();
       [...syncs.keys()].forEach(cancelSync);
+      [...removals.values()].forEach((abort) => abort());
+      removals.clear();
       if (interval !== undefined) {
         timers.clearInterval(interval);
       }

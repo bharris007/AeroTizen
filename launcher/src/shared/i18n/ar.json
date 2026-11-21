@@ -336,7 +336,7 @@
   "settings.calendars.title": "التقويمات",
   "settings.calendars.hint": "أضف تقويمات Google من هاتفك.",
   "settings.calendars.addTitle": "أضف من هاتفك",
-  "settings.calendars.scan": "امسح الرمز بكاميرا هاتفك، ثم الصق عنوان iCal السري لكل تقويم.",
+  "settings.calendars.scan": "امسح الرمز بكاميرا هاتفك، وسجّل الدخول باستخدام Google، ثم اختر التقاويم التي تريدها.",
   "settings.calendars.orVisit": "أو افتح {{url}} وأدخل",
   "settings.calendars.connecting": "جارٍ الحصول على رمز الإقران…",
   "settings.calendars.offline": "تعذر الوصول إلى خدمة الإقران. تحقق من اتصال التلفزيون بالإنترنت.",
@@ -351,8 +351,12 @@
   "settings.calendars.off": "مخفي من صفحة العائلة",
   "settings.calendars.errorNetwork": "تعذرت المزامنة. يتم عرض الأحداث المحفوظة.",
   "settings.calendars.errorInvalid": "هذا العنوان ليس تقويمًا.",
-  "settings.calendars.errorNotFound": "لم يعد Google يشارك هذا التقويم. انسخ عنوانه السري مرة أخرى.",
+  "settings.calendars.errorNotFound": "لم يعد هذا التقويم مشتركًا معك.",
   "settings.calendars.show": "إظهار {{name}}",
+  "settings.calendars.removeAccount": "إزالة الحساب",
+  "settings.calendars.googleAccount": "حساب Google",
+  "settings.calendars.reconnectAccount": "أعد الاتصال من الهاتف: امسح الرمز وسجّل الدخول مرة أخرى.",
+  "settings.calendars.reconnect": "انتهت صلاحية تسجيل الدخول إلى Google. أعد الاتصال من هاتفك.",
   "family.oneEvent": "حدث واحد اليوم",
   "family.untitled": "(بلا عنوان)"
 }

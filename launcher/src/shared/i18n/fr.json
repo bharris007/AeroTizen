@@ -336,7 +336,7 @@
   "settings.calendars.title": "Agendas",
   "settings.calendars.hint": "Ajoutez des agendas Google depuis votre téléphone.",
   "settings.calendars.addTitle": "Ajouter depuis votre téléphone",
-  "settings.calendars.scan": "Scannez avec l'appareil photo de votre téléphone, puis collez l'adresse iCal secrète de chaque agenda.",
+  "settings.calendars.scan": "Scannez avec l'appareil photo de votre téléphone, connectez-vous à Google et cochez les agendas voulus.",
   "settings.calendars.orVisit": "Ou ouvrez {{url}} et saisissez",
   "settings.calendars.connecting": "Obtention d'un code d'association…",
   "settings.calendars.offline": "Service d'association injoignable. Vérifiez la connexion Internet du téléviseur.",
@@ -351,8 +351,12 @@
   "settings.calendars.off": "Masqué de la page Famille",
   "settings.calendars.errorNetwork": "Échec de la synchronisation. Événements enregistrés affichés.",
   "settings.calendars.errorInvalid": "Cette adresse n'est pas un flux d'agenda.",
-  "settings.calendars.errorNotFound": "Google ne partage plus cet agenda. Copiez à nouveau son adresse secrète.",
+  "settings.calendars.errorNotFound": "Cet agenda n'est plus partagé avec vous.",
   "settings.calendars.show": "Afficher {{name}}",
+  "settings.calendars.removeAccount": "Supprimer le compte",
+  "settings.calendars.googleAccount": "Compte Google",
+  "settings.calendars.reconnectAccount": "Reconnectez-vous sur le téléphone : scannez le code et connectez-vous à nouveau.",
+  "settings.calendars.reconnect": "La connexion Google a expiré. Reconnectez-vous sur votre téléphone.",
   "family.oneEvent": "1 événement aujourd'hui",
   "family.untitled": "(Sans titre)"
 }
