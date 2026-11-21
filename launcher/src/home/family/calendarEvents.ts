@@ -29,7 +29,8 @@ export interface DayAgenda {
   readonly timed: readonly DayEventBlock[];
 }
 
-const todayNumber = (now: number, timeZone: string) => {
+// The calendar date of `now` in `timeZone` as a day number (days since 1970-01-01).
+export const todayNumber = (now: number, timeZone: string) => {
   const zoned = zonedDate(now, timeZone);
   return Date.UTC(zoned.getFullYear(), zoned.getMonth(), zoned.getDate()) / DAY_MS;
 };
@@ -75,11 +76,10 @@ const layoutColumns = (placements: readonly Placement[]): DayEventBlock[] => {
   return blocks;
 };
 
-// Today's events in `timeZone`: all-day events for the strip, and timed events placed on
-// the CALENDAR_START_HOUR–CALENDAR_END_HOUR grid. Events outside the grid are pinned to
-// its nearest edge so nothing is hidden.
-export const dayAgenda = (events: readonly CalendarEvent[], now: number, timeZone: string): DayAgenda => {
-  const today = todayNumber(now, timeZone);
+// One day's events in `timeZone` (`today` is that day's number): all-day events for the
+// strip, and timed events placed on the CALENDAR_START_HOUR–CALENDAR_END_HOUR grid. Events
+// outside the grid are pinned to its nearest edge so nothing is hidden.
+export const agendaForDay = (events: readonly CalendarEvent[], today: number, timeZone: string): DayAgenda => {
   const dayStart = wallToUtc(today * DAY_MS, timeZone);
   const dayEnd = wallToUtc((today + 1) * DAY_MS, timeZone);
   const allDay: AllDayCalendarEvent[] = [];
@@ -106,6 +106,9 @@ export const dayAgenda = (events: readonly CalendarEvent[], now: number, timeZon
   placements.sort((a, b) => a.start - b.start || b.end - a.end);
   return { allDay, count: allDay.length + placements.length, timed: layoutColumns(placements) };
 };
+
+export const dayAgenda = (events: readonly CalendarEvent[], now: number, timeZone: string) =>
+  agendaForDay(events, todayNumber(now, timeZone), timeZone);
 
 const padded = (value: number) => (value < 10 ? "0" + value : String(value));
 

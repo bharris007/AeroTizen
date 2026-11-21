@@ -1,7 +1,8 @@
 // Google OAuth and Calendar API calls. Base URLs can be overridden for local testing.
 export const GOOGLE_SCOPES = ["openid", "email", "https://www.googleapis.com/auth/calendar.readonly"];
 const MAX_CALENDARS = 50;
-const MAX_EVENTS_PER_CALENDAR = 250;
+const EVENTS_PAGE_SIZE = 250;
+const MAX_EVENT_PAGES = 4;
 const MAX_TITLE_LENGTH = 120;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -183,18 +184,32 @@ export const normalizeEvent = (item) => {
 };
 
 export const listEvents = async ({ accessToken, calendarId, endpoints, fetchImpl, from, to }) => {
-  const params = new URLSearchParams({
-    maxResults: String(MAX_EVENTS_PER_CALENDAR),
-    orderBy: "startTime",
-    showDeleted: "false",
-    singleEvents: "true",
-    timeMax: new Date(to).toISOString(),
-    timeMin: new Date(from).toISOString(),
-  });
-  const data = await getJson(
-    fetchImpl,
-    endpoints.api + "/calendar/v3/calendars/" + encodeURIComponent(calendarId) + "/events?" + params.toString(),
-    accessToken,
-  );
-  return (Array.isArray(data.items) ? data.items : []).map(normalizeEvent).filter(Boolean);
+  const items = [];
+  let pageToken = "";
+  for (let page = 0; page < MAX_EVENT_PAGES; page += 1) {
+    const params = new URLSearchParams({
+      maxResults: String(EVENTS_PAGE_SIZE),
+      orderBy: "startTime",
+      showDeleted: "false",
+      singleEvents: "true",
+      timeMax: new Date(to).toISOString(),
+      timeMin: new Date(from).toISOString(),
+    });
+    if (pageToken) {
+      params.set("pageToken", pageToken);
+    }
+    const data = await getJson(
+      fetchImpl,
+      endpoints.api + "/calendar/v3/calendars/" + encodeURIComponent(calendarId) + "/events?" + params.toString(),
+      accessToken,
+    );
+    if (Array.isArray(data.items)) {
+      items.push(...data.items);
+    }
+    pageToken = typeof data.nextPageToken === "string" ? data.nextPageToken : "";
+    if (!pageToken) {
+      break;
+    }
+  }
+  return items.map(normalizeEvent).filter(Boolean);
 };

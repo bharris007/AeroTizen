@@ -1,4 +1,5 @@
 import type {
+  FamilyConditions,
   FamilyDay,
   FamilyForecastService,
   FamilyForecastSnapshot,
@@ -14,12 +15,14 @@ import { type FamilyForecastReading, familyForecastSignature, parseFamilyForecas
 const REFRESH_INTERVAL_MS = 20 * 60 * 1000;
 const EMPTY_HOURS: readonly FamilyHour[] = Object.freeze([]);
 const EMPTY_DAYS: readonly FamilyDay[] = Object.freeze([]);
+const NO_CONDITIONS: FamilyConditions = Object.freeze({ feelsLike: null, humidity: null, windSpeed: null });
 
 const sourceKey = (location: WeatherLocation, unit: TemperatureUnit) =>
   JSON.stringify([location.latitude, location.longitude, location.name, location.timezone || "", unit]);
 
 const emptyReading = (): FamilyForecastReading => ({
   code: null,
+  conditions: NO_CONDITIONS,
   days: EMPTY_DAYS,
   high: null,
   hours: EMPTY_HOURS,
@@ -65,6 +68,7 @@ export const createFamilyForecast = ({
     const location = place();
     return Object.freeze({
       code: ready ? reading.code : null,
+      conditions: ready ? reading.conditions : NO_CONDITIONS,
       days: ready ? reading.days : EMPTY_DAYS,
       high: ready ? reading.high : null,
       hours: ready ? reading.hours : EMPTY_HOURS,

@@ -64,7 +64,7 @@ export const parseClaimReply = (text: string): readonly Record<string, unknown>[
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_TITLE_LENGTH = 120;
-const MAX_EVENTS = 500;
+const MAX_EVENTS = 1000;
 
 export type RelayEvent =
   Omit<AllDayCalendarEvent, "calendarId" | "color"> | Omit<TimedCalendarEvent, "calendarId" | "color">;

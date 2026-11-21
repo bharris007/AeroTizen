@@ -1,8 +1,9 @@
-import type { FamilyDay, FamilyForecastSnapshot, FamilyHour } from "../../contracts/familyForecast";
+import type { FamilyConditions, FamilyDay, FamilyForecastSnapshot, FamilyHour } from "../../contracts/familyForecast";
 import { zonedDate } from "../../shared/time/zonedDate";
 import { finiteNumber, record, text } from "../weather/readings";
 
-const HOURLY_STRIP_LENGTH = 8;
+// The Home pane shows the first eight hours; the full-screen view shows all of them.
+const HOURLY_STRIP_LENGTH = 12;
 const DAILY_DATE = /^(\d{4})-(\d{2})-(\d{2})/;
 const DAILY_TIME = /T(\d{2}):(\d{2})/;
 const HOURLY_TIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/;
@@ -16,6 +17,7 @@ interface WallClock {
 
 export interface FamilyForecastReading {
   readonly code: number | null;
+  readonly conditions: FamilyConditions;
   readonly days: readonly FamilyDay[];
   readonly high: number | null;
   readonly hours: readonly FamilyHour[];
@@ -91,11 +93,19 @@ const minuteOfDay = (value: unknown) => {
   return hour > 23 || minute > 59 ? null : hour * 60 + minute;
 };
 
+const percent = (value: unknown) => (finiteNumber(value) && value >= 0 && value <= 100 ? Math.round(value) : null);
+const withPrecipitation = <T extends object>(item: T, value: unknown): T => {
+  const chance = percent(value);
+  return chance === null ? item : { ...item, precipitation: chance };
+};
+const optionalNumber = (value: unknown) => (finiteNumber(value) ? value : null);
+
 const parseDays = (daily: Record<string, unknown> | null): readonly FamilyDay[] => {
   const dates = list(daily?.time);
   const codes = list(daily?.weather_code);
   const highs = list(daily?.temperature_2m_max);
   const lows = list(daily?.temperature_2m_min);
+  const chances = list(daily?.precipitation_probability_max);
   const count = Math.min(dates.length, codes.length, highs.length, lows.length);
   const days: FamilyDay[] = [];
   for (let index = 0; index < count; index++) {
@@ -108,7 +118,7 @@ const parseDays = (daily: Record<string, unknown> | null): readonly FamilyDay[] 
       continue;
     }
     const weekday = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))).getUTCDay();
-    days.push(Object.freeze({ code, high, low, weekday }));
+    days.push(Object.freeze(withPrecipitation({ code, high, low, weekday }, chances[index])));
   }
   return Object.freeze(days);
 };
@@ -138,8 +148,9 @@ export const parseFamilyForecast = (
   const times = list(hourly?.time);
   const temperatures = list(hourly?.temperature_2m);
   const codes = list(hourly?.weather_code);
+  const hourlyChances = list(hourly?.precipitation_probability);
   const count = Math.min(times.length, temperatures.length, codes.length);
-  const samples: { clock: WallClock; code: number; temperature: number }[] = [];
+  const samples: { chance: unknown; clock: WallClock; code: number; temperature: number }[] = [];
   for (let index = 0; index < count; index++) {
     const stamp = times[index];
     const sampleTemperature = temperatures[index];
@@ -148,22 +159,33 @@ export const parseFamilyForecast = (
     if (!clock || !finiteNumber(sampleTemperature) || !finiteNumber(sampleCode)) {
       continue;
     }
-    samples.push({ clock, code: sampleCode, temperature: sampleTemperature });
+    samples.push({ chance: hourlyChances[index], clock, code: sampleCode, temperature: sampleTemperature });
   }
   const now = wallFromTimestamp(timestamp, timeZone);
   const start = samples.findIndex((sample) => isAtOrAfterHour(sample.clock, now));
   const selected = start < 0 ? [] : samples.slice(start, start + HOURLY_STRIP_LENGTH);
   const hours = Object.freeze(
     selected.map((sample) =>
-      Object.freeze({
-        code: sample.code,
-        hour: sample.clock.hour,
-        temperature: sample.temperature,
-      }),
+      Object.freeze(
+        withPrecipitation(
+          {
+            code: sample.code,
+            hour: sample.clock.hour,
+            temperature: sample.temperature,
+          },
+          sample.chance,
+        ),
+      ),
     ),
   );
   return Object.freeze({
     code,
+    conditions: Object.freeze({
+      feelsLike: optionalNumber(current?.apparent_temperature),
+      humidity: percent(current?.relative_humidity_2m),
+      windSpeed:
+        current && finiteNumber(current.wind_speed_10m) && current.wind_speed_10m >= 0 ? current.wind_speed_10m : null,
+    }),
     days: parseDays(daily),
     high,
     hours,
@@ -188,7 +210,8 @@ export const familyForecastSignature = (
     status === "ready" ? reading.code : null,
     status === "ready" ? reading.high : null,
     status === "ready" ? reading.low : null,
-    status === "ready" ? reading.hours.map((hour) => [hour.hour, hour.temperature, hour.code]) : [],
-    status === "ready" ? reading.days.map((day) => [day.weekday, day.high, day.low, day.code]) : [],
+    status === "ready" ? reading.hours.map((hour) => [hour.hour, hour.temperature, hour.code, hour.precipitation]) : [],
+    status === "ready" ? reading.days.map((day) => [day.weekday, day.high, day.low, day.code, day.precipitation]) : [],
+    status === "ready" ? reading.conditions : null,
     status === "ready" ? [reading.sunriseMinute, reading.sunsetMinute] : [],
   ]);

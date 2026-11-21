@@ -199,9 +199,9 @@ test("syncs a Google account's calendars in one relay request and recolours them
   expect(body).toEqual({
     accountId: ACCOUNT,
     calendarIds: ["home@group.calendar.google.com", "me"],
-    from: NOW - DAY,
+    from: NOW - 7 * DAY,
     secret: h.storage.get(CALENDAR_SECRET_KEY),
-    to: NOW + 4 * DAY,
+    to: NOW + 30 * DAY,
   });
   request?.done(
     200,

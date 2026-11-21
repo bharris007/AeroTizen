@@ -14,6 +14,7 @@ const BEFORE_DAWN = Date.UTC(2026, 0, 15, 9, 0);
 
 const ready: FamilyForecastSnapshot = {
   code: 2,
+  conditions: { feelsLike: 70, humidity: 40, windSpeed: 6 },
   days: [
     { code: 2, high: 75, low: 51, weekday: 4 },
     { code: 61, high: 66, low: 48, weekday: 5 },

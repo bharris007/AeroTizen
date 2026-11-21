@@ -14,6 +14,10 @@ export interface Inventory {
   readonly ready: boolean;
 }
 export type Page = "apps" | "family" | "home";
+export type FamilyPane = "weather" | "calendar";
+export type CalendarSpan = 1 | 3 | 5;
+// Which part of the full-screen calendar the remote is on.
+export type CalendarFocus = "grid" | "span";
 export interface HomeMenuChoice {
   readonly action: "add" | "remove" | "move";
   readonly label: MessageKey;
@@ -22,8 +26,16 @@ export interface HomeState {
   readonly active: boolean;
   readonly appOffset: number;
   readonly appsEndOffset: number;
+  // Family calendar: the Home pane's day and the full-screen view's first day, as days
+  // from today, plus the full-screen span and remote focus.
+  readonly calendarDay: number;
+  readonly calendarFocus: CalendarFocus;
+  readonly calendarSpan: CalendarSpan;
+  readonly calendarStart: number;
   readonly continueOffset: number;
   readonly draft: readonly string[] | null;
+  // The Family pane shown full screen, if any.
+  readonly expanded: FamilyPane | null;
   readonly menu: Readonly<{ id: string }> | null;
   readonly moving: string | null;
   readonly page: Page;
@@ -35,18 +47,26 @@ export interface HomeEnvironment {
   appItems: RefObject<HTMLDivElement>;
   appViewport: RefObject<HTMLDivElement>;
   bridge: HomeBridge;
+  // Full-screen calendar: Back to today, change span, page by span (-1 or 1).
+  calendarToday(): void;
   choose(index: number): void;
+  collapsePane(): void;
   continueItems: RefObject<HTMLDivElement>;
   continueViewport: RefObject<HTMLDivElement>;
   describe(app: InstalledApp): AppPresentation;
   dismiss(): void;
+  expandPane(pane: FamilyPane): void;
   inventory: Store<Inventory>;
   menuChoices(): readonly HomeMenuChoice[];
   nodes: Map<string, HTMLElement>;
+  pageCalendar(direction: number): void;
   rows: RefObject<HTMLElement>;
   runtime: LauncherRuntime;
   select(key: string): void;
+  setCalendarSpan(span: CalendarSpan): void;
   settings: SettingsStore;
+  // Home pane: move the shown day (-1 or 1), or 0 for today.
+  shiftCalendarDay(delta: number): void;
   showMoveInstructions(): void;
   showPage(page: Page): void;
   state: MutableStore<HomeState>;

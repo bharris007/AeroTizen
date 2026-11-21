@@ -13,7 +13,11 @@ import { HomeControl } from "../HomeControl/HomeControl";
 
 import styles from "./FamilyWeather.module.css";
 
-const WEEKDAY_KEYS = [
+// The Home pane shows five days and eight hours; the full-screen view shows them all.
+const PANE_DAYS = 5;
+const PANE_HOURS = 8;
+
+export const WEEKDAY_KEYS = [
   "family.day0",
   "family.day1",
   "family.day2",
@@ -23,7 +27,7 @@ const WEEKDAY_KEYS = [
   "family.day6",
 ] as const;
 
-const temperatureText = (temperature: number | null, t: Translate) => {
+export const temperatureText = (temperature: number | null, t: Translate) => {
   if (temperature === null) {
     return "--°";
   }
@@ -52,9 +56,12 @@ export const FamilyWeather = ({
   const showCondition = unavailable || (forecast.status === "ready" && forecast.code !== null);
   const high = forecast.high === null ? "" : t("family.high", { temperature: Math.round(forecast.high) });
   const low = forecast.low === null ? "" : t("family.low", { temperature: Math.round(forecast.low) });
-  const title = [t("family.weather"), forecast.locationLabel, current, showCondition ? condition : ""]
-    .filter((part) => part)
-    .join(", ");
+  const title =
+    [t("family.weather"), forecast.locationLabel, current, showCondition ? condition : ""]
+      .filter((part) => part)
+      .join(", ") +
+    ". " +
+    t("family.openFullScreen");
   const scene = familyScene(
     forecast.code,
     familyPhase(now, forecast.timeZone, forecast.sunriseMinute, forecast.sunsetMinute),
@@ -94,7 +101,7 @@ export const FamilyWeather = ({
       </div>
       {forecast.days.length > 0 ? (
         <div class={styles.days} data-family-days aria-label={t("family.forecast")}>
-          {forecast.days.map((day, index) => (
+          {forecast.days.slice(0, PANE_DAYS).map((day, index) => (
             <div class={styles.day} key={index} data-family-day={day.weekday}>
               <div class={styles.dayName}>
                 {index === 0 ? t("family.today") : t(WEEKDAY_KEYS[day.weekday] ?? "family.day0")}
@@ -112,7 +119,7 @@ export const FamilyWeather = ({
       ) : null}
       {forecast.hours.length > 0 ? (
         <div class={styles.hourly} data-family-hourly>
-          {forecast.hours.map((hour, index) => (
+          {forecast.hours.slice(0, PANE_HOURS).map((hour, index) => (
             <div class={styles.hour} key={hour.hour + "-" + index} data-family-hour={hour.hour}>
               <div class={styles.hourTime}>{formatFamilyHour(hour.hour, timeFormat, t)}</div>
               <div class={styles.hourIcon}>

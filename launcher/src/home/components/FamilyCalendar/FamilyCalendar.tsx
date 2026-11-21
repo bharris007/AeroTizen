@@ -2,10 +2,11 @@ import { useMemo } from "preact/hooks";
 
 import type { CalendarEvent } from "../../../contracts/familyCalendar";
 import type { TimeFormat } from "../../../contracts/preferences";
+import type { Translate } from "../../../shared/i18n/createTranslations";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import text from "../../../shared/styles/text.module.css";
-import { CALENDAR_HOURS, calendarNowTop, formatFamilyDate } from "../../family/calendarDay";
-import { dayAgenda, eventTint, formatEventTime } from "../../family/calendarEvents";
+import { CALENDAR_HOURS, calendarNowTop, formatCalendarDay } from "../../family/calendarDay";
+import { agendaForDay, eventTint, formatEventTime, todayNumber } from "../../family/calendarEvents";
 import { formatFamilyHour } from "../../family/formatFamilyHour";
 import type { HomeEnvironment } from "../../types";
 import { HomeControl } from "../HomeControl/HomeControl";
@@ -13,11 +14,23 @@ import { HomeControl } from "../HomeControl/HomeControl";
 import styles from "./FamilyCalendar.module.css";
 
 const EVENT_TINT_ALPHA = 0.3;
+
+// "Today", "Tomorrow", "Yesterday", or the weekday's name.
+export const relativeDay = (offset: number, day: number, language: string, t: Translate) => {
+  if (offset === 0) {
+    return t("family.today");
+  }
+  if (offset === 1) {
+    return t("family.tomorrow");
+  }
+  return offset === -1 ? t("family.yesterday") : formatCalendarDay(day, language, "weekday");
+};
 // Blocks shorter than this show the title and time on one line.
 const COMPACT_BLOCK_FRACTION = 0.06;
 
 export const FamilyCalendar = ({
   cardClass,
+  dayOffset,
   env,
   events,
   now,
@@ -26,6 +39,8 @@ export const FamilyCalendar = ({
   timeZone,
 }: {
   cardClass: string;
+  // Days from today shown on the card.
+  dayOffset: number;
   env: HomeEnvironment;
   events: readonly CalendarEvent[];
   now: number;
@@ -34,20 +49,28 @@ export const FamilyCalendar = ({
   timeZone: string;
 }) => {
   const { language, t } = useTranslation();
-  const date = formatFamilyDate(now, timeZone, language);
-  const nowTop = calendarNowTop(now, timeZone);
-  const agenda = useMemo(() => dayAgenda(events, now, timeZone), [events, now, timeZone]);
+  const day = todayNumber(now, timeZone) + dayOffset;
+  const isToday = dayOffset === 0;
+  const date = formatCalendarDay(day, language, "long");
+  const nowTop = isToday ? calendarNowTop(now, timeZone) : null;
+  const agenda = useMemo(() => agendaForDay(events, day, timeZone), [events, day, timeZone]);
   const summary = (() => {
     if (agenda.count === 0) {
       return t("family.noEvents");
     }
-    return agenda.count === 1 ? t("family.oneEvent") : t("family.eventsToday", { count: agenda.count });
+    if (agenda.count === 1) {
+      return t(isToday ? "family.oneEvent" : "family.oneEventOnDay");
+    }
+    return t(isToday ? "family.eventsToday" : "family.eventsOnDay", { count: agenda.count });
   })();
-  const title = t("family.today") + ", " + date + ", " + summary;
+  const relative = relativeDay(dayOffset, day, language, t);
+  const title = relative + ", " + date + ", " + summary + ". " + t("family.openFullScreen");
   const time = (instant: number) => formatEventTime(instant, timeZone, timeFormat, t);
   return (
     <HomeControl env={env} controlKey="family-calendar" className={cardClass} registered={registered} title={title}>
-      <div class={styles.kicker}>{t("family.today")}</div>
+      <div class={styles.kicker} data-family-relative={isToday ? "today" : dayOffset}>
+        {isToday ? <span class={styles.todayBadge}>{relative}</span> : relative}
+      </div>
       <div class={styles.date + " " + text.truncate} data-family-date>
         {date}
       </div>
