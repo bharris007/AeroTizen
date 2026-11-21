@@ -1,0 +1,143 @@
+@keyframes twinkle {
+  from {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes breathe {
+  from {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.65;
+  }
+}
+
+@keyframes turn {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tree {
+  position: absolute;
+  width: 560px;
+  height: 820px;
+}
+
+.art {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 560px;
+  height: 820px;
+}
+
+.light {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border-radius: 50%;
+  animation: twinkle ease-in-out infinite;
+  will-change: opacity;
+}
+
+.warm {
+  background: radial-gradient(
+    circle closest-side,
+    #fffaf0 0%,
+    #ffe2a8 20%,
+    rgba(255, 196, 110, 0.42) 42%,
+    rgba(255, 196, 110, 0) 100%
+  );
+}
+
+.amber {
+  background: radial-gradient(
+    circle closest-side,
+    #fff1d6 0%,
+    #ffb45c 22%,
+    rgba(255, 150, 60, 0.4) 44%,
+    rgba(255, 150, 60, 0) 100%
+  );
+}
+
+.twinkleA {
+  animation-duration: 2.6s;
+}
+
+.twinkleB {
+  animation-duration: 3.4s;
+  animation-delay: -1.1s;
+}
+
+.twinkleC {
+  animation-duration: 4.2s;
+  animation-delay: -2.3s;
+}
+
+.twinkleD {
+  animation-duration: 5.1s;
+  animation-delay: -0.6s;
+}
+
+.halo {
+  position: absolute;
+  top: -66px;
+  left: 160px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle closest-side,
+    rgba(255, 228, 160, 0.75) 0%,
+    rgba(255, 206, 120, 0.28) 35%,
+    rgba(255, 206, 120, 0) 100%
+  );
+  animation: breathe 3.2s ease-in-out infinite;
+  will-change: opacity;
+}
+
+/* A slowly turning four-point flare over the star. */
+.flare {
+  position: absolute;
+  top: -36px;
+  left: 190px;
+  width: 180px;
+  height: 180px;
+  animation: turn 30s linear infinite;
+  will-change: transform;
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    top: 89px;
+    left: 0;
+    width: 180px;
+    height: 2px;
+    background: linear-gradient(
+      to right,
+      rgba(255, 240, 200, 0) 0%,
+      rgba(255, 240, 200, 0.9) 50%,
+      rgba(255, 240, 200, 0) 100%
+    );
+  }
+
+  &::after {
+    transform: rotate(90deg);
+  }
+}

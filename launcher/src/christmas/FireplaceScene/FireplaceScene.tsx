@@ -1,25 +1,57 @@
 import { useLayoutEffect, useRef } from "preact/hooks";
 
 import { FIRE_HEIGHT, FIRE_WIDTH, startFireAnimation } from "../../fireplace/startFireAnimation";
+import type { BokehLight } from "../Bokeh/Bokeh";
+import { Bokeh } from "../Bokeh/Bokeh";
+import { ChristmasTree } from "../ChristmasTree/ChristmasTree";
+import { createSceneRandom } from "../sceneRandom";
 
+import { Candles } from "./Candles";
 import styles from "./FireplaceScene.module.css";
-import { Garland } from "./Garland";
+import { MantelGarland } from "./MantelGarland";
+import { SnowyWindow } from "./SnowyWindow";
 import { Stocking } from "./Stocking";
+import { StockingShades } from "./StockingShades";
+import { Stonework } from "./Stonework";
+import { Wreath } from "./Wreath";
 
 const STOCKINGS = [
-  { key: "red", x: 20, body: "#c92a2a", accent: "#f8f9fa", delay: "0s" },
-  { key: "green", x: 150, body: "#2b8a3e", accent: "#ffd43b", delay: "-1.2s" },
-  { key: "blue", x: 1040, body: "#1c7ed6", accent: "#f8f9fa", delay: "-0.5s" },
-  { key: "gold", x: 1170, body: "#e8590c", accent: "#fff3bf", delay: "-1.8s" },
+  { key: "cranberry", x: 640, body: "#8a1a2c", trim: "#efe6d4", delay: "0s" },
+  { key: "pine", x: 790, body: "#1d4a33", trim: "#d9b46a", delay: "-1.4s" },
+  { key: "cream", x: 1000, body: "#e3d5b6", trim: "#8a1a2c", delay: "-0.6s" },
+  { key: "velvet", x: 1150, body: "#6e1424", trim: "#d9b46a", delay: "-2.1s" },
 ] as const;
 
-const CANDLES = [
-  { key: "c1", x: 330, height: 90 },
-  { key: "c2", x: 390, height: 60 },
-  { key: "c3", x: 880, height: 70 },
-  { key: "c4", x: 940, height: 100 },
-] as const;
+const SPARK_COUNT = 12;
 
+const createSparks = () => {
+  const random = createSceneRandom(71);
+  return Array.from({ length: SPARK_COUNT }, (_, index) => {
+    const duration = 2.6 + random() * 2.4;
+    return {
+      key: index,
+      className: styles.spark + " " + (index % 2 === 0 ? styles.sparkLeft : styles.sparkRight),
+      style: {
+        left: (90 + random() * 220).toFixed(0) + "px",
+        animationDuration: duration.toFixed(1) + "s",
+        animationDelay: (-random() * duration).toFixed(1) + "s",
+      },
+    };
+  });
+};
+
+const SPARKS = createSparks();
+
+const BOKEH: readonly BokehLight[] = [
+  { key: "b1", x: 70, y: 70, sizePx: 170, color: "rgba(255, 196, 120, 0.2)", durationS: 15, delayS: 0 },
+  { key: "b2", x: 250, y: 24, sizePx: 120, color: "rgba(255, 170, 90, 0.18)", durationS: 18, delayS: 5 },
+  { key: "b3", x: 1700, y: 40, sizePx: 150, color: "rgba(255, 210, 140, 0.18)", durationS: 16, delayS: 3 },
+  { key: "b4", x: 1860, y: 150, sizePx: 190, color: "rgba(255, 180, 100, 0.2)", durationS: 20, delayS: 8 },
+  { key: "b5", x: 40, y: 1010, sizePx: 160, color: "rgba(255, 150, 80, 0.16)", durationS: 17, delayS: 10 },
+];
+
+// A cosy hearth on a snowy night. The canvas fire is the only per-frame drawing;
+// its light reaches the room through two flickering glows that only change opacity.
 export const FireplaceScene = () => {
   const canvas = useRef<HTMLCanvasElement>(null);
   useLayoutEffect(() => {
@@ -29,65 +61,60 @@ export const FireplaceScene = () => {
   }, []);
   return (
     <div class={styles.scene}>
-      <svg class={styles.wall} viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true">
-        <defs>
-          <pattern id="christmas-bricks" width="160" height="80" patternUnits="userSpaceOnUse">
-            <rect width="160" height="80" fill="#4a1d14" />
-            <rect x="3" y="3" width="154" height="34" rx="3" fill="#6e2a1c" />
-            <rect x="-77" y="43" width="154" height="34" rx="3" fill="#652619" />
-            <rect x="83" y="43" width="154" height="34" rx="3" fill="#73301f" />
-          </pattern>
-        </defs>
-        <rect width="1920" height="1080" fill="url(#christmas-bricks)" />
-      </svg>
+      <StockingShades />
+      <div class={styles.wall} />
+      <div class={styles.breast} />
+      <div class={styles.wainscot} />
       <div class={styles.floor} />
-      <div class={styles.rug} />
-      <div class={styles.wreath} aria-hidden="true">
-        <svg viewBox="0 0 240 260" class={styles.wreathArt}>
-          <circle cx="120" cy="120" r="88" stroke="#1f6f3a" stroke-width="46" fill="none" />
-          <circle cx="120" cy="120" r="88" stroke="#2f9e44" stroke-width="18" stroke-dasharray="8 14" fill="none" />
-          <circle cx="62" cy="72" r="9" fill="#e03131" />
-          <circle cx="180" cy="78" r="9" fill="#e03131" />
-          <circle cx="48" cy="150" r="9" fill="#e03131" />
-          <circle cx="192" cy="160" r="9" fill="#e03131" />
-          <circle cx="120" cy="40" r="9" fill="#ffd43b" />
-          <path d="M120 196 L82 240 L100 244 L120 214 L140 244 L158 240 Z" fill="#c92a2a" />
-          <path d="M120 200 Q84 170 78 204 Q86 226 120 206 Q154 226 162 204 Q156 170 120 200 Z" fill="#e03131" />
-          <circle cx="120" cy="203" r="10" fill="#a51111" />
-        </svg>
-      </div>
-      <div class={styles.hearth}>
-        <div class={styles.surround} />
-        <div class={styles.opening}>
-          <canvas class={styles.fire} ref={canvas} width={FIRE_WIDTH} height={FIRE_HEIGHT} />
-          <svg class={styles.logs} viewBox="0 0 760 120" aria-hidden="true">
-            <rect x="150" y="56" width="460" height="44" rx="22" fill="#3d2414" transform="rotate(-6 380 78)" />
-            <rect x="170" y="62" width="440" height="42" rx="21" fill="#5a3620" transform="rotate(7 380 82)" />
-            <circle cx="610" cy="104" r="20" fill="#c89464" />
-            <circle cx="610" cy="104" r="11" fill="#8a5a33" />
-          </svg>
-          <div class={styles.grate} />
-        </div>
-      </div>
-      <div class={styles.mantel}>
-        {CANDLES.map((candle) => (
-          <div key={candle.key} class={styles.candle} style={{ left: candle.x + "px", height: candle.height + "px" }}>
-            <span class={styles.flame} />
-          </div>
-        ))}
-        <div class={styles.shelf} />
-        <Garland />
-        {STOCKINGS.map((stocking) => (
-          <Stocking
-            key={stocking.key}
-            x={stocking.x}
-            body={stocking.body}
-            accent={stocking.accent}
-            delay={stocking.delay}
-          />
+      <svg class={styles.rug} viewBox="0 0 1100 160" aria-hidden="true">
+        <ellipse cx="550" cy="80" rx="540" ry="76" fill="#5e1019" />
+        <ellipse
+          cx="550"
+          cy="80"
+          rx="510"
+          ry="64"
+          fill="none"
+          stroke="#d9b46a"
+          stroke-width="3"
+          stroke-dasharray="14 10"
+        />
+        <ellipse cx="550" cy="80" rx="440" ry="48" fill="#7a1622" />
+        <ellipse cx="550" cy="80" rx="300" ry="30" fill="none" stroke="#e6d8b8" stroke-opacity="0.5" stroke-width="2" />
+      </svg>
+      <div class={styles.vignette} />
+      <SnowyWindow />
+      <Wreath />
+      <Stonework />
+      <canvas class={styles.fire} ref={canvas} width={FIRE_WIDTH} height={FIRE_HEIGHT} />
+      <div class={styles.fireEdge} />
+      <span class={styles.embers} />
+      <div class={styles.sparks} aria-hidden="true">
+        {SPARKS.map((spark) => (
+          <span key={spark.key} class={spark.className} style={spark.style} />
         ))}
       </div>
-      <div class={styles.glow} />
+      <svg class={styles.logs} viewBox="0 0 400 80" aria-hidden="true">
+        <rect x="40" y="30" width="300" height="34" rx="17" fill="#2e1a0e" transform="rotate(-5 200 46)" />
+        <rect x="70" y="38" width="290" height="32" rx="16" fill="#4a2c18" transform="rotate(6 200 54)" />
+        <circle cx="352" cy="64" r="15" fill="#b9875a" />
+        <circle cx="352" cy="64" r="8" fill="#7a5130" />
+        <path
+          d="M30 76 H370 M60 76 V56 M140 76 V56 M260 76 V56 M340 76 V56"
+          stroke="#0e0806"
+          stroke-width="7"
+          stroke-linecap="round"
+        />
+      </svg>
+      <div class={styles.hearthSlab} />
+      <div class={styles.shelf} />
+      {STOCKINGS.map((stocking) => (
+        <Stocking key={stocking.key} x={stocking.x} body={stocking.body} trim={stocking.trim} delay={stocking.delay} />
+      ))}
+      <MantelGarland />
+      <Candles />
+      <ChristmasTree class={styles.tree} />
+      <div class={styles.firelight} />
+      <Bokeh lights={BOKEH} />
     </div>
   );
 };

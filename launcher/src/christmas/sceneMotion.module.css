@@ -1,0 +1,60 @@
+/* A slow sideways camera drift. Layers share one timeline and move further the
+   nearer they are, which reads as parallax. Each layer is drawn wider than the
+   stage by its travel so no edge shows. */
+@keyframes parallaxFar {
+  from {
+    transform: translate3d(-10px, 0, 0);
+  }
+  to {
+    transform: translate3d(10px, 0, 0);
+  }
+}
+
+@keyframes parallaxMid {
+  from {
+    transform: translate3d(-22px, 0, 0);
+  }
+  to {
+    transform: translate3d(22px, 0, 0);
+  }
+}
+
+@keyframes parallaxNear {
+  from {
+    transform: translate3d(-40px, 0, 0);
+  }
+  to {
+    transform: translate3d(40px, 0, 0);
+  }
+}
+
+.parallaxFar,
+.parallaxMid,
+.parallaxNear {
+  animation-duration: 38s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
+}
+
+.parallaxFar {
+  animation-name: parallaxFar;
+}
+
+.parallaxMid {
+  animation-name: parallaxMid;
+}
+
+.parallaxNear {
+  animation-name: parallaxNear;
+}
+
+/* Camera drift and other slow ambient motion pause in Performance mode, leaving
+   snow, flames and twinkling lights alive on slower TVs. */
+[data-performance-mode="true"] .parallaxFar,
+[data-performance-mode="true"] .parallaxMid,
+[data-performance-mode="true"] .parallaxNear,
+[data-performance-mode="true"] .ambient {
+  animation-play-state: paused;
+}
