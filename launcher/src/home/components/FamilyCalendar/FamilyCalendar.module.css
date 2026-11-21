@@ -74,3 +74,86 @@
   height: 2px;
   background: #ff5c5c;
 }
+
+.allDay {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -6px 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  max-width: 100%;
+  margin: 0 8px 8px 0;
+  padding: 6px 14px;
+  border: 0;
+  border-left: 6px solid;
+  border-radius: 10px;
+  font-size: 20px;
+  line-height: 1.25;
+
+  [dir="rtl"] & {
+    margin: 0 0 8px 8px;
+    border-right: 6px solid;
+    border-left: 0;
+  }
+}
+
+.events {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  bottom: 0;
+  left: 96px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+
+  [dir="rtl"] & {
+    right: 96px;
+    left: 4px;
+  }
+}
+
+.event {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 4px 10px;
+  overflow: hidden;
+  border: 0;
+  border-left: 6px solid;
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+  font-size: 19px;
+  line-height: 1.2;
+
+  [dir="rtl"] & {
+    border-right: 6px solid;
+    border-left: 0;
+  }
+}
+
+.compact {
+  flex-direction: row;
+  align-items: center;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.eventTitle {
+  font-weight: 600;
+}
+
+.eventTime {
+  flex: 0 0 auto;
+  color: var(--family-muted);
+  font-size: 16px;
+
+  .compact & {
+    margin-left: 8px;
+  }
+}

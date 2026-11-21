@@ -16,6 +16,7 @@ export const FamilyBoard = ({
   timeFormat: TimeFormat;
 }) => {
   const forecast = useStore(env.runtime.familyForecast);
+  const { events } = useStore(env.runtime.familyCalendar);
   const now = useStore(env.status.time);
   return (
     <div class={styles.board} hidden={!shown} data-family-board>
@@ -33,6 +34,7 @@ export const FamilyBoard = ({
         <FamilyCalendar
           cardClass={styles.card}
           env={env}
+          events={events}
           now={now}
           registered={shown}
           timeFormat={timeFormat}

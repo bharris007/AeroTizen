@@ -7,6 +7,7 @@ type BootRuntime = Pick<
   | "apps"
   | "clock"
   | "continueWatching"
+  | "familyCalendar"
   | "familyForecast"
   | "homeScreen"
   | "homewatch"
@@ -32,7 +33,18 @@ const STARTUP_REPORT_DELAY_MS = 1500;
 
 export const startLauncherBoot = (host: BootHost, runtime: BootRuntime, startup: LauncherStartup) => {
   const { document } = host;
-  const { apps, clock, continueWatching, familyForecast, homewatch, inputs, network, settings, weather } = runtime;
+  const {
+    apps,
+    clock,
+    continueWatching,
+    familyCalendar,
+    familyForecast,
+    homewatch,
+    inputs,
+    network,
+    settings,
+    weather,
+  } = runtime;
   let disposed = false;
   let discoveryStarted = false;
   let refreshTimer: number | undefined;
@@ -82,6 +94,7 @@ export const startLauncherBoot = (host: BootHost, runtime: BootRuntime, startup:
     network.start();
     weather.start();
     familyForecast.start();
+    familyCalendar.start();
     inputs.start();
     homewatch.start();
     startupReportTimer = host.setTimeout(() => {

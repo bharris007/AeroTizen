@@ -48,7 +48,8 @@
   "dependencies": {
     "i18next": "26.7.1",
     "lucide-preact": "1.66.0",
-    "preact": "10.29.8"
+    "preact": "10.29.8",
+    "qrcode-generator": "2.0.4"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

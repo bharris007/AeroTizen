@@ -11,6 +11,7 @@ export const createSettingsServices = (runtime: LauncherRuntime, platform: Launc
     config: runtime.config,
     clock: runtime.clock,
     weather: runtime.weather,
+    familyCalendar: runtime.familyCalendar,
     backgrounds: platform.backgrounds.list.map((background) => ({
       ...background,
       preview: platform.backgrounds.preview(background),

@@ -1,6 +1,7 @@
 import { screen } from "@testing-library/preact";
 import { expect, test } from "vitest";
 
+import type { CalendarEvent, FamilyCalendarSnapshot } from "../../../contracts/familyCalendar";
 import type { FamilyForecastSnapshot } from "../../../contracts/familyForecast";
 import { createStore } from "../../../shared/state/createStore";
 import { renderWithEnglish } from "../../../test/renderWithEnglish";
@@ -32,11 +33,27 @@ const ready: FamilyForecastSnapshot = {
   timeZone: "America/Chicago",
 };
 
-const environment = (forecast: FamilyForecastSnapshot, selected: string, now = NOON) => {
+const calendarSnapshot = (events: readonly CalendarEvent[] = []): FamilyCalendarSnapshot => ({
+  events,
+  pairing: { code: "", expiresAt: 0, state: "idle", url: "" },
+  statuses: {},
+  syncing: false,
+});
+
+const environment = (
+  forecast: FamilyForecastSnapshot,
+  selected: string,
+  now = NOON,
+  events: readonly CalendarEvent[] = [],
+) => {
   const env = createCardEnvironment(selected);
   return {
     ...env,
-    runtime: { ...env.runtime, familyForecast: createStore(forecast) },
+    runtime: {
+      ...env.runtime,
+      familyCalendar: createStore(calendarSnapshot(events)),
+      familyForecast: createStore(forecast),
+    },
     status: { time: createStore(now) },
   } as unknown as typeof env;
 };
@@ -93,4 +110,54 @@ test("keeps the calendar empty and hides the time line outside the day grid", ()
   expect(container.querySelector("[data-family-hourly]")).toBeNull();
   expect(container.querySelector("[data-family-days]")).toBeNull();
   expect(container.querySelector("[data-family-photo]")?.getAttribute("data-family-photo")).toBe("night");
+});
+
+test("shows today's events in calendar colours with overlaps side by side and an all-day strip", () => {
+  // Chicago is UTC-6 on 15 January 2026.
+  const at = (hour: number, minute = 0) => Date.UTC(2026, 0, 15, hour + 6, minute);
+  const today = Date.UTC(2026, 0, 15) / (24 * 60 * 60 * 1000);
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const base = { calendarId: "family", color: "#33b679" };
+  const allDay = (id: string, title: string, startDay: number): CalendarEvent => ({
+    ...base,
+    allDay: true,
+    endDay: startDay + 1,
+    id,
+    startDay,
+    title,
+  });
+  const timed = (id: string, title: string, start: number, end: number, color = base.color): CalendarEvent => ({
+    ...base,
+    allDay: false,
+    color,
+    end,
+    id,
+    start,
+    title,
+  });
+  const events: CalendarEvent[] = [
+    allDay("a", "MLK Day prep", today),
+    allDay("old", "Yesterday", today - 1),
+    timed("b", "Dentist", at(9), at(10)),
+    timed("c", "Standup", at(9, 30), at(10, 30), "#f4511e"),
+    timed("d", "Pickup", at(14), at(15)),
+    timed("e", "Tomorrow", at(8) + DAY_MS, at(9) + DAY_MS),
+  ];
+  const { container } = renderWithEnglish(
+    <FamilyBoard env={environment(ready, "family-calendar", NOON, events)} shown timeFormat="12" />,
+  );
+
+  expect(screen.queryByText("No events")).toBeNull();
+  expect(screen.getByRole("button", { name: /4 events today/ })).toBeDefined();
+  expect(screen.getByText("MLK Day prep")).toBeDefined();
+  expect(screen.queryByText("Yesterday")).toBeNull();
+  expect(screen.queryByText("Tomorrow")).toBeNull();
+  expect(screen.getByText("9:00 AM – 10:00 AM")).toBeDefined();
+  const block = (title: string) => screen.getByText(title).closest("[data-family-event]") as HTMLElement;
+  expect(block("Dentist").style.width).toBe("50%");
+  expect(block("Standup").style.left).toBe("50%");
+  expect(block("Standup").style.borderColor).toBe("rgb(244, 81, 30)");
+  expect(block("Pickup").style.width).toBe("100%");
+  expect(Number.parseFloat(block("Pickup").style.top)).toBeGreaterThan(Number.parseFloat(block("Dentist").style.top));
+  expect(container.querySelectorAll("[data-family-event='all-day']")).toHaveLength(1);
 });
