@@ -38,3 +38,41 @@ export const calendarNowTop = (timestamp: number, timeZone: string) => {
   const zoned = zonedDate(timestamp, timeZone);
   return calendarNowFraction(zoned.getHours(), zoned.getMinutes());
 };
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEKDAY_FALLBACK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// Names a calendar day number (days since 1970-01-01) in `language`. Day numbers are
+// already local dates, so they are formatted in UTC.
+export const formatCalendarDay = (day: number, language: string, style: "weekday" | "column" | "long") => {
+  const options: Intl.DateTimeFormatOptions = { timeZone: "UTC" };
+  if (style === "weekday") {
+    options.weekday = "long";
+  } else if (style === "column") {
+    options.weekday = "short";
+    options.day = "numeric";
+  } else {
+    options.weekday = "long";
+    options.month = "long";
+    options.day = "numeric";
+  }
+  const date = new Date(day * DAY_MS);
+  try {
+    return new Intl.DateTimeFormat(language, options).format(date);
+  } catch {
+    return WEEKDAY_FALLBACK[date.getUTCDay()] + " " + date.getUTCDate();
+  }
+};
+
+// Short range for a multi-day header, e.g. "Nov 21 – 25".
+export const formatCalendarRange = (first: number, last: number, language: string) => {
+  const format = (day: number, options: Intl.DateTimeFormatOptions) => {
+    try {
+      return new Intl.DateTimeFormat(language, { ...options, timeZone: "UTC" }).format(new Date(day * DAY_MS));
+    } catch {
+      return new Date(day * DAY_MS).toISOString().slice(0, 10);
+    }
+  };
+  const start = format(first, { day: "numeric", month: "long" });
+  return first === last ? start : start + " – " + format(last, { day: "numeric", month: "long" });
+};

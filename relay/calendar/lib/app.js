@@ -24,7 +24,8 @@ const MAX_ICS_BYTES = 5 * 1024 * 1024;
 const ICS_TIMEOUT_MS = 12 * 1000;
 const MAX_NAME_LENGTH = 40;
 const MAX_URL_LENGTH = 2048;
-const MAX_EVENT_WINDOW_MS = 8 * 24 * 60 * 60 * 1000;
+// About a week back and a month ahead, so the TV can page through days.
+const MAX_EVENT_WINDOW_MS = 40 * 24 * 60 * 60 * 1000;
 const SECRET_PATTERN = /^[a-f0-9]{32,64}$/;
 const COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 const ID_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;

@@ -258,7 +258,7 @@ test("the events endpoint returns normalized Google events for the TV that owns 
     calendarIds: [],
     from,
     secret: SECRET,
-    to: from + 9 * 86400000,
+    to: from + 41 * 86400000,
   });
   assert.equal(tooWide.status, 400);
 });
@@ -304,4 +304,41 @@ test("Google event normalization drops cancelled and malformed events", async ()
     startDay: Date.UTC(2026, 0, 1) / 86400000,
     title: "New Year",
   });
+});
+
+test("the events endpoint follows Google's pages and allows a five-week window", async () => {
+  const google = mockGoogle();
+  const pages = [];
+  const base = google.fetchImpl;
+  google.fetchImpl = async (input, init) => {
+    const url = new URL(String(input));
+    if (url.pathname.includes("/events")) {
+      pages.push(url.searchParams.get("pageToken"));
+      const token = url.searchParams.get("pageToken");
+      return jsonResponse(200, {
+        items: [
+          { end: { date: "2026-12-02" }, id: "p" + (token || "0"), start: { date: "2026-12-01" }, summary: "Page" },
+        ],
+        nextPageToken: token ? undefined : "second",
+      });
+    }
+    return base(input, init);
+  };
+  const context = await setup(ENV, google);
+  const { claim } = await addAccount(context);
+  const from = Date.parse("2026-11-14T00:00:00Z");
+  const reply = await context.call("POST", "events", {
+    accountId: claim.calendars[0].accountId,
+    calendarIds: ["bryan@example.com"],
+    from,
+    secret: SECRET,
+    to: from + 37 * 86400000,
+  });
+  assert.equal(reply.status, 200);
+  const body = await reply.json();
+  assert.deepEqual(
+    body.calendars["bryan@example.com"].events.map((event) => event.id),
+    ["p0", "psecond"],
+  );
+  assert.deepEqual(pages, [null, "second"]);
 });

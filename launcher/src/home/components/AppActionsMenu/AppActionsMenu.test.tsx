@@ -34,7 +34,12 @@ const harness = () => {
     draft: null,
     appOffset: 0,
     appsEndOffset: 0,
+    calendarDay: 0,
+    calendarFocus: "grid",
+    calendarSpan: 3,
+    calendarStart: 0,
     continueOffset: 0,
+    expanded: null,
     scroll: 0,
   });
   const origin = document.createElement("button");

@@ -9,6 +9,7 @@ import { AppActionsMenu } from "../AppActionsMenu/AppActionsMenu";
 import { AppGrid } from "../AppGrid/AppGrid";
 import { ContinueWatchingRow } from "../ContinueWatchingRow/ContinueWatchingRow";
 import { FamilyBoard } from "../FamilyBoard/FamilyBoard";
+import { FamilyExpanded } from "../FamilyExpanded/FamilyExpanded";
 import { HomeControl } from "../HomeControl/HomeControl";
 import { HomeHeader } from "../HomeHeader/HomeHeader";
 import { InputDock } from "../InputDock/InputDock";
@@ -132,6 +133,7 @@ export const Home = ({ env }: { env: HomeEnvironment }) => {
         </div>
       </div>
       <AppActionsMenu env={env} />
+      <FamilyExpanded env={env} timeFormat={settings.timeFormat} unit={settings.tempUnit === "F" ? "F" : "C"} />
     </div>
   );
 };

@@ -9,7 +9,12 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     active: true,
     appOffset: 0,
     appsEndOffset: 0,
+    calendarDay: 0,
+    calendarFocus: "grid",
+    calendarSpan: 3,
+    calendarStart: 0,
     continueOffset: 0,
+    expanded: null,
     draft: null,
     menu: null,
     moving: null,
@@ -36,10 +41,30 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     },
   };
   // Isolated cards use only these Home controller fields.
-  const environment: Pick<HomeEnvironment, "state" | "nodes" | "activate" | "select" | "runtime" | "describe"> = {
+  const environment: Pick<
+    HomeEnvironment,
+    | "state"
+    | "nodes"
+    | "activate"
+    | "select"
+    | "runtime"
+    | "describe"
+    | "calendarToday"
+    | "collapsePane"
+    | "expandPane"
+    | "pageCalendar"
+    | "setCalendarSpan"
+    | "shiftCalendarDay"
+  > = {
     state,
     nodes: new Map<string, HTMLElement>(),
     activate: vi.fn(),
+    calendarToday: vi.fn(),
+    collapsePane: vi.fn(),
+    expandPane: vi.fn(),
+    pageCalendar: vi.fn(),
+    setCalendarSpan: vi.fn(),
+    shiftCalendarDay: vi.fn(),
     select: vi.fn(),
     runtime: runtime as HomeEnvironment["runtime"],
     describe: (app: InstalledApp): AppPresentation => ({

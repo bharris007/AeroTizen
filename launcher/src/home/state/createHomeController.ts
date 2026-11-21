@@ -3,12 +3,19 @@ import { createInputScope } from "../../shared/input/createInputScope";
 import { focusControl } from "../../shared/navigation/focusControl";
 import { createStore } from "../../shared/state/createStore";
 import { ADD_APPS_KEY } from "../homeControls";
-import type { HomeEnvironment, HomeMenuChoice, HomeState, Page } from "../types";
+import type { CalendarSpan, FamilyPane, HomeEnvironment, HomeMenuChoice, HomeState, Page } from "../types";
 
 import { revealHorizontalItem } from "./horizontalScroll";
 
 const HEADER_KEYS = ["gear", "christmas-shortcut", "family-tab", "home-tab"] as const;
 const FAMILY_ROW_KEYS = ["family-weather", "family-calendar"] as const;
+export const FAMILY_DAY_KEY = "family-day";
+// The calendar keeps events from a week back to a month ahead.
+export const CALENDAR_FIRST_DAY = -7;
+export const CALENDAR_LAST_DAY = 30;
+const CALENDAR_SPANS: readonly CalendarSpan[] = [1, 3, 5];
+const DEFAULT_CALENDAR_SPAN: CalendarSpan = 3;
+const clampDay = (day: number, span = 1) => Math.max(CALENDAR_FIRST_DAY, Math.min(CALENDAR_LAST_DAY - span + 1, day));
 
 const tabForPage = (page: Page) => {
   if (page === "apps") {
@@ -143,7 +150,20 @@ const getVerticalColumn = ({
 export const createHomeController = (
   env: Omit<
     HomeEnvironment,
-    "bridge" | "state" | "select" | "activate" | "showPage" | "choose" | "dismiss" | "menuChoices"
+    | "bridge"
+    | "state"
+    | "select"
+    | "activate"
+    | "showPage"
+    | "choose"
+    | "dismiss"
+    | "menuChoices"
+    | "calendarToday"
+    | "collapsePane"
+    | "expandPane"
+    | "pageCalendar"
+    | "setCalendarSpan"
+    | "shiftCalendarDay"
   >,
   transaction: (action: () => void) => void,
 ) => {
@@ -151,6 +171,11 @@ export const createHomeController = (
   const state = createStore<HomeState>({
     page: "family",
     appsEndOffset: 0,
+    calendarDay: 0,
+    calendarFocus: "grid",
+    calendarSpan: DEFAULT_CALENDAR_SPAN,
+    calendarStart: 0,
+    expanded: null,
     scroll: 0,
     continueOffset: 0,
     selected: "",
@@ -206,7 +231,8 @@ export const createHomeController = (
   const rows = (): readonly (readonly string[])[] => {
     const page = state.getSnapshot().page;
     if (page === "family") {
-      return [HEADER_KEYS, FAMILY_ROW_KEYS];
+      // The day control sits inside the calendar card; the remote reaches it with Up.
+      return [HEADER_KEYS, FAMILY_ROW_KEYS, [FAMILY_DAY_KEY]];
     }
     const columns = getAppGridColumns(settings.getSnapshot().homeCardColumns, page);
     const appKeys = ids().map((id) => "app:" + id);
@@ -325,9 +351,35 @@ export const createHomeController = (
   const showPage = (page: Page) => {
     cancelPress();
     endMove();
-    update({ page, appsEndOffset: 0, scroll: 0, menu: null, selected: tabForPage(page) });
+    update({ page, appsEndOffset: 0, scroll: 0, menu: null, selected: tabForPage(page), expanded: null });
     focus();
   };
+  const expandPane = (pane: FamilyPane) => {
+    const current = state.getSnapshot();
+    update({
+      calendarFocus: "grid",
+      calendarStart: clampDay(current.calendarDay, current.calendarSpan),
+      expanded: pane,
+      selected: pane === "weather" ? "family-weather" : "family-calendar",
+    });
+    focus();
+  };
+  const collapsePane = () => {
+    const pane = state.getSnapshot().expanded;
+    update({ expanded: null, selected: pane === "weather" ? "family-weather" : "family-calendar" });
+    focus();
+  };
+  const shiftCalendarDay = (delta: number) => {
+    update({ calendarDay: delta === 0 ? 0 : clampDay(state.getSnapshot().calendarDay + delta) });
+  };
+  const setCalendarSpan = (span: CalendarSpan) => {
+    update({ calendarSpan: span, calendarStart: clampDay(state.getSnapshot().calendarStart, span) });
+  };
+  const pageCalendar = (direction: number) => {
+    const { calendarSpan, calendarStart } = state.getSnapshot();
+    update({ calendarStart: clampDay(calendarStart + direction * calendarSpan, calendarSpan) });
+  };
+  const calendarToday = () => update({ calendarStart: 0 });
   const activate = (key: string) => {
     const nextPage = pageForTab(key);
     if (key === "gear") {
@@ -345,7 +397,9 @@ export const createHomeController = (
     } else if (nextPage) {
       showPage(nextPage);
     } else if (key === "family-weather" || key === "family-calendar") {
-      return;
+      expandPane(key === "family-weather" ? "weather" : "calendar");
+    } else if (key === FAMILY_DAY_KEY) {
+      shiftCalendarDay(0);
     } else if (key === "back-to-top") {
       select(ADD_APPS_KEY);
     } else if (key === ADD_APPS_KEY) {
@@ -407,6 +461,61 @@ export const createHomeController = (
     focus();
   };
   const K = runtime.config.KEY;
+  // Remote keys for the Family page's panes. Returns true when the key was used.
+  const familyKey = (code: number, delta: number) => {
+    const current = state.getSnapshot();
+    const horizontal = code === K.LEFT || code === K.RIGHT;
+    if (current.expanded) {
+      if (code === K.BACK || code === K.ESC) {
+        collapsePane();
+        return true;
+      }
+      // OK acts on key down here; holding it must not repeat.
+      if (code === K.ENTER && enterDown) {
+        return true;
+      }
+      enterDown = code === K.ENTER;
+      if (current.expanded === "weather") {
+        if (code === K.ENTER) {
+          collapsePane();
+        }
+        return true;
+      }
+      if (current.calendarFocus === "span") {
+        if (horizontal) {
+          const index = CALENDAR_SPANS.indexOf(current.calendarSpan) + delta;
+          setCalendarSpan(CALENDAR_SPANS[Math.max(0, Math.min(CALENDAR_SPANS.length - 1, index))]);
+        } else if (code === K.DOWN || code === K.ENTER) {
+          update({ calendarFocus: "grid" });
+        }
+        return true;
+      }
+      if (horizontal) {
+        pageCalendar(delta);
+      } else if (code === K.UP) {
+        update({ calendarFocus: "span" });
+      } else if (code === K.ENTER) {
+        calendarToday();
+      }
+      return true;
+    }
+    if (current.selected === FAMILY_DAY_KEY) {
+      if (horizontal) {
+        shiftCalendarDay(delta);
+        return true;
+      }
+      if (code === K.UP || code === K.DOWN) {
+        select(code === K.UP ? tabForPage("family") : "family-calendar");
+        return true;
+      }
+      return false;
+    }
+    if (code === K.UP && current.selected === "family-calendar") {
+      select(FAMILY_DAY_KEY);
+      return true;
+    }
+    return code === K.DOWN && (FAMILY_ROW_KEYS as readonly string[]).includes(current.selected);
+  };
   const keydown = (code: number, event: Pick<KeyboardEvent, "preventDefault">) =>
     transaction(() => {
       const current = state.getSnapshot();
@@ -417,6 +526,9 @@ export const createHomeController = (
         return;
       }
       event.preventDefault();
+      if (current.page === "family" && familyKey(code, delta)) {
+        return;
+      }
       if (current.moving) {
         if (code === K.ENTER || code === K.BACK || code === K.ESC) {
           if (code !== K.ENTER || !enterDown) {
@@ -520,5 +632,21 @@ export const createHomeController = (
     keyup,
     showPage,
   };
-  return { ...env, state, bridge, select, activate, showPage, choose, dismiss, menuChoices };
+  return {
+    ...env,
+    state,
+    bridge,
+    select,
+    activate,
+    showPage,
+    choose,
+    dismiss,
+    menuChoices,
+    calendarToday,
+    collapsePane,
+    expandPane,
+    pageCalendar,
+    setCalendarSpan,
+    shiftCalendarDay,
+  };
 };

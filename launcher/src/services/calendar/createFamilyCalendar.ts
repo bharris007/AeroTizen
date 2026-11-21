@@ -37,11 +37,12 @@ export const PAIRING_POLL_INTERVAL_MS = 3000;
 const PAIRING_RETRY_MS = 15 * 1000;
 // Start a new pairing code shortly before the current one expires.
 const PAIRING_RENEW_MARGIN_MS = 60 * 1000;
-const WINDOW_PAST_MS = 2 * DAY_MS;
-const WINDOW_FUTURE_MS = 14 * DAY_MS;
-// The relay reads at most eight days of Google events per request.
-const GOOGLE_WINDOW_PAST_MS = DAY_MS;
-const GOOGLE_WINDOW_FUTURE_MS = 4 * DAY_MS;
+// A week back and a month ahead, so the full-screen calendar can page through days.
+// The relay accepts Google windows of up to 40 days.
+const WINDOW_PAST_MS = 7 * DAY_MS;
+const WINDOW_FUTURE_MS = 30 * DAY_MS;
+const GOOGLE_WINDOW_PAST_MS = WINDOW_PAST_MS;
+const GOOGLE_WINDOW_FUTURE_MS = WINDOW_FUTURE_MS;
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_OK = 200;
 const HTTP_FORBIDDEN = 403;
