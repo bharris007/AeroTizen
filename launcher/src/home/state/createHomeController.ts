@@ -214,7 +214,7 @@ export const createHomeController = (
     if (page === "family") {
       return [HEADER_KEYS, FAMILY_ROW_KEYS];
     }
-    // The XMAS countdown is a display-only page: the header is its only row.
+    // The Xmas countdown is a display-only page: the header is its only row.
     if (page === "xmas") {
       return [HEADER_KEYS];
     }

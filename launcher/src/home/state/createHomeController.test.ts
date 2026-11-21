@@ -92,7 +92,7 @@ test("moves from the header to Family and between its columns", () => {
   expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "family-tab" });
 });
 
-test("the XMAS tab sits right of Watch and shows a header-only countdown page", () => {
+test("the Xmas tab sits right of Watch and shows a header-only countdown page", () => {
   const home = controller();
   home.bridge.focus();
   press(home, KEY.UP);

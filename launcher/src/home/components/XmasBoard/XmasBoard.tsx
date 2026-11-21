@@ -13,7 +13,7 @@ interface XmasTimers {
   setInterval(callback: () => void, ms: number): number;
 }
 
-// The XMAS tab's page: the Christmas Mode countdown behind the normal launcher header.
+// The Xmas tab's page: the Christmas Mode countdown behind the normal launcher header.
 // Home only mounts it while the tab is shown; `paused` freezes the ticker and CSS motion
 // while Settings or another surface covers the launcher.
 export const XmasBoard = ({

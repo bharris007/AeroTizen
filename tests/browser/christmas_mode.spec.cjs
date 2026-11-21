@@ -52,11 +52,11 @@ test("Christmas Mode opens from the Settings badge and is driven entirely by the
   expect(await page.evaluate(() => window.Christmas.isOpen())).toBe(false);
 });
 
-test("the XMAS tab sits right of Watch and shows the countdown under the launcher header", async ({ page }) => {
+test("the Xmas tab sits right of Watch and shows the countdown under the launcher header", async ({ page }) => {
   await page.goto("/");
   await page.waitForFunction(() => window.AeroTizen?.settingsUi);
   const tabs = page.locator("[data-header-tabs] [role=button]");
-  await expect(tabs).toHaveText(["Home", "Watch", "XMAS"]);
+  await expect(tabs).toHaveText(["Home", "Watch", "Xmas"]);
   await expect(page.locator("[data-xmas-board]")).toHaveCount(0);
 
   await page.keyboard.press("ArrowUp");

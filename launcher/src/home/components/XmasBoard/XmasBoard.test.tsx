@@ -27,7 +27,7 @@ const harness = () => {
   return { callbacks, now, tick, timers };
 };
 
-test("the XMAS tab shows the live countdown and celebrates at midnight", async () => {
+test("the Xmas tab shows the live countdown and celebrates at midnight", async () => {
   const { now, tick, timers } = harness();
   const { container } = renderWithEnglish(<XmasBoard paused={false} now={now} timers={timers} />);
   expect(container.querySelector("[data-xmas-board]")?.getAttribute("data-paused")).toBe("false");
@@ -43,7 +43,7 @@ test("the XMAS tab shows the live countdown and celebrates at midnight", async (
   expect(container.textContent).toContain("Merry Christmas!");
 });
 
-test("a covered XMAS tab stops ticking and freezes its motion; unmounting clears the timer", async () => {
+test("a covered Xmas tab stops ticking and freezes its motion; unmounting clears the timer", async () => {
   const { callbacks, now, timers } = harness();
   const { container, rerender, unmount } = renderWithEnglish(<XmasBoard paused={false} now={now} timers={timers} />);
   expect(callbacks.size).toBe(1);
