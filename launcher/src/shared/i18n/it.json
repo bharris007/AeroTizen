@@ -341,7 +341,7 @@
   "settings.calendars.title": "Calendari",
   "settings.calendars.hint": "Aggiungi calendari Google dal telefono.",
   "settings.calendars.addTitle": "Aggiungi dal telefono",
-  "settings.calendars.scan": "Inquadra con la fotocamera del telefono, poi incolla l'indirizzo iCal segreto di ogni calendario.",
+  "settings.calendars.scan": "Inquadra con la fotocamera del telefono, accedi con Google e seleziona i calendari che vuoi.",
   "settings.calendars.orVisit": "Oppure apri {{url}} e inserisci",
   "settings.calendars.connecting": "Richiesta del codice di abbinamento…",
   "settings.calendars.offline": "Servizio di abbinamento non raggiungibile. Controlla la connessione Internet della TV.",
@@ -356,8 +356,12 @@
   "settings.calendars.off": "Nascosto dalla pagina Famiglia",
   "settings.calendars.errorNetwork": "Sincronizzazione non riuscita. Mostro gli eventi salvati.",
   "settings.calendars.errorInvalid": "Questo indirizzo non è un feed di calendario.",
-  "settings.calendars.errorNotFound": "Google non condivide più questo calendario. Copia di nuovo l'indirizzo segreto.",
+  "settings.calendars.errorNotFound": "Questo calendario non è più condiviso con te.",
   "settings.calendars.show": "Mostra {{name}}",
+  "settings.calendars.removeAccount": "Rimuovi account",
+  "settings.calendars.googleAccount": "Account Google",
+  "settings.calendars.reconnectAccount": "Ricollegati dal telefono: inquadra il codice e accedi di nuovo.",
+  "settings.calendars.reconnect": "L'accesso a Google è scaduto. Ricollegati dal telefono.",
   "family.oneEvent": "1 evento oggi",
   "family.untitled": "(Senza titolo)"
 }

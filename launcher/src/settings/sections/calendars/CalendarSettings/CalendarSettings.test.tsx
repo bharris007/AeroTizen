@@ -21,6 +21,7 @@ const familyCalendar = {
   ...calendarStore,
   dispose: vi.fn(),
   start: vi.fn(),
+  removeAccount: vi.fn(),
   startPairing: vi.fn(),
   stopPairing: vi.fn(),
   syncNow: vi.fn(),
@@ -31,10 +32,23 @@ vi.mock("../../../hooks/useSettingsEnvironment", () => ({
 }));
 
 const SYNCED_AT = Date.UTC(2026, 10, 21, 13, 5); // 7:05 AM in Chicago
+const NONE = { account: "", accountId: "", calendarId: "", kind: "ics" as const };
+const ACCOUNT = "AccountAbc123456789xyz00";
 const calendars: CalendarSource[] = [
-  { color: "#33b679", enabled: true, id: "family", name: "Family", url: "https://calendar.google.com/a.ics" },
-  { color: "#f4511e", enabled: true, id: "work", name: "Work", url: "https://calendar.google.com/b.ics" },
+  { ...NONE, color: "#33b679", enabled: true, id: "family", name: "Family", url: "https://calendar.google.com/a.ics" },
+  { ...NONE, color: "#f4511e", enabled: true, id: "work", name: "Work", url: "https://calendar.google.com/b.ics" },
 ];
+const googleCalendar = (id: string, name: string): CalendarSource => ({
+  account: "bryan@example.com",
+  accountId: ACCOUNT,
+  calendarId: id + "@group.calendar.google.com",
+  color: "#16a765",
+  enabled: true,
+  id,
+  kind: "google",
+  name,
+  url: "",
+});
 
 test("pairs while shown, shows the QR code, sync status and removes after confirmation", () => {
   const actions = { removeCalendar: vi.fn(), setCalendarEnabled: vi.fn() };
@@ -91,4 +105,35 @@ test("explains how to start when no calendars are connected", () => {
   );
   expect(screen.getByText("No calendars yet. Scan the code to add one.")).toBeDefined();
   expect(screen.getByRole("button", { name: "Sync now" }).getAttribute("aria-disabled")).toBe("true");
+});
+
+test("groups Google calendars under their account with reconnect and account removal", () => {
+  const actions = { removeCalendar: vi.fn(), setCalendarEnabled: vi.fn() };
+  const settings = {
+    calendars: [googleCalendar("home", "Home"), googleCalendar("kids", "Kids")],
+    timeFormat: "12" as const,
+    weatherLocation: null,
+  };
+  calendarStore.set({
+    ...calendarStore.getSnapshot(),
+    statuses: {
+      home: { error: "reconnect", eventCount: 0, lastSyncedAt: null, state: "error" },
+      kids: { error: "", eventCount: 1, lastSyncedAt: SYNCED_AT, state: "ok" },
+    },
+  });
+  const { container } = renderWithEnglish(<CalendarSettings active actions={actions} settings={settings} />);
+  expect(screen.getByText("bryan@example.com")).toBeDefined();
+  expect(screen.getByText("Reconnect on phone: scan the code and sign in again.")).toBeDefined();
+  expect(screen.getByText("Google sign-in expired. Reconnect on your phone.")).toBeDefined();
+  expect(container.querySelector("[data-key='calendar:home:remove']")).toBeNull();
+
+  fireEvent.click(screen.getByRole("switch", { name: "Show Kids" }));
+  expect(actions.setCalendarEnabled).toHaveBeenCalledWith("kids", false);
+
+  const remove = container.querySelector("[data-key='calendar-account:" + ACCOUNT + ":remove']") as HTMLElement;
+  expect(remove.textContent).toBe("Remove account");
+  fireEvent.click(remove);
+  expect(familyCalendar.removeAccount).not.toHaveBeenCalled();
+  fireEvent.click(remove);
+  expect(familyCalendar.removeAccount).toHaveBeenCalledWith(ACCOUNT);
 });

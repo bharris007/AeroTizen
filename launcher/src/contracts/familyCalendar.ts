@@ -1,12 +1,24 @@
 import type { Store } from "../shared/state/createStore";
 
-// A calendar the user added from their phone. The iCal address is a private link, so it
-// stays in local preferences and is never shown on screen.
+export type CalendarSourceKind = "ics" | "google";
+
+// A calendar the user added from their phone: either a Google calendar from a signed-in
+// account (the relay keeps the encrypted sign-in) or a pasted iCal address. iCal addresses
+// are private links, so they stay in local preferences and are never shown on screen.
+// Fields that do not apply to a kind are empty strings.
 export interface CalendarSource {
+  // Google: the account's email address, shown to group calendars.
+  readonly account: string;
+  // Google: the relay's account record for this TV and Google account.
+  readonly accountId: string;
+  // Google: the calendar's Google id.
+  readonly calendarId: string;
   readonly color: string;
   readonly enabled: boolean;
   readonly id: string;
+  readonly kind: CalendarSourceKind;
   readonly name: string;
+  // iCal: the feed address.
   readonly url: string;
 }
 
@@ -35,7 +47,8 @@ export interface TimedCalendarEvent extends CalendarEventBase {
 export type CalendarEvent = AllDayCalendarEvent | TimedCalendarEvent;
 
 export type CalendarSyncState = "pending" | "syncing" | "ok" | "error";
-export type CalendarSyncError = "" | "network" | "invalid" | "notFound";
+// "reconnect": Google access was removed or expired; sign in again from the phone.
+export type CalendarSyncError = "" | "network" | "invalid" | "notFound" | "reconnect";
 
 export interface CalendarSyncStatus {
   readonly error: CalendarSyncError;
@@ -62,6 +75,8 @@ export interface FamilyCalendarSnapshot {
 
 export interface FamilyCalendarService extends Store<FamilyCalendarSnapshot> {
   dispose(): void;
+  // Removes a Google account's calendars and deletes its sign-in from the relay.
+  removeAccount(accountId: string): void;
   start(): void;
   // Shows a pairing code and collects calendars sent from a phone until stopped.
   startPairing(): void;

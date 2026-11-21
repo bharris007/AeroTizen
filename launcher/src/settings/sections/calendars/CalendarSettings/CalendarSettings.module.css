@@ -80,3 +80,16 @@
 .error {
   color: #ff8a80;
 }
+
+.account {
+  margin-bottom: 8px;
+  padding-left: 20px;
+  border-left: 4px solid var(--settings-divider);
+
+  [dir="rtl"] & {
+    padding-right: 20px;
+    padding-left: 0;
+    border-right: 4px solid var(--settings-divider);
+    border-left: 0;
+  }
+}
