@@ -95,7 +95,7 @@ test("moves from the header to Family and between its columns", () => {
 test("the Christmas shortcut sits between the gear and the tabs and opens Christmas Mode", () => {
   const home = controller();
   const open = vi.fn();
-  window.Christmas = { close() {}, isOpen: () => false, nextScene() {}, open, previousScene() {} };
+  window.Christmas = { close() {}, isOpen: () => false, open };
   try {
     home.bridge.focus();
     press(home, KEY.UP);

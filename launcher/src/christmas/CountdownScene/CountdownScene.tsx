@@ -2,6 +2,7 @@ import type { Translate } from "../../shared/i18n/createTranslations";
 import type { BokehLight } from "../Bokeh/Bokeh";
 import { Bokeh } from "../Bokeh/Bokeh";
 import type { ChristmasCountdown } from "../christmasCountdown";
+import { ChristmasTree } from "../ChristmasTree/ChristmasTree";
 import { createForest, PineForest } from "../PineForest";
 import motion from "../sceneMotion.module.css";
 import { Snowfall } from "../Snowfall/Snowfall";
@@ -11,6 +12,7 @@ import { StarField } from "../StarField/StarField";
 import { Celebration } from "./Celebration";
 import { CountdownDisplay } from "./CountdownDisplay";
 import styles from "./CountdownScene.module.css";
+import { LightString } from "./LightString";
 import { MidnightVillage } from "./MidnightVillage";
 import { SleighFlight } from "./SleighFlight";
 
@@ -29,7 +31,8 @@ const FOREST = createForest({
   snow: "#3a4c7a",
 });
 
-const FRAME_LOOK = {
+const FRAME = createForest({
+  seed: 17,
   width: 460,
   height: 560,
   ridgeY: 520,
@@ -38,12 +41,9 @@ const FRAME_LOOK = {
   treeHeight: [300, 520],
   fill: "#050a17",
   snow: "#25335a",
-} as const;
+});
 
 const GLINTS = createGlints({ seed: 53, count: 60, width: 2000, top: 70, bottom: 200 });
-
-const FRAME_LEFT = createForest({ ...FRAME_LOOK, seed: 17 });
-const FRAME_RIGHT = createForest({ ...FRAME_LOOK, seed: 29 });
 
 const RIDGE_PEAKS = [
   [0, 210],
@@ -78,13 +78,12 @@ const BOKEH: readonly BokehLight[] = [
   { key: "b1", x: 90, y: 940, sizePx: 190, color: "rgba(255, 190, 110, 0.22)", durationS: 14, delayS: 0 },
   { key: "b2", x: 250, y: 1040, sizePx: 130, color: "rgba(255, 150, 90, 0.2)", durationS: 17, delayS: 4 },
   { key: "b3", x: 40, y: 760, sizePx: 110, color: "rgba(255, 214, 150, 0.16)", durationS: 19, delayS: 9 },
-  { key: "b4", x: 1820, y: 960, sizePx: 210, color: "rgba(255, 190, 110, 0.2)", durationS: 16, delayS: 2 },
-  { key: "b5", x: 1660, y: 1050, sizePx: 120, color: "rgba(230, 90, 90, 0.18)", durationS: 13, delayS: 6 },
-  { key: "b6", x: 1890, y: 780, sizePx: 100, color: "rgba(255, 220, 160, 0.15)", durationS: 21, delayS: 11 },
+  { key: "b4", x: 1880, y: 520, sizePx: 150, color: "rgba(255, 190, 110, 0.16)", durationS: 16, delayS: 2 },
+  { key: "b5", x: 1290, y: 1010, sizePx: 120, color: "rgba(230, 90, 90, 0.16)", durationS: 13, delayS: 6 },
 ];
 
-// Midnight over a sleeping village: the countdown floats in the sky between the
-// moon and the rooftops, with depth from layered hills that drift like a slow pan.
+// Midnight over a sleeping village: the countdown floats in the sky beside a lit
+// tree, with depth from layered hills that drift like a slow pan.
 export const CountdownScene = ({ countdown, translate }: { countdown: ChristmasCountdown; translate: Translate }) => (
   <div class={styles.scene} data-christmas-countdown={countdown.kind}>
     <StarField />
@@ -120,14 +119,15 @@ export const CountdownScene = ({ countdown, translate }: { countdown: ChristmasC
         <path d="M0 150 Q420 104 980 140 Q1500 176 2000 128 V220 H0 Z" fill="#0b1230" opacity="0.4" />
         <SnowGlints glints={GLINTS} />
       </svg>
-      <PineForest forest={FRAME_LEFT} class={styles.frameLeft} />
-      <PineForest forest={FRAME_RIGHT} class={styles.frameRight} />
+      <PineForest forest={FRAME} class={styles.frame} />
     </div>
+    <ChristmasTree class={styles.tree} />
     {countdown.kind === "christmas" ? (
       <Celebration translate={translate} />
     ) : (
       <CountdownDisplay countdown={countdown} translate={translate} />
     )}
+    <LightString />
     <Snowfall />
     <Bokeh lights={BOKEH} />
   </div>

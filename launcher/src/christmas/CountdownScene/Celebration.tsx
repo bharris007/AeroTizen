@@ -2,6 +2,7 @@ import type { Translate } from "../../shared/i18n/createTranslations";
 import { Flourish } from "../Flourish";
 
 import styles from "./CountdownScene.module.css";
+import { SantaHat } from "./SantaHat";
 
 const SPARKLES = [
   { key: "s1", left: "14%", top: "30%", delay: "0s" },
@@ -23,7 +24,10 @@ export const Celebration = ({ translate }: { translate: Translate }) => (
         style={{ left: sparkle.left, top: sparkle.top, animationDelay: sparkle.delay }}
       />
     ))}
-    <h1 class={styles.merry}>{translate("christmas.merry")}</h1>
+    <div class={styles.merryLine}>
+      <h1 class={styles.merry}>{translate("christmas.merry")}</h1>
+      <SantaHat class={styles.hatOnTitle} />
+    </div>
     <Flourish class={styles.flourish} />
     <p class={styles.subtitle}>{translate("christmas.merryDetail")}</p>
   </div>

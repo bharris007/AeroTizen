@@ -4,7 +4,6 @@ import type { Translate } from "../shared/i18n/createTranslations";
 import { createStore } from "../shared/state/createStore";
 
 import { getChristmasCountdown, msUntilNextMinute } from "./christmasCountdown";
-import { stepChristmasScene } from "./christmasScenes";
 import type { ChristmasState } from "./ChristmasView/ChristmasView";
 import { ChristmasView } from "./ChristmasView/ChristmasView";
 
@@ -27,7 +26,7 @@ export const mountChristmas = (
   now: () => number = () => Date.now(),
   timers: ChristmasTimers = window,
 ) => {
-  const state = createStore<ChristmasState>({ open: false, scene: "countdown", now: now() });
+  const state = createStore<ChristmasState>({ open: false, now: now() });
   let ticker: number | undefined;
   let disposed = false;
 
@@ -57,12 +56,6 @@ export const mountChristmas = (
     }
     state.set({ ...current, open: false });
   };
-  const step = (offset: number) => {
-    const current = state.getSnapshot();
-    if (current.open) {
-      state.set({ ...current, scene: stepChristmasScene(current.scene, offset) });
-    }
-  };
   render(<ChristmasView state={state} translate={translate} />, host);
   return {
     bridge: {
@@ -72,13 +65,11 @@ export const mountChristmas = (
         if (disposed || current.open) {
           return;
         }
-        state.set({ open: true, scene: "countdown", now: now() });
+        state.set({ open: true, now: now() });
         scheduleTick();
       },
       close,
       isOpen: () => state.getSnapshot().open,
-      nextScene: () => step(1),
-      previousScene: () => step(-1),
     },
     dispose() {
       disposed = true;

@@ -7,8 +7,7 @@
   }
 }
 
-/* After a quiet spell the chrome steps back so the scene can be left running;
-   the selected scene stays legible and any scene switch brings it back. */
+/* After a quiet spell the chrome steps back so the scene can be left running. */
 @keyframes recede {
   from {
     opacity: 1;
@@ -18,23 +17,10 @@
   }
 }
 
-@keyframes select {
-  from {
-    transform: scale(0.94);
-    opacity: 0.6;
-  }
-  to {
-    transform: scale(1.05);
-    opacity: 1;
-  }
-}
-
 .christmas {
   --christmas-display: "Playfair Display", "Alexandria", Georgia, serif;
   --christmas-numerals: "Jost", "Alexandria", var(--font-ui, sans-serif);
   --christmas-gold: #f3d9a4;
-  --christmas-gold-line: rgba(233, 207, 152, 0.38);
-  --christmas-glass: rgba(6, 10, 24, 0.58);
 
   position: fixed;
   top: 0;
@@ -66,19 +52,10 @@
   }
 }
 
-.bar {
-  position: absolute;
-  top: 36px;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-}
-
 .brand {
   position: absolute;
-  top: 22px;
   left: 72px;
+  bottom: 52px;
   display: flex;
   align-items: center;
   font-family: var(--christmas-display);
@@ -95,65 +72,17 @@
   }
 
   [dir="rtl"] & {
-    left: auto;
-    right: 72px;
     font-style: normal;
   }
 }
 
-.tabs {
-  display: flex;
-  align-items: center;
-  padding: 8px 10px;
-  border: 1px solid var(--christmas-gold-line);
-  border-radius: 999px;
-  background: var(--christmas-glass);
-  box-shadow:
-    0 18px 50px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.arrow {
-  width: 28px;
-  height: 28px;
-  margin: 0 8px;
-  color: var(--christmas-gold);
-  opacity: 0.7;
-}
-
-.tab {
-  display: flex;
-  align-items: center;
-  margin: 0 4px;
-  padding: 14px 32px;
-  border-radius: 999px;
-  font-size: 27px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: rgba(255, 248, 236, 0.74);
-
-  > svg {
-    width: 28px;
-    height: 28px;
-    -webkit-margin-end: 12px;
-  }
-
-  &[data-focused="true"] {
-    background: linear-gradient(to bottom, #fbe9bf 0%, #e7c27a 100%);
-    color: #24170a;
-    font-weight: 600;
-    transform: scale(1.05);
-    box-shadow:
-      0 0 0 3px rgba(255, 250, 238, 0.9),
-      0 10px 32px rgba(231, 194, 122, 0.5);
-    animation: select var(--motion-duration-enter) ease-out both;
-  }
-}
-
+/* The art is not mirrored in RTL, so the chrome keeps clear of the tree on the
+   right in both directions: the hint sits under the countdown column. */
 .hint {
   position: absolute;
-  right: 72px;
+  left: 710px;
   bottom: 44px;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   padding: 12px 24px;
@@ -169,11 +98,6 @@
     height: 24px;
     color: var(--christmas-gold);
     -webkit-margin-end: 12px;
-  }
-
-  [dir="rtl"] & {
-    right: auto;
-    left: 72px;
   }
 }
 

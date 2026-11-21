@@ -4,6 +4,7 @@ import { padCountdownUnit } from "../christmasCountdown";
 import { Flourish } from "../Flourish";
 
 import styles from "./CountdownScene.module.css";
+import { SantaHat } from "./SantaHat";
 
 const UNITS = [
   { unit: "days", label: "christmas.days" },
@@ -26,8 +27,11 @@ export const CountdownDisplay = ({
         const value = countdown[unit];
         return (
           <div key={unit} class={styles.unit} data-christmas-unit={unit}>
-            <span key={value} class={styles.value}>
-              {unit === "days" ? String(value) : padCountdownUnit(value)}
+            <span class={styles.numeral}>
+              <span key={value} class={styles.value}>
+                {unit === "days" ? String(value) : padCountdownUnit(value)}
+              </span>
+              {unit === "days" && <SantaHat class={styles.hatOnDays} />}
             </span>
             <span class={styles.label}>{translate(label)}</span>
           </div>

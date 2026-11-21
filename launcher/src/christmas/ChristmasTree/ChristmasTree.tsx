@@ -73,30 +73,6 @@ const tierPath = (tier: Tier) => {
   );
 };
 
-// Snow rests on the bough tips as a band that follows the hem.
-const snowPath = (tier: Tier) => {
-  const xs = tipXs(tier);
-  const back = xs
-    .slice(0, -1)
-    .reverse()
-    .map((x, index) => {
-      const from = xs[xs.length - 1 - index];
-      return "Q" + point((from + x) / 2, tier.bottom - SCALLOP_DEPTH - 10) + " " + point(x, tipY(tier, 0) - 8);
-    })
-    .join(" ");
-  return (
-    "M" +
-    point(xs[0], tipY(tier, 0)) +
-    " " +
-    hemPath(tier, 0) +
-    " L" +
-    point(xs[xs.length - 1], tier.bottom - 8) +
-    " " +
-    back +
-    " Z"
-  );
-};
-
 const boughLines = (tier: Tier) =>
   tipXs(tier)
     .map((x, index) => "M" + point(CENTER_X, tier.top + 18) + " L" + point(x, tipY(tier, index) - 6))
@@ -120,7 +96,7 @@ const onCurve = (curve: ReturnType<typeof strandCurve>, t: number) => ({
 });
 
 const TWINKLES = [styles.twinkleA, styles.twinkleB, styles.twinkleC, styles.twinkleD];
-const LIGHT_COLOURS = [styles.warm, styles.warm, styles.warm, styles.amber];
+const LIGHT_COLOURS = [styles.warm, styles.ruby, styles.warm, styles.amber, styles.warm];
 
 const LIGHTS = flatMap(STRANDS, (y, strand) => {
   const curve = strandCurve(y);
@@ -170,7 +146,6 @@ const STAR_POINTS = Array.from({ length: 10 }, (_, index) => {
 const RENDERED_TIERS = TIERS.map((tier) => ({
   key: tier.top,
   body: tierPath(tier),
-  snow: snowPath(tier),
   boughs: boughLines(tier),
 }));
 
@@ -188,7 +163,7 @@ const STRAND_PATHS = STRANDS.map((y) => {
 
 // A decorated fir lit by warm fairy lights. The boughs, ribbon and baubles are one
 // static SVG; the lights and star glow are separate elements that only change opacity.
-export const ChristmasTree = ({ class: className, snowy = false }: { class: string; snowy?: boolean }) => (
+export const ChristmasTree = ({ class: className }: { class: string }) => (
   <div class={styles.tree + " " + className} aria-hidden="true">
     <svg class={styles.art} viewBox="0 0 560 820">
       <defs>
@@ -226,7 +201,6 @@ export const ChristmasTree = ({ class: className, snowy = false }: { class: stri
             <path d={tier.body} fill="#000" opacity="0.35" transform="translate(0 14)" />
             <path d={tier.body} fill="url(#christmas-tree-boughs)" />
             <path d={tier.boughs} stroke="#7fd19a" stroke-opacity="0.12" stroke-width="2" fill="none" />
-            {snowy && <path d={tier.snow} fill="#eef4ff" opacity="0.82" />}
           </g>
         ))}
       {STRAND_PATHS.map((d) => (

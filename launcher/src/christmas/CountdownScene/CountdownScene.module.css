@@ -124,15 +124,21 @@
   /* Static glows live in the sky paint rather than in overlay elements: anything
      above an animated layer becomes its own composited layer, and every full-screen
      layer costs fill rate on the TV each frame. Top to bottom: vignette, text scrim,
-     moon halo, horizon glow, sky. */
+     moon halo, tree glow, horizon glow, sky. */
   background:
     radial-gradient(ellipse 1400px 900px at 50% 44%, rgba(2, 4, 12, 0) 55%, rgba(2, 4, 12, 0.7) 100%),
-    radial-gradient(ellipse 630px 320px at 960px 470px, rgba(5, 9, 24, 0.6) 0%, rgba(5, 9, 24, 0) 100%),
+    radial-gradient(ellipse 620px 320px at 710px 470px, rgba(5, 9, 24, 0.6) 0%, rgba(5, 9, 24, 0) 100%),
     radial-gradient(
-      circle 380px at 1645px 205px,
+      circle 320px at 1225px 177px,
       rgba(220, 228, 255, 0.3) 0%,
       rgba(200, 215, 255, 0.1) 40%,
       rgba(200, 215, 255, 0) 100%
+    ),
+    radial-gradient(
+      ellipse 460px 520px at 1580px 600px,
+      rgba(255, 196, 120, 0.22) 0%,
+      rgba(255, 160, 90, 0.08) 55%,
+      rgba(255, 160, 90, 0) 100%
     ),
     radial-gradient(
       ellipse 1100px 360px at 960px 940px,
@@ -145,10 +151,10 @@
 
 .moon {
   position: absolute;
-  top: 120px;
-  left: 1560px;
-  width: 170px;
-  height: 170px;
+  top: 102px;
+  left: 1150px;
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
   background:
     radial-gradient(circle at 62% 60%, rgba(176, 164, 136, 0.35) 0, rgba(176, 164, 136, 0) 18%),
@@ -272,28 +278,26 @@
   height: 220px;
 }
 
-.frameLeft,
-.frameRight {
+.frame {
   position: absolute;
   top: -380px;
+  left: -60px;
   width: 460px;
   height: 560px;
 }
 
-.frameLeft {
-  left: -60px;
-}
-
-.frameRight {
-  right: -60px;
+/* Stands on the snowbank, clear of the countdown column and the exit hint. */
+.tree {
+  top: 228px;
+  left: 1300px;
 }
 
 .countdown,
 .celebrate {
   position: absolute;
   top: 196px;
-  left: 0;
-  right: 0;
+  left: 120px;
+  width: 1180px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -318,9 +322,9 @@
 
 .flourish {
   display: block;
-  width: 420px;
-  height: 24px;
-  margin: 18px 0 20px;
+  width: 525px;
+  height: 55px;
+  margin: 6px 0 10px;
 }
 
 .units {
@@ -357,6 +361,11 @@
   right: 0;
 }
 
+.numeral {
+  position: relative;
+  display: block;
+}
+
 .value {
   display: block;
   font-family: var(--christmas-numerals);
@@ -370,6 +379,16 @@
     0 0 44px rgba(255, 190, 110, 0.38),
     0 6px 26px rgba(0, 0, 0, 0.5);
   animation: tickIn 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.hatOnDays {
+  top: -62px;
+  left: 6px;
+
+  [dir="rtl"] & {
+    left: auto;
+    right: 6px;
+  }
 }
 
 .label {
@@ -403,16 +422,16 @@
 }
 
 .celebrate {
-  top: 250px;
+  top: 270px;
 }
 
 .celebrateGlow {
   position: absolute;
   top: -120px;
   left: 50%;
-  width: 1400px;
-  height: 560px;
-  margin-left: -700px;
+  width: 1100px;
+  height: 520px;
+  margin-left: -550px;
   border-radius: 50%;
   background: radial-gradient(
     ellipse closest-side,
@@ -424,12 +443,26 @@
   will-change: opacity;
 }
 
+.merryLine {
+  position: relative;
+}
+
+.hatOnTitle {
+  top: -58px;
+  left: -10px;
+
+  [dir="rtl"] & {
+    left: auto;
+    right: -10px;
+  }
+}
+
 .merry {
   position: relative;
   margin: 0;
   padding: 0 40px;
   font-family: var(--christmas-display);
-  font-size: 176px;
+  font-size: 132px;
   font-style: italic;
   font-weight: 700;
   line-height: 1.15;

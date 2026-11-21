@@ -15,21 +15,16 @@ const DEPTHS = {
 
 type Depth = keyof typeof DEPTHS;
 
-const DENSITIES = {
-  heavy: { far: 26, mid: 20, near: 6 },
-  light: { far: 18, mid: 12, near: 4 },
-  window: { far: 14, mid: 10, near: 0 },
-} as const satisfies Record<string, Record<Depth, number>>;
-
-type Density = keyof typeof DENSITIES;
+const FLAKES_PER_DEPTH: Record<Depth, number> = { far: 26, mid: 20, near: 6 };
+const SNOW_SEED = 11;
 
 const within = (range: readonly [number, number], amount: number) => range[0] + (range[1] - range[0]) * amount;
 
-const createFlakes = (density: Density, seed: number) => {
-  const random = createSceneRandom(seed);
+const createFlakes = () => {
+  const random = createSceneRandom(SNOW_SEED);
   return flatMap(Object.keys(DEPTHS) as Depth[], (depth) => {
     const { className, sizePx, durationS, opacity } = DEPTHS[depth];
-    return Array.from({ length: DENSITIES[density][depth] }, (_, index) => {
+    return Array.from({ length: FLAKES_PER_DEPTH[depth] }, (_, index) => {
       const size = Math.round(within(sizePx, random()));
       const duration = within(durationS, random());
       return {
@@ -48,15 +43,11 @@ const createFlakes = (density: Density, seed: number) => {
   });
 };
 
-const FLAKES: Record<Density, ReturnType<typeof createFlakes>> = {
-  heavy: createFlakes("heavy", 11),
-  light: createFlakes("light", 7),
-  window: createFlakes("window", 5),
-};
+const FLAKES = createFlakes();
 
-export const Snowfall = ({ density = "heavy" }: { density?: Density }) => (
+export const Snowfall = () => (
   <div class={styles.snowfall} aria-hidden="true">
-    {FLAKES[density].map((flake) => (
+    {FLAKES.map((flake) => (
       <span key={flake.key} class={flake.className} style={flake.style} />
     ))}
   </div>

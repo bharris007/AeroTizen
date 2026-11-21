@@ -75,6 +75,16 @@
   );
 }
 
+.ruby {
+  background: radial-gradient(
+    circle closest-side,
+    #ffe4e0 0%,
+    #ff5a5f 22%,
+    rgba(230, 40, 60, 0.42) 44%,
+    rgba(230, 40, 60, 0) 100%
+  );
+}
+
 .twinkleA {
   animation-duration: 2.6s;
 }
