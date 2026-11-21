@@ -34,14 +34,17 @@ export const mountChristmas = (
   // The owner wakes on each local minute boundary, when the shown minute turns over.
   // A timer that fires early or late simply re-reads the clock and aims for the next boundary.
   const scheduleTick = () => {
-    ticker = timers.setTimeout(() => {
-      const current = state.getSnapshot();
-      const time = now();
-      if (shownCountdown(current.now) !== shownCountdown(time)) {
-        state.set({ ...current, now: time });
-      }
-      scheduleTick();
-    }, msUntilNextMinute(new Date(now())));
+    ticker = timers.setTimeout(
+      () => {
+        const current = state.getSnapshot();
+        const time = now();
+        if (shownCountdown(current.now) !== shownCountdown(time)) {
+          state.set({ ...current, now: time });
+        }
+        scheduleTick();
+      },
+      msUntilNextMinute(new Date(now())),
+    );
   };
   const close = () => {
     const current = state.getSnapshot();
