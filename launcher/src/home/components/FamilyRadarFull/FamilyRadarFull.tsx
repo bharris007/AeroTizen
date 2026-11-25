@@ -1,4 +1,4 @@
-import { Move, ZoomIn, ZoomOut } from "lucide-preact";
+import { Minus, Move, Plus } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 
 import type { FamilyForecastSnapshot } from "../../../contracts/familyForecast";
@@ -91,22 +91,17 @@ export const FamilyRadarFull = ({
         zoom={viewport.zoom}
       />
       <div class={styles.tools}>
-        <div
-          class={styles.zoom}
-          role="group"
-          aria-label={t("family.radarZoom")}
-          data-family-radar-zoom
-          data-focused={focus === "zoom" ? "true" : undefined}
-        >
+        <div class={styles.zoom} role="group" aria-label={t("family.radarZoom")} data-family-radar-zoom>
           <button
             type="button"
             class={styles.zoomButton}
             tabIndex={-1}
             aria-label={t("family.radarZoomIn")}
             data-family-radar-zoom="1"
+            data-focused={focus === "zoomIn" ? "true" : undefined}
             onClick={zoom(1)}
           >
-            <Icon icon={ZoomIn} size={32} />
+            <Icon icon={Plus} size={36} />
           </button>
           <span class={styles.zoomLevel} data-family-radar-zoom-level>
             {viewport.zoom}
@@ -117,9 +112,10 @@ export const FamilyRadarFull = ({
             tabIndex={-1}
             aria-label={t("family.radarZoomOut")}
             data-family-radar-zoom="-1"
+            data-focused={focus === "zoomOut" ? "true" : undefined}
             onClick={zoom(-1)}
           >
-            <Icon icon={ZoomOut} size={32} />
+            <Icon icon={Minus} size={36} />
           </button>
         </div>
         <button

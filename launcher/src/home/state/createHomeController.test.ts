@@ -185,7 +185,9 @@ test("the weather radar control toggles live radar on the card and in full scree
   home.bridge.keyup(KEY.ENTER);
   expect(home.state.getSnapshot().weatherRadar).toBe(true);
   press(home, KEY.DOWN);
-  expect(home.state.getSnapshot().weatherFocus).toBe("zoom");
+  expect(home.state.getSnapshot().weatherFocus).toBe("zoomIn");
+  press(home, KEY.DOWN);
+  expect(home.state.getSnapshot().weatherFocus).toBe("zoomOut");
   press(home, KEY.DOWN);
   expect(home.state.getSnapshot().weatherFocus).toBe("pan");
   press(home, KEY.DOWN);
@@ -237,20 +239,25 @@ test("full-screen radar pans and zooms with the remote and saves that view", () 
   expect(home.state.getSnapshot().radarPanning).toBe(false);
 
   press(home, KEY.UP);
-  expect(home.state.getSnapshot().weatherFocus).toBe("zoom");
-  press(home, KEY.RIGHT);
-  press(home, KEY.RIGHT);
+  expect(home.state.getSnapshot().weatherFocus).toBe("zoomOut");
+  press(home, KEY.UP);
+  expect(home.state.getSnapshot().weatherFocus).toBe("zoomIn");
+  ok(home);
+  ok(home);
   expect(home.settings.getSnapshot().radarView?.zoom).toBe(9);
-  press(home, KEY.LEFT);
+  press(home, KEY.DOWN);
+  expect(home.state.getSnapshot().weatherFocus).toBe("zoomOut");
+  ok(home);
   expect(home.settings.getSnapshot().radarView?.zoom).toBe(8);
+  press(home, KEY.UP);
   for (let step = 0; step < 6; step += 1) {
-    press(home, KEY.RIGHT);
+    ok(home);
   }
   expect(home.settings.getSnapshot().radarView?.zoom).toBe(10);
   press(home, KEY.UP);
   expect(home.state.getSnapshot().weatherFocus).toBe("radar");
   press(home, KEY.DOWN);
-  expect(home.state.getSnapshot().weatherFocus).toBe("zoom");
+  expect(home.state.getSnapshot().weatherFocus).toBe("zoomIn");
 });
 
 test("the split weather radar card pans and zooms with the remote and saves that view", () => {
@@ -295,11 +302,16 @@ test("the split weather radar card pans and zooms with the remote and saves that
   });
 
   press(home, KEY.UP);
-  expect(home.state.getSnapshot()).toMatchObject({ selected: "family-weather", weatherFocus: "zoom" });
-  press(home, KEY.RIGHT);
+  expect(home.state.getSnapshot()).toMatchObject({ selected: "family-weather", weatherFocus: "zoomOut" });
+  press(home, KEY.UP);
+  expect(home.state.getSnapshot()).toMatchObject({ selected: "family-weather", weatherFocus: "zoomIn" });
+  ok(home);
   expect(home.settings.getSnapshot().radarView?.zoom).toBe(8);
-  press(home, KEY.LEFT);
+  press(home, KEY.DOWN);
+  expect(home.state.getSnapshot().weatherFocus).toBe("zoomOut");
+  ok(home);
   expect(home.settings.getSnapshot().radarView?.zoom).toBe(7);
+  press(home, KEY.UP);
   press(home, KEY.UP);
   expect(home.state.getSnapshot().selected).toBe("family-radar");
   press(home, KEY.RIGHT);

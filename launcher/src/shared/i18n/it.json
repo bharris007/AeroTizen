@@ -398,7 +398,7 @@
   "family.radarZoomIn": "Ingrandisci",
   "family.radarZoomOut": "Riduci",
   "family.radarPanHint": "Le frecce spostano la mappa. Indietro o OK per uscire.",
-  "family.radarZoomHint": "Sinistra: riduci. Destra: ingrandisci. Giù: lo spostamento.",
+  "family.radarZoomHint": "OK per lo zoom. Su e giù passano dal più al meno.",
   "family.radarPlay": "Riproduci",
   "family.radarPause": "Pausa",
   "family.radarPast": "Passato",
@@ -412,6 +412,8 @@
   "family.radarHours": "{{count}} h",
   "family.radarPan": "Sposta",
   "family.radarPanOn": "Modalità spostamento",
-  "family.radarPanSelectHint": "OK per spostare la mappa. Su per lo zoom. Giù per la sequenza.",
-  "family.radarViewHint": "OK per la sequenza. Su per i comandi. Indietro per chiudere."
+  "family.radarPanSelectHint": "OK per spostare la mappa. Su per ridurre. Giù per la sequenza.",
+  "family.radarViewHint": "OK per la sequenza. Su per i comandi. Indietro per chiudere.",
+  "family.radarZoomInHint": "OK per ingrandire. Giù per ridurre.",
+  "family.radarZoomOutHint": "OK per ridurre. Su per ingrandire. Giù per lo spostamento."
 }

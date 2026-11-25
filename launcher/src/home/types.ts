@@ -19,8 +19,8 @@ export type CalendarSpan = 1 | 3 | 5;
 // Which part of the full-screen calendar the remote is on.
 export type CalendarFocus = "grid" | "span";
 // Which part of the full-screen weather the remote is on.
-// Radar adds the timeline, its 1h/2h span, zoom, and the pan button.
-export type WeatherFocus = "pan" | "radar" | "span" | "timeline" | "view" | "zoom";
+// Radar adds the timeline, its 1h/2h span, separate zoom in/out buttons, and pan.
+export type WeatherFocus = "pan" | "radar" | "span" | "timeline" | "view" | "zoomIn" | "zoomOut";
 export type RadarCommand =
   | { count: number; nowIndex: number; type: "sync" }
   | { span: 1 | 2; type: "span" }

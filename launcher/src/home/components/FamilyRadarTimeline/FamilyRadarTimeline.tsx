@@ -94,8 +94,11 @@ export const FamilyRadarTimeline = ({
     if (focus === "timeline") {
       return t("family.radarTimelineHint");
     }
-    if (focus === "zoom") {
-      return t("family.radarZoomHint");
+    if (focus === "zoomIn") {
+      return t("family.radarZoomInHint");
+    }
+    if (focus === "zoomOut") {
+      return t("family.radarZoomOutHint");
     }
     if (focus === "view") {
       return t("family.radarViewHint");

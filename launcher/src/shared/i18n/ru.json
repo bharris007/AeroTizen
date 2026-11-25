@@ -398,7 +398,7 @@
   "family.radarZoomIn": "Приблизить",
   "family.radarZoomOut": "Отдалить",
   "family.radarPanHint": "Стрелки двигают карту. Назад или OK — выход.",
-  "family.radarZoomHint": "Влево — дальше. Вправо — ближе. Вниз — сдвиг карты.",
+  "family.radarZoomHint": "OK меняет масштаб. Вверх и вниз — плюс и минус.",
   "family.radarPlay": "Воспроизвести",
   "family.radarPause": "Пауза",
   "family.radarPast": "Прошлое",
@@ -412,6 +412,8 @@
   "family.radarHours": "{{count}} ч",
   "family.radarPan": "Сдвиг",
   "family.radarPanOn": "Режим сдвига",
-  "family.radarPanSelectHint": "OK — двигать карту. Вверх — масштаб. Вниз — шкала времени.",
-  "family.radarViewHint": "OK — шкала времени. Вверх — элементы управления. Назад — закрыть."
+  "family.radarPanSelectHint": "OK — двигать карту. Вверх — отдалить. Вниз — шкала времени.",
+  "family.radarViewHint": "OK — шкала времени. Вверх — элементы управления. Назад — закрыть.",
+  "family.radarZoomInHint": "OK — приблизить. Вниз — отдалить.",
+  "family.radarZoomOutHint": "OK — отдалить. Вверх — приблизить. Вниз — сдвиг карты."
 }

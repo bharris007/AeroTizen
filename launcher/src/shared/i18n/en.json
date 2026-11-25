@@ -398,7 +398,7 @@
   "family.radarZoomIn": "Zoom in",
   "family.radarZoomOut": "Zoom out",
   "family.radarPanHint": "Arrows move the map. Back or OK to exit.",
-  "family.radarZoomHint": "Left zooms out. Right zooms in. Down reaches pan.",
+  "family.radarZoomHint": "OK zooms. Up and down move between plus and minus.",
   "family.radarPlay": "Play",
   "family.radarPause": "Pause",
   "family.radarPast": "Past",
@@ -412,6 +412,8 @@
   "family.radarHours": "{{count}}h",
   "family.radarPan": "Pan",
   "family.radarPanOn": "Pan mode",
-  "family.radarPanSelectHint": "OK to move the map. Up for zoom. Down for the timeline.",
-  "family.radarViewHint": "OK for the timeline. Up for the controls. Back to close."
+  "family.radarPanSelectHint": "OK to move the map. Up for zoom out. Down for the timeline.",
+  "family.radarViewHint": "OK for the timeline. Up for the controls. Back to close.",
+  "family.radarZoomInHint": "OK zooms in. Down reaches zoom out.",
+  "family.radarZoomOutHint": "OK zooms out. Up reaches zoom in. Down reaches pan."
 }

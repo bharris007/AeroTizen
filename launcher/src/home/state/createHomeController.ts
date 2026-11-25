@@ -616,19 +616,27 @@ export const createHomeController = (
       if (current.expanded === "weather") {
         if (current.weatherFocus === "radar") {
           if (code === K.DOWN) {
-            update({ weatherFocus: current.weatherRadar ? "zoom" : "view" });
+            update({ weatherFocus: current.weatherRadar ? "zoomIn" : "view" });
           } else if (code === K.ENTER) {
             toggleWeatherRadar();
           }
           return true;
         }
-        if (current.weatherRadar && current.weatherFocus === "zoom") {
-          if (code === K.LEFT) {
-            zoomRadar(-1);
-          } else if (code === K.RIGHT) {
+        if (current.weatherRadar && current.weatherFocus === "zoomIn") {
+          if (code === K.ENTER) {
             zoomRadar(1);
           } else if (code === K.UP) {
             update({ weatherFocus: "radar" });
+          } else if (code === K.DOWN) {
+            update({ weatherFocus: "zoomOut" });
+          }
+          return true;
+        }
+        if (current.weatherRadar && current.weatherFocus === "zoomOut") {
+          if (code === K.ENTER) {
+            zoomRadar(-1);
+          } else if (code === K.UP) {
+            update({ weatherFocus: "zoomIn" });
           } else if (code === K.DOWN) {
             update({ weatherFocus: "pan" });
           }
@@ -638,7 +646,7 @@ export const createHomeController = (
           if (code === K.ENTER) {
             update({ radarPanning: true, weatherFocus: "pan" });
           } else if (code === K.UP) {
-            update({ weatherFocus: "zoom" });
+            update({ weatherFocus: "zoomOut" });
           } else if (code === K.DOWN) {
             update({ weatherFocus: "span" });
           }
@@ -711,7 +719,7 @@ export const createHomeController = (
       if (code === K.DOWN) {
         select("family-weather");
         if (current.weatherRadar) {
-          update({ weatherFocus: "zoom" });
+          update({ weatherFocus: "zoomIn" });
         }
         return true;
       }
@@ -735,14 +743,30 @@ export const createHomeController = (
       return false;
     }
     if (!current.expanded && current.weatherRadar && current.selected === "family-weather") {
-      if (current.weatherFocus === "zoom") {
-        if (code === K.LEFT) {
-          zoomRadar(-1);
-        } else if (code === K.RIGHT) {
+      if (current.weatherFocus === "zoomIn") {
+        if (code === K.ENTER && enterDown) {
+          return true;
+        }
+        if (code === K.ENTER) {
+          enterDown = true;
           zoomRadar(1);
         } else if (code === K.UP) {
           update({ weatherFocus: "view" });
           select(FAMILY_RADAR_KEY);
+        } else if (code === K.DOWN) {
+          update({ weatherFocus: "zoomOut" });
+        }
+        return true;
+      }
+      if (current.weatherFocus === "zoomOut") {
+        if (code === K.ENTER && enterDown) {
+          return true;
+        }
+        if (code === K.ENTER) {
+          enterDown = true;
+          zoomRadar(-1);
+        } else if (code === K.UP) {
+          update({ weatherFocus: "zoomIn" });
         } else if (code === K.DOWN) {
           update({ weatherFocus: "pan" });
         }
@@ -756,7 +780,7 @@ export const createHomeController = (
           enterDown = true;
           update({ radarPanning: true, weatherFocus: "pan" });
         } else if (code === K.UP) {
-          update({ weatherFocus: "zoom" });
+          update({ weatherFocus: "zoomOut" });
         } else if (code === K.DOWN) {
           update({ weatherFocus: "view" });
         }

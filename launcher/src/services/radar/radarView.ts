@@ -5,8 +5,8 @@ import { projectRadar, RADAR_CARD_ZOOM, unprojectRadar } from "./rainViewer";
 export const RADAR_MIN_ZOOM = 4;
 export const RADAR_MAX_ZOOM = 10;
 export const RADAR_DEFAULT_ZOOM = RADAR_CARD_ZOOM;
-// One press moves about a fifth of the full-screen map.
-const PAN_TILES = 1.5;
+// One press moves about a quarter of the previous pan step, for finer control.
+const PAN_TILES = 0.375;
 const MAX_LATITUDE = 85;
 const SAME_PLACE_DEGREES = 0.0001;
 

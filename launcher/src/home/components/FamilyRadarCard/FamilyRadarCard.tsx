@@ -1,4 +1,4 @@
-import { Move, ZoomIn, ZoomOut } from "lucide-preact";
+import { Minus, Move, Plus } from "lucide-preact";
 
 import type { FamilyForecastSnapshot } from "../../../contracts/familyForecast";
 import { radarViewport } from "../../../services/radar/radarView";
@@ -48,22 +48,17 @@ export const FamilyRadarCard = ({
         zoom={viewport.zoom}
       />
       <div class={styles.tools} data-family-radar-panning={panning ? "true" : "false"}>
-        <div
-          class={styles.zoom}
-          role="group"
-          aria-label={t("family.radarZoom")}
-          data-family-radar-zoom
-          data-focused={focus === "zoom" ? "true" : undefined}
-        >
+        <div class={styles.zoom} role="group" aria-label={t("family.radarZoom")} data-family-radar-zoom>
           <button
             type="button"
             class={styles.zoomButton}
             tabIndex={-1}
             aria-label={t("family.radarZoomIn")}
             data-family-radar-zoom="1"
+            data-focused={focus === "zoomIn" ? "true" : undefined}
             onClick={zoom(1)}
           >
-            <Icon icon={ZoomIn} size={24} />
+            <Icon icon={Plus} size={26} />
           </button>
           <span class={styles.zoomLevel} data-family-radar-zoom-level>
             {viewport.zoom}
@@ -74,9 +69,10 @@ export const FamilyRadarCard = ({
             tabIndex={-1}
             aria-label={t("family.radarZoomOut")}
             data-family-radar-zoom="-1"
+            data-focused={focus === "zoomOut" ? "true" : undefined}
             onClick={zoom(-1)}
           >
-            <Icon icon={ZoomOut} size={24} />
+            <Icon icon={Minus} size={26} />
           </button>
         </div>
         <button
