@@ -6,6 +6,7 @@ export const DEFAULT_SETTINGS: SettingsDefaults = {
   home: null, // null selects first-launch defaults; [] retains an empty Home.
   theme: "classic",
   performanceMode: false,
+  radarView: null,
   homeCardColumns: 3,
   homeAppLayout: "grid",
   background: "aurora",

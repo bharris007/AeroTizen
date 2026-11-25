@@ -1,5 +1,6 @@
 import type { FamilyForecastSnapshot } from "../../../contracts/familyForecast";
-import { RADAR_CARD_ZOOM } from "../../../services/radar/rainViewer";
+import { radarViewport } from "../../../services/radar/radarView";
+import { useStoreSelector } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import type { HomeEnvironment } from "../../types";
 import { FamilyRadarMap } from "../FamilyRadarMap/FamilyRadarMap";
@@ -20,6 +21,8 @@ export const FamilyRadarCard = ({
   registered: boolean;
 }) => {
   const { t } = useTranslation();
+  const saved = useStoreSelector(env.settings, (settings) => settings.radarView);
+  const viewport = radarViewport(saved, forecast);
   const title = t("family.radar") + ", " + forecast.locationLabel + ". " + t("family.openFullScreen");
   return (
     <HomeControl env={env} controlKey="family-weather" className={cardClass} registered={registered} title={title}>
@@ -27,9 +30,9 @@ export const FamilyRadarCard = ({
         enabled={enabled}
         env={env}
         label={forecast.locationLabel}
-        latitude={forecast.latitude}
-        longitude={forecast.longitude}
-        zoom={RADAR_CARD_ZOOM}
+        latitude={viewport.latitude}
+        longitude={viewport.longitude}
+        zoom={viewport.zoom}
       />
     </HomeControl>
   );

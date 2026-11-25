@@ -392,5 +392,11 @@
   "family.radar": "Radar in diretta",
   "family.radarLoading": "Caricamento del radar",
   "family.radarUnavailable": "Il radar in diretta non è disponibile",
-  "family.radarCredit": "RainViewer · © Esri · © OpenStreetMap"
+  "family.radarCredit": "RainViewer · © Esri · © OpenStreetMap",
+  "family.radarCreditNexrad": "NEXRAD · © Esri · © OpenStreetMap",
+  "family.radarZoom": "Zoom",
+  "family.radarZoomIn": "Ingrandisci",
+  "family.radarZoomOut": "Riduci",
+  "family.radarPanHint": "Le frecce spostano la mappa. OK per lo zoom. Indietro per chiudere.",
+  "family.radarZoomHint": "Sinistra: riduci. Destra: ingrandisci. Giù: torna alla mappa."
 }

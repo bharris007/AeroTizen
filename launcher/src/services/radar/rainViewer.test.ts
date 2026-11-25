@@ -4,13 +4,17 @@ import { FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE } from "../family/familyLocation"
 
 import {
   baseTileUrl,
+  nexradCovers,
+  nexradTileUrl,
   parseRainViewerMaps,
   projectRadar,
   RADAR_CARD_ZOOM,
   RADAR_FRAME_LIMIT,
   RADAR_TILE_SIZE,
+  radarOverlay,
   radarTileUrl,
   tilesForView,
+  unprojectRadar,
 } from "./rainViewer";
 
 const frame = (time: number, path = "/v2/radar/" + time.toString(16)) => ({ path, time });
@@ -75,4 +79,21 @@ test("centers the configured location and builds base and radar tile urls", () =
   );
   expect(tilesForView(90, 0, 8, 0, 600)).toEqual({ originLeft: 0, originTop: 0, tiles: [] });
   expect(Number.isFinite(projectRadar(89, 179, 3).y)).toBe(true);
+  const roundTrip = unprojectRadar(point.x, point.y, RADAR_CARD_ZOOM);
+  expect(roundTrip.latitude).toBeCloseTo(FRANKLIN_LATITUDE, 4);
+  expect(roundTrip.longitude).toBeCloseTo(FRANKLIN_LONGITUDE, 4);
+});
+
+test("zooms past RainViewer with NEXRAD in the US and scaled radar tiles elsewhere", () => {
+  const unitedStates = radarOverlay(9, FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE);
+  expect(unitedStates).toEqual({ kind: "nexrad", tileSize: RADAR_TILE_SIZE, tileZoom: 9 });
+  expect(nexradCovers(51.5, -0.1)).toBe(false);
+  const london = radarOverlay(9, 51.5, -0.1);
+  expect(london).toEqual({ kind: "rainviewer", tileSize: RADAR_TILE_SIZE * 4, tileZoom: 7 });
+  const view = tilesForView(51.5, -0.1, 9, 800, 600, london.tileZoom);
+  expect(view.tiles[0]?.size).toBe(RADAR_TILE_SIZE * 4);
+  expect(nexradTileUrl("m20m", 9, { x: 132, y: 201 })).toBe(
+    "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913-m20m/9/132/201.png",
+  );
+  expect(nexradTileUrl("now", 9, { x: 1, y: 2 })).toContain("/nexrad-n0q-900913/9/1/2.png");
 });

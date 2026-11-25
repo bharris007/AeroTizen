@@ -37,7 +37,7 @@ export const FamilyExpanded = ({
     return null;
   }
   const weather = weatherRadar ? (
-    <FamilyRadarFull env={env} forecast={forecast} />
+        <FamilyRadarFull env={env} focus={weatherFocus} forecast={forecast} />
   ) : (
     <FamilyWeatherFull forecast={forecast} now={now} timeFormat={timeFormat} unit={unit} />
   );

@@ -1,3 +1,5 @@
+import { resolveFamilyLocation } from "../../services/family/familyLocation";
+import { clampRadarZoom, moveRadarCenter, radarViewport } from "../../services/radar/radarView";
 import { getAppGridColumns } from "../../shared/apps/appCardSizes";
 import { createInputScope } from "../../shared/input/createInputScope";
 import { focusControl } from "../../shared/navigation/focusControl";
@@ -163,9 +165,11 @@ export const createHomeController = (
     | "collapsePane"
     | "expandPane"
     | "pageCalendar"
+    | "panRadar"
     | "setCalendarSpan"
     | "shiftCalendarDay"
     | "toggleWeatherRadar"
+    | "zoomRadar"
   >,
   transaction: (action: () => void) => void,
 ) => {
@@ -380,6 +384,33 @@ export const createHomeController = (
   const toggleWeatherRadar = () => {
     update({ weatherRadar: !state.getSnapshot().weatherRadar });
   };
+  const radarPlace = () => resolveFamilyLocation(settings.getSnapshot().weatherLocation);
+  const radarCamera = () => radarViewport(settings.getSnapshot().radarView, radarPlace());
+  const saveRadarView = (next: { latitude: number; longitude: number; zoom: number }) => {
+    const place = radarPlace();
+    settings.update({
+      radarView: {
+        latitude: next.latitude,
+        longitude: next.longitude,
+        placeLatitude: place.latitude,
+        placeLongitude: place.longitude,
+        zoom: next.zoom,
+      },
+    });
+  };
+  const panRadar = (x: number, y: number) => {
+    const current = radarCamera();
+    const center = moveRadarCenter(current.latitude, current.longitude, current.zoom, x, y);
+    saveRadarView({ latitude: center.latitude, longitude: center.longitude, zoom: current.zoom });
+  };
+  const zoomRadar = (delta: number) => {
+    const current = radarCamera();
+    const zoom = clampRadarZoom(current.zoom + delta);
+    if (zoom === current.zoom) {
+      return;
+    }
+    saveRadarView({ latitude: current.latitude, longitude: current.longitude, zoom });
+  };
   const setCalendarSpan = (span: CalendarSpan) => {
     update({ calendarSpan: span, calendarStart: clampDay(state.getSnapshot().calendarStart, span) });
   };
@@ -488,9 +519,35 @@ export const createHomeController = (
       if (current.expanded === "weather") {
         if (current.weatherFocus === "radar") {
           if (code === K.DOWN) {
-            update({ weatherFocus: "view" });
+            update({ weatherFocus: current.weatherRadar ? "zoom" : "view" });
           } else if (code === K.ENTER) {
             toggleWeatherRadar();
+          }
+          return true;
+        }
+        if (current.weatherRadar && current.weatherFocus === "zoom") {
+          if (code === K.LEFT) {
+            zoomRadar(-1);
+          } else if (code === K.RIGHT) {
+            zoomRadar(1);
+          } else if (code === K.UP) {
+            update({ weatherFocus: "radar" });
+          } else if (code === K.DOWN) {
+            update({ weatherFocus: "view" });
+          }
+          return true;
+        }
+        if (current.weatherRadar) {
+          if (code === K.LEFT) {
+            panRadar(-1, 0);
+          } else if (code === K.RIGHT) {
+            panRadar(1, 0);
+          } else if (code === K.UP) {
+            panRadar(0, -1);
+          } else if (code === K.DOWN) {
+            panRadar(0, 1);
+          } else if (code === K.ENTER) {
+            update({ weatherFocus: "zoom" });
           }
           return true;
         }
@@ -687,7 +744,9 @@ export const createHomeController = (
     expandPane,
     pageCalendar,
     setCalendarSpan,
+    panRadar,
     shiftCalendarDay,
     toggleWeatherRadar,
+    zoomRadar,
   };
 };

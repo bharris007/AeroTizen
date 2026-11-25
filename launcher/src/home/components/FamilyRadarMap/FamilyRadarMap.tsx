@@ -2,7 +2,9 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/ho
 
 import {
   baseTileUrl,
-  RADAR_TILE_SIZE,
+  NEXRAD_FRAMES,
+  nexradTileUrl,
+  radarOverlay,
   type RadarTile,
   radarTileUrl,
   tilesForView,
@@ -77,7 +79,10 @@ export const FamilyRadarMap = ({
   useEffect(() => {
     setIndex(0);
   }, [frameKey]);
-  const animate = enabled && !performanceMode && !reduceMotion && map.frames.length > 1;
+  const overlay = radarOverlay(zoom, latitude, longitude);
+  const nexrad = overlay.kind === "nexrad";
+  const frameCount = nexrad ? NEXRAD_FRAMES.length : map.frames.length;
+  const animate = enabled && !performanceMode && !reduceMotion && frameCount > 1;
   useEffect(() => {
     if (!animate) {
       return;
@@ -87,38 +92,49 @@ export const FamilyRadarMap = ({
     }, RADAR_FRAME_INTERVAL_MS);
     return () => window.clearInterval(timer);
   }, [animate]);
-  const tiles = useMemo(() => {
+  const baseTiles = useMemo(() => {
     if (!enabled || size.width <= 0 || size.height <= 0) {
       return NO_TILES;
     }
     return tilesForView(latitude, longitude, zoom, size.width, size.height).tiles;
   }, [enabled, latitude, longitude, size.height, size.width, zoom]);
-  const shownFrame = (() => {
-    if (map.frames.length === 0) {
-      return null;
+  const radarTiles = useMemo(() => {
+    if (!enabled || size.width <= 0 || size.height <= 0) {
+      return NO_TILES;
+    }
+    return tilesForView(latitude, longitude, zoom, size.width, size.height, overlay.tileZoom).tiles;
+  }, [enabled, latitude, longitude, overlay.tileZoom, size.height, size.width, zoom]);
+  const shownIndex = (() => {
+    if (frameCount === 0) {
+      return 0;
     }
     if (!animate) {
-      return map.frames[map.frames.length - 1];
+      return frameCount - 1;
     }
-    return map.frames[index % map.frames.length];
+    return index % frameCount;
   })();
+  const shownFrame = nexrad || map.frames.length === 0 ? null : map.frames[shownIndex];
+  const nexradFrame = nexrad ? NEXRAD_FRAMES[shownIndex] : null;
   useEffect(() => {
-    if (!animate || map.frames.length < 2 || tiles.length === 0) {
+    if (!animate || radarTiles.length === 0) {
       return;
     }
-    const next = map.frames[(index + 1) % map.frames.length];
-    // Retain the images for this frame so the next loop step can use the cache.
-    const preloaded = tiles.map((tile) => {
+    const nextIndex = (shownIndex + 1) % Math.max(frameCount, 1);
+    const preloaded = radarTiles.map((tile) => {
       const image = new Image();
-      image.src = radarTileUrl(map.host, next.path, zoom, tile);
+      if (nexrad) {
+        image.src = nexradTileUrl(NEXRAD_FRAMES[nextIndex] ?? "now", overlay.tileZoom, tile);
+      } else if (map.frames[nextIndex]) {
+        image.src = radarTileUrl(map.host, map.frames[nextIndex].path, overlay.tileZoom, tile);
+      }
       return image;
     });
     return () => {
       preloaded.splice(0, preloaded.length);
     };
-  }, [animate, index, map.frames, map.host, tiles, zoom]);
+  }, [animate, frameCount, map.frames, map.host, nexrad, overlay.tileZoom, radarTiles, shownIndex]);
   const statusText = (() => {
-    if (map.frames.length > 0) {
+    if (nexrad || map.frames.length > 0) {
       return "";
     }
     if (map.status === "unavailable") {
@@ -126,37 +142,55 @@ export const FamilyRadarMap = ({
     }
     return map.status === "loading" ? t("family.radarLoading") : "";
   })();
+  const radarSrc = (tile: RadarTile) => {
+    if (nexradFrame) {
+      return nexradTileUrl(nexradFrame, overlay.tileZoom, tile);
+    }
+    if (shownFrame) {
+      return radarTileUrl(map.host, shownFrame.path, overlay.tileZoom, tile);
+    }
+    return "";
+  };
   return (
     <div
       class={styles.map}
       ref={frame}
       data-family-radar-map
-      data-family-radar-status={map.frames.length > 0 ? "ready" : map.status}
-      data-radar-frame={shownFrame ? shownFrame.time : undefined}
+      data-family-radar-status={nexrad || map.frames.length > 0 ? "ready" : map.status}
+      data-radar-frame={shownFrame ? shownFrame.time : nexradFrame || undefined}
+      data-radar-source={overlay.kind}
       data-radar-zoom={zoom}
     >
       <div class={styles.layers} aria-hidden="true">
-        {tiles.map((tile) => (
-          <div
-            class={styles.tile}
-            key={tile.left + ":" + tile.top}
-            style={{
-              height: RADAR_TILE_SIZE + "px",
-              left: tile.left + "px",
-              top: tile.top + "px",
-              width: RADAR_TILE_SIZE + "px",
-            }}
-          >
-            <img class={styles.image} alt="" src={baseTileUrl(zoom, tile)} />
-            {shownFrame ? (
-              <img class={styles.image} alt="" src={radarTileUrl(map.host, shownFrame.path, zoom, tile)} />
-            ) : null}
-          </div>
+        {baseTiles.map((tile) => (
+          <img
+            key={"base:" + tile.left + ":" + tile.top}
+            class={styles.image + " " + styles.tile}
+            alt=""
+            src={baseTileUrl(zoom, tile)}
+            style={{ height: tile.size + "px", left: tile.left + "px", top: tile.top + "px", width: tile.size + "px" }}
+          />
         ))}
-        {tiles.length > 0 ? <div class={styles.marker} data-family-radar-marker /> : null}
+        {radarTiles.map((tile) =>
+          radarSrc(tile) ? (
+            <img
+              key={"radar:" + tile.left + ":" + tile.top + ":" + tile.size}
+              class={styles.image + " " + styles.tile}
+              alt=""
+              src={radarSrc(tile)}
+              style={{
+                height: tile.size + "px",
+                left: tile.left + "px",
+                top: tile.top + "px",
+                width: tile.size + "px",
+              }}
+            />
+          ) : null,
+        )}
+        {baseTiles.length > 0 ? <div class={styles.marker} data-family-radar-marker /> : null}
       </div>
       {label ? <div class={styles.place + " " + text.truncate}>{label}</div> : null}
-      <p class={styles.credit}>{t("family.radarCredit")}</p>
+      <p class={styles.credit}>{t(nexrad ? "family.radarCreditNexrad" : "family.radarCredit")}</p>
       {statusText ? <p class={styles.status}>{statusText}</p> : null}
     </div>
   );

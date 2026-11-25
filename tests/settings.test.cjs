@@ -239,3 +239,22 @@ test("custom gradients preserve both colours and direction across a restart and 
   assert.equal(invalid.customGradient.end, "#00c4d4");
   assert.equal(invalid.customGradient.angle, 135);
 });
+
+test("radar zoom and pan survive a reload and invalid values are dropped", () => {
+  const key = "aerotizen.settings.v1";
+  const view = {
+    latitude: 36.1,
+    longitude: -86.7,
+    placeLatitude: 35.9251,
+    placeLongitude: -86.8689,
+    zoom: 9,
+  };
+  const { settings, store } = loadSettings({});
+  assert.equal(settings.getSnapshot().radarView, null);
+  settings.update({ radarView: view });
+  assert.deepEqual(loadSettings(store).settings.getSnapshot().radarView, view);
+  assert.equal(
+    loadSettings({ [key]: JSON.stringify({ radarView: { zoom: "close" } }) }).settings.getSnapshot().radarView,
+    null,
+  );
+});

@@ -15,16 +15,27 @@ const controller = () => {
     items: [],
     ready: true,
   });
+  let saved = {
+    continueWatching: false,
+    home: ["demo"],
+    homeAppLayout: "grid" as const,
+    homeCardColumns: 3,
+    homeInitialized: true,
+    radarView: null as {
+      latitude: number;
+      longitude: number;
+      placeLatitude: number;
+      placeLongitude: number;
+      zoom: number;
+    } | null,
+    weatherLocation: null,
+  };
   const settings = {
-    getSnapshot: () => ({
-      continueWatching: false,
-      home: ["demo"],
-      homeAppLayout: "grid",
-      homeCardColumns: 3,
-      homeInitialized: true,
-    }),
+    getSnapshot: () => saved,
     subscribe: () => () => undefined,
-    update: () => undefined,
+    update: (patch: Partial<typeof saved>) => {
+      saved = { ...saved, ...patch };
+    },
   };
   const runtime = {
     apps: { byId: (id: string) => (id === "demo" ? { id, name: "Demo" } : undefined) },
@@ -174,14 +185,43 @@ test("the weather radar control toggles live radar on the card and in full scree
   home.bridge.keyup(KEY.ENTER);
   expect(home.state.getSnapshot().weatherRadar).toBe(true);
   press(home, KEY.DOWN);
+  expect(home.state.getSnapshot().weatherFocus).toBe("zoom");
+  press(home, KEY.DOWN);
   expect(home.state.getSnapshot().weatherFocus).toBe("view");
   ok(home);
-  expect(home.state.getSnapshot()).toMatchObject({ expanded: null, selected: "family-weather", weatherRadar: true });
-
-  ok(home);
-  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", weatherFocus: "view", weatherRadar: true });
+  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", weatherFocus: "zoom", weatherRadar: true });
   press(home, KEY.BACK);
   expect(home.state.getSnapshot()).toMatchObject({ expanded: null, selected: "family-weather", weatherRadar: true });
+});
+
+test("full-screen radar pans and zooms with the remote and saves that view", () => {
+  const home = controller();
+  home.bridge.focus();
+  home.toggleWeatherRadar();
+  home.expandPane("weather");
+  expect(home.state.getSnapshot()).toMatchObject({ weatherFocus: "view", weatherRadar: true });
+
+  press(home, KEY.RIGHT);
+  const panned = home.settings.getSnapshot().radarView;
+  expect(panned?.zoom).toBe(7);
+  expect(panned?.longitude).toBeGreaterThan(panned?.placeLongitude ?? 0);
+  expect(home.state.getSnapshot().expanded).toBe("weather");
+
+  press(home, KEY.ENTER);
+  expect(home.state.getSnapshot().weatherFocus).toBe("zoom");
+  press(home, KEY.RIGHT);
+  press(home, KEY.RIGHT);
+  expect(home.settings.getSnapshot().radarView?.zoom).toBe(9);
+  press(home, KEY.LEFT);
+  expect(home.settings.getSnapshot().radarView?.zoom).toBe(8);
+  for (let step = 0; step < 6; step += 1) {
+    press(home, KEY.RIGHT);
+  }
+  expect(home.settings.getSnapshot().radarView?.zoom).toBe(10);
+  press(home, KEY.UP);
+  expect(home.state.getSnapshot().weatherFocus).toBe("radar");
+  press(home, KEY.DOWN);
+  expect(home.state.getSnapshot().weatherFocus).toBe("zoom");
 });
 
 test("the calendar's day control changes the Home pane's day and OK returns to today", () => {

@@ -55,9 +55,11 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     | "collapsePane"
     | "expandPane"
     | "pageCalendar"
+    | "panRadar"
     | "setCalendarSpan"
     | "shiftCalendarDay"
     | "toggleWeatherRadar"
+    | "zoomRadar"
   > = {
     state,
     nodes: new Map<string, HTMLElement>(),
@@ -66,9 +68,11 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     collapsePane: vi.fn(),
     expandPane: vi.fn(),
     pageCalendar: vi.fn(),
+    panRadar: vi.fn(),
     setCalendarSpan: vi.fn(),
     shiftCalendarDay: vi.fn(),
     toggleWeatherRadar: vi.fn(),
+    zoomRadar: vi.fn(),
     select: vi.fn(),
     runtime: runtime as HomeEnvironment["runtime"],
     describe: (app: InstalledApp): AppPresentation => ({

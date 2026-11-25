@@ -191,6 +191,11 @@ test("full-screen radar keeps a remote toggle back to the forecast", () => {
   expect(screen.getByText("Loading radar")).toBeDefined();
   expect(screen.getByText("Franklin, TN")).toBeDefined();
   expect(screen.getByText("Press Back to close")).toBeDefined();
+  expect(container.querySelector("[data-family-radar-zoom-level]")?.textContent).toBe("7");
+  fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+  expect(env.zoomRadar).toHaveBeenCalledWith(1);
+  fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
+  expect(env.zoomRadar).toHaveBeenCalledWith(-1);
   const toggle = screen.getByRole("button", { name: "Show the forecast" });
   expect(toggle.getAttribute("data-focused")).toBe("true");
   expect(toggle.getAttribute("data-family-radar-toggle")).toBe("forecast");

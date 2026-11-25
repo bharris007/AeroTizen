@@ -222,6 +222,7 @@ test("live radar replaces the forecast and loads RainViewer tiles for that place
     );
     expect(sources).toContain(baseTileUrl(RADAR_CARD_ZOOM, tile));
     expect(container.querySelector("[data-family-radar-marker]")).not.toBeNull();
+    expect(container.querySelector("[data-family-radar-zoom]")).toBeNull();
     expect(container.querySelector("[data-family-radar-slot]")?.getAttribute("data-revealed")).toBe("true");
     expect(radarMap.watch).toHaveBeenCalled();
   } finally {

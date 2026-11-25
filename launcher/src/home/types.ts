@@ -19,7 +19,8 @@ export type CalendarSpan = 1 | 3 | 5;
 // Which part of the full-screen calendar the remote is on.
 export type CalendarFocus = "grid" | "span";
 // Which part of the full-screen weather the remote is on.
-export type WeatherFocus = "radar" | "view";
+// "zoom" is the full-screen radar's plus and minus control.
+export type WeatherFocus = "radar" | "view" | "zoom";
 export interface HomeMenuChoice {
   readonly action: "add" | "remove" | "move";
   readonly label: MessageKey;
@@ -66,6 +67,8 @@ export interface HomeEnvironment {
   menuChoices(): readonly HomeMenuChoice[];
   nodes: Map<string, HTMLElement>;
   pageCalendar(direction: number): void;
+  // Full-screen radar: move the map by one step. x is west/east, y is north/south (-1 or 1).
+  panRadar(x: number, y: number): void;
   rows: RefObject<HTMLElement>;
   runtime: LauncherRuntime;
   select(key: string): void;
@@ -80,4 +83,6 @@ export interface HomeEnvironment {
   // Home and full-screen weather: switch between the forecast and live radar.
   toggleWeatherRadar(): void;
   updates: LauncherUpdateNotice;
+  // Full-screen radar: change the saved zoom by one step.
+  zoomRadar(delta: number): void;
 }

@@ -392,5 +392,11 @@
   "family.radar": "رادار مباشر",
   "family.radarLoading": "جارٍ تحميل الرادار",
   "family.radarUnavailable": "الرادار المباشر غير متاح",
-  "family.radarCredit": "RainViewer · © Esri · © OpenStreetMap"
+  "family.radarCredit": "RainViewer · © Esri · © OpenStreetMap",
+  "family.radarCreditNexrad": "NEXRAD · © Esri · © OpenStreetMap",
+  "family.radarZoom": "التكبير",
+  "family.radarZoomIn": "تكبير",
+  "family.radarZoomOut": "تصغير",
+  "family.radarPanHint": "الأسهم تحرّك الخريطة. OK للتكبير. رجوع للإغلاق.",
+  "family.radarZoomHint": "يسار للتصغير. يمين للتكبير. أسفل للعودة إلى الخريطة."
 }

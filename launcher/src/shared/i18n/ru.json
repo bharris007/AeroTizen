@@ -392,5 +392,11 @@
   "family.radar": "Радар",
   "family.radarLoading": "Загрузка радара",
   "family.radarUnavailable": "Радар недоступен",
-  "family.radarCredit": "RainViewer · © Esri · © OpenStreetMap"
+  "family.radarCredit": "RainViewer · © Esri · © OpenStreetMap",
+  "family.radarCreditNexrad": "NEXRAD · © Esri · © OpenStreetMap",
+  "family.radarZoom": "Масштаб",
+  "family.radarZoomIn": "Приблизить",
+  "family.radarZoomOut": "Отдалить",
+  "family.radarPanHint": "Стрелки двигают карту. OK — масштаб. Назад — закрыть.",
+  "family.radarZoomHint": "Влево — дальше. Вправо — ближе. Вниз — вернуться к карте."
 }

@@ -21,6 +21,14 @@ export interface WeatherLocation {
   readonly name: string;
   readonly timezone?: string;
 }
+// Full-screen radar camera. placeLatitude/placeLongitude are the weather place it belongs to.
+export interface RadarView {
+  readonly latitude: number;
+  readonly longitude: number;
+  readonly placeLatitude: number;
+  readonly placeLongitude: number;
+  readonly zoom: number;
+}
 export interface SettingsValues {
   aeroClockStyle: "vertical" | "horizontal" | "minimal" | "bold";
   background: string;
@@ -40,6 +48,7 @@ export interface SettingsValues {
   language: string;
   numerals: "latn" | "arab";
   performanceMode: boolean;
+  radarView: RadarView | null;
   showContinueWatchingHeading: boolean;
   showDate: boolean;
   showInputsHeading: boolean;
