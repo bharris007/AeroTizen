@@ -19,8 +19,15 @@ export type CalendarSpan = 1 | 3 | 5;
 // Which part of the full-screen calendar the remote is on.
 export type CalendarFocus = "grid" | "span";
 // Which part of the full-screen weather the remote is on.
-// "zoom" is the full-screen radar's plus and minus control.
-export type WeatherFocus = "radar" | "view" | "zoom";
+// Radar adds the timeline, its 1h/2h span, and the zoom control.
+export type WeatherFocus = "radar" | "span" | "timeline" | "view" | "zoom";
+export type RadarCommand =
+  | { count: number; nowIndex: number; type: "sync" }
+  | { span: 1 | 2; type: "span" }
+  | { type: "play" }
+  | { delta: number; type: "scrub" }
+  | { index: number; type: "seek" }
+  | { type: "tick" };
 export interface HomeMenuChoice {
   readonly action: "add" | "remove" | "move";
   readonly label: MessageKey;
@@ -42,6 +49,12 @@ export interface HomeState {
   readonly menu: Readonly<{ id: string }> | null;
   readonly moving: string | null;
   readonly page: Page;
+  // Full-screen radar playback. A null frame follows the newest observation.
+  readonly radarFrame: number | null;
+  readonly radarFrameCount: number;
+  readonly radarNowIndex: number;
+  readonly radarPlaying: boolean;
+  readonly radarSpan: 1 | 2;
   readonly scroll: number;
   readonly selected: string;
   // Full-screen weather: the forecast, or the radar toggle in the corner.
@@ -58,6 +71,8 @@ export interface HomeEnvironment {
   calendarToday(): void;
   choose(index: number): void;
   collapsePane(): void;
+  // Full-screen radar timeline: play, scrub, seek, and choose 1h or the full range.
+  commandRadar(command: RadarCommand): void;
   continueItems: RefObject<HTMLDivElement>;
   continueViewport: RefObject<HTMLDivElement>;
   describe(app: InstalledApp): AppPresentation;

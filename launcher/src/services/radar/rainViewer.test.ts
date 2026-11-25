@@ -9,7 +9,6 @@ import {
   parseRainViewerMaps,
   projectRadar,
   RADAR_CARD_ZOOM,
-  RADAR_FRAME_LIMIT,
   RADAR_TILE_SIZE,
   radarOverlay,
   radarTileUrl,
@@ -19,15 +18,19 @@ import {
 
 const frame = (time: number, path = "/v2/radar/" + time.toString(16)) => ({ path, time });
 
-test("keeps the newest observed frames and rejects a map that is not a RainViewer host", () => {
-  const past = Array.from({ length: RADAR_FRAME_LIMIT + 3 }, (_, index) => frame(1_000 + index));
+test("keeps every observed frame and any nowcast, and rejects a map that is not a RainViewer host", () => {
+  const past = Array.from({ length: 13 }, (_, index) => frame(1_000 + index * 600));
   const parsed = parseRainViewerMaps({
+    generated: 1_000 + 12 * 600,
     host: "https://tilecache.rainviewer.com/",
     radar: { nowcast: [frame(9_999, "/v2/radar/nowcast_1")], past },
   });
   expect(parsed?.host).toBe("https://tilecache.rainviewer.com");
-  expect(parsed?.frames.map((item) => item.time)).toEqual(past.slice(-RADAR_FRAME_LIMIT).map((item) => item.time));
-  expect(parsed?.frames.some((item) => item.path.includes("nowcast"))).toBe(false);
+  expect(parsed?.generated).toBe(1_000 + 12 * 600);
+  expect(parsed?.frames.map((item) => item.kind + ":" + item.time)).toEqual([
+    ...past.map((item) => "past:" + item.time),
+    "forecast:9999",
+  ]);
 
   expect(parseRainViewerMaps({ host: "http://tilecache.rainviewer.com", radar: { past } })).toBeNull();
   expect(parseRainViewerMaps({ host: "https://tilecache.rainviewer.com/extra", radar: { past } })).toBeNull();

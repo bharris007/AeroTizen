@@ -58,6 +58,11 @@
   }
 }
 
+.map[data-radar-chrome="full"] .credit {
+  top: 72px;
+  bottom: auto;
+}
+
 .credit {
   position: absolute;
   bottom: 18px;

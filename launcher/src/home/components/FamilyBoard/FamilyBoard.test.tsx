@@ -197,7 +197,8 @@ test("live radar replaces the forecast and loads RainViewer tiles for that place
   try {
     const env = environment(ready, "family-weather");
     const radarMap = radarService({
-      frames: [{ path: "/v2/radar/13f17414a055", time: 100 }],
+      frames: [{ kind: "past", path: "/v2/radar/13f17414a055", time: 100 }],
+      generated: 100,
       host: "https://tilecache.rainviewer.com",
       status: "ready",
     });

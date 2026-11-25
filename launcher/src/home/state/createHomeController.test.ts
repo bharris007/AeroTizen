@@ -187,9 +187,13 @@ test("the weather radar control toggles live radar on the card and in full scree
   press(home, KEY.DOWN);
   expect(home.state.getSnapshot().weatherFocus).toBe("zoom");
   press(home, KEY.DOWN);
+  expect(home.state.getSnapshot().weatherFocus).toBe("span");
+  press(home, KEY.DOWN);
+  expect(home.state.getSnapshot().weatherFocus).toBe("timeline");
+  press(home, KEY.DOWN);
   expect(home.state.getSnapshot().weatherFocus).toBe("view");
   ok(home);
-  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", weatherFocus: "zoom", weatherRadar: true });
+  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", weatherFocus: "timeline", weatherRadar: true });
   press(home, KEY.BACK);
   expect(home.state.getSnapshot()).toMatchObject({ expanded: null, selected: "family-weather", weatherRadar: true });
 });
@@ -208,6 +212,9 @@ test("full-screen radar pans and zooms with the remote and saves that view", () 
   expect(home.state.getSnapshot().expanded).toBe("weather");
 
   press(home, KEY.ENTER);
+  expect(home.state.getSnapshot().weatherFocus).toBe("timeline");
+  press(home, KEY.UP);
+  press(home, KEY.UP);
   expect(home.state.getSnapshot().weatherFocus).toBe("zoom");
   press(home, KEY.RIGHT);
   press(home, KEY.RIGHT);
@@ -222,6 +229,30 @@ test("full-screen radar pans and zooms with the remote and saves that view", () 
   expect(home.state.getSnapshot().weatherFocus).toBe("radar");
   press(home, KEY.DOWN);
   expect(home.state.getSnapshot().weatherFocus).toBe("zoom");
+});
+
+test("the radar timeline plays, scrubs, and switches between one hour and the full range", () => {
+  const home = controller();
+  home.toggleWeatherRadar();
+  home.expandPane("weather");
+  home.commandRadar({ count: 8, nowIndex: 6, type: "sync" });
+  press(home, KEY.ENTER);
+  expect(home.state.getSnapshot()).toMatchObject({ radarPlaying: true, weatherFocus: "timeline" });
+  press(home, KEY.RIGHT);
+  expect(home.state.getSnapshot()).toMatchObject({ radarFrame: 7, radarPlaying: false });
+  press(home, KEY.LEFT);
+  press(home, KEY.LEFT);
+  expect(home.state.getSnapshot()).toMatchObject({ radarFrame: 5, radarPlaying: false });
+  press(home, KEY.ENTER);
+  expect(home.state.getSnapshot().radarPlaying).toBe(true);
+  home.commandRadar({ type: "tick" });
+  expect(home.state.getSnapshot().radarFrame).toBe(6);
+  press(home, KEY.UP);
+  expect(home.state.getSnapshot().weatherFocus).toBe("span");
+  press(home, KEY.RIGHT);
+  expect(home.state.getSnapshot()).toMatchObject({ radarFrame: null, radarSpan: 2 });
+  press(home, KEY.LEFT);
+  expect(home.state.getSnapshot().radarSpan).toBe(1);
 });
 
 test("the calendar's day control changes the Home pane's day and OK returns to today", () => {

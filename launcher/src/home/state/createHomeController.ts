@@ -5,7 +5,7 @@ import { createInputScope } from "../../shared/input/createInputScope";
 import { focusControl } from "../../shared/navigation/focusControl";
 import { createStore } from "../../shared/state/createStore";
 import { ADD_APPS_KEY } from "../homeControls";
-import type { CalendarSpan, FamilyPane, HomeEnvironment, HomeMenuChoice, HomeState, Page } from "../types";
+import type { CalendarSpan, FamilyPane, HomeEnvironment, HomeMenuChoice, HomeState, Page, RadarCommand } from "../types";
 
 import { revealHorizontalItem } from "./horizontalScroll";
 
@@ -163,6 +163,7 @@ export const createHomeController = (
     | "menuChoices"
     | "calendarToday"
     | "collapsePane"
+    | "commandRadar"
     | "expandPane"
     | "pageCalendar"
     | "panRadar"
@@ -185,6 +186,11 @@ export const createHomeController = (
     scroll: 0,
     continueOffset: 0,
     selected: "",
+    radarFrame: null,
+    radarFrameCount: 0,
+    radarNowIndex: 0,
+    radarPlaying: true,
+    radarSpan: 1,
     weatherFocus: "view",
     weatherRadar: false,
     active: true,
@@ -411,6 +417,48 @@ export const createHomeController = (
     }
     saveRadarView({ latitude: current.latitude, longitude: current.longitude, zoom });
   };
+  const radarIndex = () => {
+    const current = state.getSnapshot();
+    if (current.radarFrame === null || current.radarFrameCount < 1) {
+      return current.radarNowIndex;
+    }
+    return Math.max(0, Math.min(current.radarFrameCount - 1, current.radarFrame));
+  };
+  const commandRadar = (command: RadarCommand) => {
+    const current = state.getSnapshot();
+    if (command.type === "sync") {
+      const count = Math.max(0, command.count);
+      const nowIndex = count === 0 ? 0 : Math.max(0, Math.min(count - 1, command.nowIndex));
+      const frame = current.radarFrame !== null && current.radarFrame >= count ? null : current.radarFrame;
+      update({ radarFrame: frame, radarFrameCount: count, radarNowIndex: nowIndex });
+      return;
+    }
+    if (command.type === "span") {
+      update({ radarFrame: null, radarSpan: command.span });
+      return;
+    }
+    if (command.type === "play") {
+      update({ radarPlaying: !current.radarPlaying });
+      return;
+    }
+    const count = current.radarFrameCount;
+    if (count < 1) {
+      return;
+    }
+    const base = radarIndex();
+    if (command.type === "tick") {
+      if (!current.radarPlaying || count < 2) {
+        return;
+      }
+      update({ radarFrame: (base + 1) % count });
+      return;
+    }
+    if (command.type === "scrub") {
+      update({ radarFrame: (base + command.delta + count) % count, radarPlaying: false });
+      return;
+    }
+    update({ radarFrame: Math.max(0, Math.min(count - 1, command.index)), radarPlaying: false });
+  };
   const setCalendarSpan = (span: CalendarSpan) => {
     update({ calendarSpan: span, calendarStart: clampDay(state.getSnapshot().calendarStart, span) });
   };
@@ -533,6 +581,32 @@ export const createHomeController = (
           } else if (code === K.UP) {
             update({ weatherFocus: "radar" });
           } else if (code === K.DOWN) {
+            update({ weatherFocus: "span" });
+          }
+          return true;
+        }
+        if (current.weatherRadar && current.weatherFocus === "span") {
+          if (code === K.LEFT) {
+            commandRadar({ span: 1, type: "span" });
+          } else if (code === K.RIGHT) {
+            commandRadar({ span: 2, type: "span" });
+          } else if (code === K.UP) {
+            update({ weatherFocus: "zoom" });
+          } else if (code === K.DOWN) {
+            update({ weatherFocus: "timeline" });
+          }
+          return true;
+        }
+        if (current.weatherRadar && current.weatherFocus === "timeline") {
+          if (code === K.LEFT) {
+            commandRadar({ delta: -1, type: "scrub" });
+          } else if (code === K.RIGHT) {
+            commandRadar({ delta: 1, type: "scrub" });
+          } else if (code === K.ENTER) {
+            commandRadar({ type: "play" });
+          } else if (code === K.UP) {
+            update({ weatherFocus: "span" });
+          } else if (code === K.DOWN) {
             update({ weatherFocus: "view" });
           }
           return true;
@@ -547,7 +621,7 @@ export const createHomeController = (
           } else if (code === K.DOWN) {
             panRadar(0, 1);
           } else if (code === K.ENTER) {
-            update({ weatherFocus: "zoom" });
+            update({ weatherFocus: "timeline" });
           }
           return true;
         }
@@ -741,6 +815,7 @@ export const createHomeController = (
     menuChoices,
     calendarToday,
     collapsePane,
+    commandRadar,
     expandPane,
     pageCalendar,
     setCalendarSpan,

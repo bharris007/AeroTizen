@@ -1,0 +1,50 @@
+import { expect, test } from "vitest";
+
+import type { RadarFrame } from "../../contracts/radarMap";
+
+import { framePhase, radarAgeMinutes, radarTimeline } from "./radarTimeline";
+
+const past = (time: number): RadarFrame => ({ kind: "past", path: "/v2/radar/" + time, time });
+const forecast = (time: number): RadarFrame => ({ kind: "forecast", path: "/v2/radar/nowcast_" + time, time });
+
+const TEN_MINUTES = 600;
+const NOON = 1_700_000_000;
+
+const archive = () =>
+  Array.from({ length: 13 }, (_, index) => past(NOON - (12 - index) * TEN_MINUTES)).concat([
+    forecast(NOON + TEN_MINUTES),
+    forecast(NOON + 2 * TEN_MINUTES),
+  ]);
+
+test("keeps one hour of observations plus any forecast, and the full two hours", () => {
+  const frames = archive();
+  const recent = radarTimeline(frames, 1, "rainviewer", NOON);
+  expect(recent.choices).toEqual([
+    { hours: 1, span: 1 },
+    { hours: 2, span: 2 },
+  ]);
+  expect(recent.entries.filter((entry) => !entry.forecast)).toHaveLength(7);
+  expect(recent.entries.filter((entry) => entry.forecast)).toHaveLength(2);
+  expect(recent.entries[recent.nowIndex]?.time).toBe(NOON);
+  expect(framePhase(recent.entries[recent.nowIndex], NOON)).toBe("now");
+  expect(framePhase(recent.entries[recent.entries.length - 1], NOON)).toBe("forecast");
+  expect(framePhase(recent.entries[0], NOON)).toBe("past");
+
+  const full = radarTimeline(frames, 2, "rainviewer", NOON);
+  expect(full.entries.filter((entry) => !entry.forecast)).toHaveLength(13);
+  expect(full.entries[full.nowIndex]?.time).toBe(NOON);
+});
+
+test("NEXRAD zoom has the last hour and no forecast frames", () => {
+  const timeline = radarTimeline([past(NOON)], 2, "nexrad", NOON);
+  expect(timeline.choices).toEqual([{ hours: 1, span: 1 }]);
+  expect(timeline.entries.map((entry) => entry.nexrad)).toEqual(["m50m", "m40m", "m30m", "m20m", "m10m", "now"]);
+  expect(timeline.entries.some((entry) => entry.forecast)).toBe(false);
+  expect(timeline.nowIndex).toBe(timeline.entries.length - 1);
+});
+
+test("age uses the catalog time", () => {
+  expect(radarAgeMinutes(NOON, NOON - 600, (NOON + 4 * 60) * 1000)).toBe(4);
+  expect(radarAgeMinutes(0, NOON, (NOON + 30) * 1000)).toBe(1);
+  expect(radarAgeMinutes(0, 0, NOON * 1000)).toBeNull();
+});

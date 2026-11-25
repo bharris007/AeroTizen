@@ -6,14 +6,23 @@ import { parseRainViewerMaps, RAIN_VIEWER_MAPS_URL } from "./rainViewer";
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 const EMPTY_FRAMES: RadarMapSnapshot["frames"] = Object.freeze([]);
 
-const loadingSnapshot = (): RadarMapSnapshot => Object.freeze({ frames: EMPTY_FRAMES, host: "", status: "loading" });
+const loadingSnapshot = (): RadarMapSnapshot =>
+  Object.freeze({ frames: EMPTY_FRAMES, generated: 0, host: "", status: "loading" });
 
 const sameMap = (current: RadarMapSnapshot, next: RadarMapSnapshot) => {
-  if (current.status !== next.status || current.host !== next.host || current.frames.length !== next.frames.length) {
+  if (
+    current.status !== next.status ||
+    current.host !== next.host ||
+    current.generated !== next.generated ||
+    current.frames.length !== next.frames.length
+  ) {
     return false;
   }
   return current.frames.every(
-    (frame, index) => frame.time === next.frames[index]?.time && frame.path === next.frames[index]?.path,
+    (frame, index) =>
+      frame.time === next.frames[index]?.time &&
+      frame.path === next.frames[index]?.path &&
+      frame.kind === next.frames[index]?.kind,
   );
 };
 
@@ -60,11 +69,18 @@ export const createRadarMap = ({
       const parsed = parseRainViewerMaps(data);
       if (!parsed) {
         if (snapshot.frames.length === 0) {
-          publish(Object.freeze({ frames: EMPTY_FRAMES, host: "", status: "unavailable" }));
+          publish(Object.freeze({ frames: EMPTY_FRAMES, generated: 0, host: "", status: "unavailable" }));
         }
         return;
       }
-      publish(Object.freeze({ frames: parsed.frames, host: parsed.host, status: "ready" }));
+      publish(
+        Object.freeze({
+          frames: parsed.frames,
+          generated: parsed.generated,
+          host: parsed.host,
+          status: "ready",
+        }),
+      );
     });
     cancelRequest = () => {
       cancel();

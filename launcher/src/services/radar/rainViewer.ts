@@ -12,7 +12,6 @@ export const RAIN_VIEWER_MAX_ZOOM = 7;
 export const RADAR_CARD_ZOOM = RAIN_VIEWER_MAX_ZOOM;
 const ESRI_DARK_CANVAS =
   "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/";
-export const RADAR_FRAME_LIMIT = 6;
 const MAX_PROJECTED_LATITUDE = 85;
 const HTTPS_HOST = /^https:\/\/[a-z0-9.-]+$/i;
 // Live paths are hashes (`/v2/radar/13f17414a055`), not only the older timestamp form.
@@ -43,7 +42,7 @@ const EMPTY_VIEW: RadarTileView = Object.freeze({
   tiles: Object.freeze([]),
 });
 
-const finiteFrame = (value: unknown): RadarFrame | null => {
+const finiteFrame = (value: unknown): { path: string; time: number } | null => {
   if (!value || typeof value !== "object") {
     return null;
   }
@@ -186,26 +185,39 @@ export const nexradTileUrl = (
   return layer + "/" + zoom + "/" + tile.x + "/" + tile.y + ".png";
 };
 
-// Keeps the newest observed frames. Nowcast paths are forecasts, so they stay out of the live loop.
-export const parseRainViewerMaps = (data: unknown): { frames: readonly RadarFrame[]; host: string } | null => {
+const readFrames = (value: unknown, kind: RadarFrame["kind"]) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map(finiteFrame)
+    .filter((frame): frame is { path: string; time: number } => frame !== null)
+    .map((frame) => ({ kind, path: frame.path, time: frame.time }));
+};
+
+// Observed frames, then any nowcast frames RainViewer included. The catalog sometimes has none.
+export const parseRainViewerMaps = (
+  data: unknown,
+): { frames: readonly RadarFrame[]; generated: number; host: string } | null => {
   if (!data || typeof data !== "object") {
     return null;
   }
-  const body = data as { host?: unknown; radar?: { past?: unknown } };
+  const body = data as { generated?: unknown; host?: unknown; radar?: { nowcast?: unknown; past?: unknown } };
   const host = typeof body.host === "string" ? body.host.replace(/\/+$/, "") : "";
   if (!HTTPS_HOST.test(host)) {
     return null;
   }
-  if (!Array.isArray(body.radar?.past)) {
+  const past = readFrames(body.radar?.past, "past").sort((first, second) => first.time - second.time);
+  if (past.length === 0) {
     return null;
   }
-  const frames = body.radar.past
-    .map(finiteFrame)
-    .filter((frame): frame is RadarFrame => frame !== null)
-    .sort((first, second) => first.time - second.time)
-    .slice(-RADAR_FRAME_LIMIT);
-  if (frames.length === 0) {
-    return null;
-  }
-  return { frames: Object.freeze(frames), host };
+  const seen = new Set(past.map((frame) => frame.time));
+  const forecast = readFrames(body.radar?.nowcast, "forecast")
+    .filter((frame) => !seen.has(frame.time))
+    .sort((first, second) => first.time - second.time);
+  return {
+    frames: Object.freeze([...past, ...forecast]),
+    generated: typeof body.generated === "number" && Number.isFinite(body.generated) ? body.generated : 0,
+    host,
+  };
 };

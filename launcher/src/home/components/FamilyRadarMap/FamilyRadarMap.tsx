@@ -25,18 +25,23 @@ const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion:
 // Live precipitation over a dark map. Coordinates come from the family forecast, which
 // uses the saved weather place or Franklin, Tennessee when that place is missing.
 export const FamilyRadarMap = ({
+  chrome = "card",
   enabled,
   env,
   label,
   latitude,
   longitude,
+  playback,
   zoom,
 }: {
+  chrome?: "card" | "full";
   enabled: boolean;
   env: HomeEnvironment;
   label: string;
   latitude: number;
   longitude: number;
+  // Set on the full-screen player. Undefined lets the card loop on its own.
+  playback?: { nexrad: (typeof NEXRAD_FRAMES)[number] | null; path: string | null; time: number } | null;
   zoom: number;
 }) => {
   const { t } = useTranslation();
@@ -81,8 +86,9 @@ export const FamilyRadarMap = ({
   }, [frameKey]);
   const overlay = radarOverlay(zoom, latitude, longitude);
   const nexrad = overlay.kind === "nexrad";
+  const driven = playback !== undefined;
   const frameCount = nexrad ? NEXRAD_FRAMES.length : map.frames.length;
-  const animate = enabled && !performanceMode && !reduceMotion && frameCount > 1;
+  const animate = !driven && enabled && !performanceMode && !reduceMotion && frameCount > 1;
   useEffect(() => {
     if (!animate) {
       return;
@@ -104,17 +110,53 @@ export const FamilyRadarMap = ({
     }
     return tilesForView(latitude, longitude, zoom, size.width, size.height, overlay.tileZoom).tiles;
   }, [enabled, latitude, longitude, overlay.tileZoom, size.height, size.width, zoom]);
+  const restingIndex = (() => {
+    if (nexrad) {
+      return Math.max(0, NEXRAD_FRAMES.length - 1);
+    }
+    for (let frameIndex = map.frames.length - 1; frameIndex >= 0; frameIndex -= 1) {
+      if (map.frames[frameIndex]?.kind !== "forecast") {
+        return frameIndex;
+      }
+    }
+    return 0;
+  })();
   const shownIndex = (() => {
     if (frameCount === 0) {
       return 0;
     }
     if (!animate) {
-      return frameCount - 1;
+      return Math.min(restingIndex, frameCount - 1);
     }
     return index % frameCount;
   })();
-  const shownFrame = nexrad || map.frames.length === 0 ? null : map.frames[shownIndex];
-  const nexradFrame = nexrad ? NEXRAD_FRAMES[shownIndex] : null;
+  const shownFrame = (() => {
+    if (driven) {
+      return playback?.path ? { kind: "past" as const, path: playback.path, time: playback.time } : null;
+    }
+    if (nexrad || map.frames.length === 0) {
+      return null;
+    }
+    return map.frames[shownIndex] ?? null;
+  })();
+  const nexradFrame = (() => {
+    if (driven) {
+      return playback?.nexrad ?? null;
+    }
+    if (nexrad) {
+      return NEXRAD_FRAMES[shownIndex] ?? null;
+    }
+    return null;
+  })();
+  const frameMarker = (() => {
+    if (driven) {
+      return playback?.time;
+    }
+    if (shownFrame) {
+      return shownFrame.time;
+    }
+    return nexradFrame || undefined;
+  })();
   useEffect(() => {
     if (!animate || radarTiles.length === 0) {
       return;
@@ -156,8 +198,9 @@ export const FamilyRadarMap = ({
       class={styles.map}
       ref={frame}
       data-family-radar-map
+      data-radar-chrome={chrome}
       data-family-radar-status={nexrad || map.frames.length > 0 ? "ready" : map.status}
-      data-radar-frame={shownFrame ? shownFrame.time : nexradFrame || undefined}
+      data-radar-frame={frameMarker}
       data-radar-source={overlay.kind}
       data-radar-zoom={zoom}
     >

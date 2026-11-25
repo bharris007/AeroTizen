@@ -9,6 +9,11 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     active: true,
     appOffset: 0,
     appsEndOffset: 0,
+    radarFrame: null,
+    radarFrameCount: 0,
+    radarNowIndex: 0,
+    radarPlaying: true,
+    radarSpan: 1,
     calendarDay: 0,
     calendarFocus: "grid",
     calendarSpan: 3,
@@ -53,6 +58,7 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     | "describe"
     | "calendarToday"
     | "collapsePane"
+    | "commandRadar"
     | "expandPane"
     | "pageCalendar"
     | "panRadar"
@@ -66,6 +72,7 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     activate: vi.fn(),
     calendarToday: vi.fn(),
     collapsePane: vi.fn(),
+    commandRadar: vi.fn(),
     expandPane: vi.fn(),
     pageCalendar: vi.fn(),
     panRadar: vi.fn(),

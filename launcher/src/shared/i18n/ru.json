@@ -397,6 +397,17 @@
   "family.radarZoom": "Масштаб",
   "family.radarZoomIn": "Приблизить",
   "family.radarZoomOut": "Отдалить",
-  "family.radarPanHint": "Стрелки двигают карту. OK — масштаб. Назад — закрыть.",
-  "family.radarZoomHint": "Влево — дальше. Вправо — ближе. Вниз — вернуться к карте."
+  "family.radarPanHint": "Стрелки двигают карту. OK — шкала времени. Назад — закрыть.",
+  "family.radarZoomHint": "Влево — дальше. Вправо — ближе. Вниз — к шкале времени.",
+  "family.radarPlay": "Воспроизвести",
+  "family.radarPause": "Пауза",
+  "family.radarPast": "Прошлое",
+  "family.radarForecast": "Прогноз",
+  "family.radarTimeline": "Шкала радара",
+  "family.radarTimelineHint": "Влево и вправо двигают время. OK — воспроизведение или пауза. Вверх меняет интервал.",
+  "family.radarSpanHint": "Влево — 1 час. Вправо — весь интервал. Вниз — к шкале времени.",
+  "family.radarRange": "Интервал",
+  "family.radarUpdatedNow": "Обновлено только что",
+  "family.radarUpdated": "Обновлено {{minutes}} мин назад",
+  "family.radarHours": "{{count}} ч"
 }

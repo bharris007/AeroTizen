@@ -397,6 +397,17 @@
   "family.radarZoom": "Zoom",
   "family.radarZoomIn": "Aumentar zoom",
   "family.radarZoomOut": "Diminuir zoom",
-  "family.radarPanHint": "As setas movem o mapa. OK para o zoom. Voltar para fechar.",
-  "family.radarZoomHint": "Esquerda diminui. Direita aumenta. Baixo volta ao mapa."
+  "family.radarPanHint": "As setas movem o mapa. OK para a linha do tempo. Voltar para fechar.",
+  "family.radarZoomHint": "Esquerda diminui. Direita aumenta. Baixo volta à linha do tempo.",
+  "family.radarPlay": "Reproduzir",
+  "family.radarPause": "Pausar",
+  "family.radarPast": "Passado",
+  "family.radarForecast": "Previsão",
+  "family.radarTimeline": "Linha do tempo do radar",
+  "family.radarTimelineHint": "Esquerda e direita percorrem o tempo. OK reproduz ou pausa. Cima muda o intervalo.",
+  "family.radarSpanHint": "Esquerda é 1 hora. Direita é o período todo. Baixo volta à linha do tempo.",
+  "family.radarRange": "Intervalo",
+  "family.radarUpdatedNow": "Atualizado agora",
+  "family.radarUpdated": "Atualizado há {{minutes}} min",
+  "family.radarHours": "{{count}} h"
 }
