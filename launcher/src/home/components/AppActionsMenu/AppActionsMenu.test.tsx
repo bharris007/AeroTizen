@@ -40,6 +40,8 @@ const harness = () => {
     calendarStart: 0,
     continueOffset: 0,
     expanded: null,
+    weatherFocus: "view",
+    weatherRadar: false,
     scroll: 0,
   });
   const origin = document.createElement("button");

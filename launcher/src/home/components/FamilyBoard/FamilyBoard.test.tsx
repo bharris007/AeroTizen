@@ -1,8 +1,11 @@
-import { screen } from "@testing-library/preact";
-import { expect, test } from "vitest";
+import { act, fireEvent, screen } from "@testing-library/preact";
+import { expect, test, vi } from "vitest";
 
 import type { CalendarEvent, FamilyCalendarSnapshot } from "../../../contracts/familyCalendar";
 import type { FamilyForecastSnapshot } from "../../../contracts/familyForecast";
+import type { RadarMapService, RadarMapSnapshot } from "../../../contracts/radarMap";
+import { FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE } from "../../../services/family/familyLocation";
+import { baseTileUrl, RADAR_CARD_ZOOM, radarTileUrl, tilesForView } from "../../../services/radar/rainViewer";
 import { createStore } from "../../../shared/state/createStore";
 import { renderWithEnglish } from "../../../test/renderWithEnglish";
 import { createCardEnvironment } from "../../test/createCardEnvironment";
@@ -25,7 +28,9 @@ const ready: FamilyForecastSnapshot = {
     { code: 2, hour: 15, temperature: 70 },
     { code: 1, hour: 16, temperature: 68 },
   ],
+  latitude: FRANKLIN_LATITUDE,
   locationLabel: "Franklin, TN",
+  longitude: FRANKLIN_LONGITUDE,
   low: 51,
   status: "ready",
   sunriseMinute: 7 * 60 + 30,
@@ -161,4 +166,66 @@ test("shows today's events in calendar colours with overlaps side by side and an
   expect(block("Pickup").style.width).toBe("100%");
   expect(Number.parseFloat(block("Pickup").style.top)).toBeGreaterThan(Number.parseFloat(block("Dentist").style.top));
   expect(container.querySelectorAll("[data-family-event='all-day']")).toHaveLength(1);
+});
+
+const radarService = (snapshot: RadarMapSnapshot): RadarMapService => ({
+  ...createStore(snapshot),
+  dispose() {},
+  watch: vi.fn(() => () => undefined),
+});
+
+test("pressing up reveals the weather radar control and OK is wired to it", async () => {
+  const env = environment(ready, "family-calendar");
+  const { container } = renderWithEnglish(<FamilyBoard env={env} shown timeFormat="12" />);
+
+  expect(container.querySelector("[data-family-radar-slot]")?.getAttribute("data-revealed")).toBeNull();
+  const control = screen.getByRole("button", { name: "Show live radar" });
+  expect(control.getAttribute("data-family-radar")).toBe("off");
+  await act(() => {
+    env.state.set({ ...env.state.getSnapshot(), selected: "family-radar" });
+  });
+  expect(container.querySelector("[data-family-radar-slot]")?.getAttribute("data-revealed")).toBe("true");
+  expect(control.getAttribute("data-focused")).toBe("true");
+  fireEvent.click(control);
+  expect(env.select).toHaveBeenCalledWith("family-radar");
+  expect(env.activate).toHaveBeenCalledWith("family-radar");
+});
+
+test("live radar replaces the forecast and loads RainViewer tiles for that place", () => {
+  const width = vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(800);
+  const height = vi.spyOn(Element.prototype, "clientHeight", "get").mockReturnValue(600);
+  try {
+    const env = environment(ready, "family-weather");
+    const radarMap = radarService({
+      frames: [{ path: "/v2/radar/13f17414a055", time: 100 }],
+      host: "https://tilecache.rainviewer.com",
+      status: "ready",
+    });
+    env.state.set({ ...env.state.getSnapshot(), weatherRadar: true });
+    const view = {
+      ...env,
+      runtime: { ...env.runtime, radarMap },
+      settings: createStore({ performanceMode: true }),
+    } as unknown as typeof env;
+    const { container } = renderWithEnglish(<FamilyBoard env={view} shown timeFormat="12" />);
+
+    expect(container.querySelector("[data-family-weather-view]")?.getAttribute("data-family-weather-view")).toBe(
+      "radar",
+    );
+    expect(screen.getByRole("button", { name: "Show the forecast" }).getAttribute("data-family-radar")).toBe("on");
+    expect(screen.getByText("Franklin, TN")).toBeDefined();
+    expect(screen.getByText("RainViewer · © Esri · © OpenStreetMap")).toBeDefined();
+    const sources = [...container.querySelectorAll("img")].map((image) => image.getAttribute("src") || "");
+    const tile = tilesForView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 800, 600).tiles[0];
+    expect(sources).toContain(
+      radarTileUrl("https://tilecache.rainviewer.com", "/v2/radar/13f17414a055", RADAR_CARD_ZOOM, tile),
+    );
+    expect(sources).toContain(baseTileUrl(RADAR_CARD_ZOOM, tile));
+    expect(container.querySelector("[data-family-radar-marker]")).not.toBeNull();
+    expect(container.querySelector("[data-family-radar-slot]")?.getAttribute("data-revealed")).toBe("true");
+    expect(radarMap.watch).toHaveBeenCalled();
+  } finally {
+    width.mockRestore();
+    height.mockRestore();
+  }
 });

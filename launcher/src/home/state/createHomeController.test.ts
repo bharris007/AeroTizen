@@ -69,7 +69,9 @@ test("moves from the header to Family and between its columns", () => {
   // Family is the default page; its weather card is the first content item.
   expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "family-weather" });
 
-  // Up lands on the Family tab (the default, left-most tab).
+  // Up from weather reaches the radar control, then the Family tab.
+  press(home, KEY.UP);
+  expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "family-radar" });
   press(home, KEY.UP);
   expect(home.state.getSnapshot()).toMatchObject({ page: "family", selected: "family-tab" });
 
@@ -101,6 +103,7 @@ test("the Christmas shortcut sits between the gear and the tabs and opens Christ
   window.Christmas = { close() {}, isOpen: () => false, open };
   try {
     home.bridge.focus();
+    press(home, KEY.UP);
     press(home, KEY.UP);
     expect(home.state.getSnapshot().selected).toBe("family-tab");
     press(home, KEY.LEFT);
@@ -141,6 +144,44 @@ test("OK opens a Family pane full screen and Back closes it with focus kept on t
   // Down from a pane stays put.
   press(home, KEY.DOWN);
   expect(home.state.getSnapshot().selected).toBe("family-calendar");
+});
+
+test("the weather radar control toggles live radar on the card and in full screen", () => {
+  const home = controller();
+  home.bridge.focus();
+  press(home, KEY.UP);
+  expect(home.state.getSnapshot()).toMatchObject({
+    selected: "family-radar",
+    weatherFocus: "view",
+    weatherRadar: false,
+  });
+  ok(home);
+  expect(home.state.getSnapshot()).toMatchObject({ selected: "family-radar", weatherRadar: true });
+  ok(home);
+  expect(home.state.getSnapshot().weatherRadar).toBe(false);
+  press(home, KEY.RIGHT);
+  expect(home.state.getSnapshot().selected).toBe("family-radar");
+  press(home, KEY.DOWN);
+  expect(home.state.getSnapshot().selected).toBe("family-weather");
+
+  ok(home);
+  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", weatherFocus: "view", weatherRadar: false });
+  press(home, KEY.UP);
+  expect(home.state.getSnapshot().weatherFocus).toBe("radar");
+  press(home, KEY.ENTER);
+  press(home, KEY.ENTER);
+  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", weatherFocus: "radar", weatherRadar: true });
+  home.bridge.keyup(KEY.ENTER);
+  expect(home.state.getSnapshot().weatherRadar).toBe(true);
+  press(home, KEY.DOWN);
+  expect(home.state.getSnapshot().weatherFocus).toBe("view");
+  ok(home);
+  expect(home.state.getSnapshot()).toMatchObject({ expanded: null, selected: "family-weather", weatherRadar: true });
+
+  ok(home);
+  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", weatherFocus: "view", weatherRadar: true });
+  press(home, KEY.BACK);
+  expect(home.state.getSnapshot()).toMatchObject({ expanded: null, selected: "family-weather", weatherRadar: true });
 });
 
 test("the calendar's day control changes the Home pane's day and OK returns to today", () => {

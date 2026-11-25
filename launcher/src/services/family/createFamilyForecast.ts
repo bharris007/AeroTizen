@@ -72,7 +72,9 @@ export const createFamilyForecast = ({
       days: ready ? reading.days : EMPTY_DAYS,
       high: ready ? reading.high : null,
       hours: ready ? reading.hours : EMPTY_HOURS,
+      latitude: location.latitude,
       locationLabel: location.label || location.name,
+      longitude: location.longitude,
       low: ready ? reading.low : null,
       status,
       sunriseMinute: ready ? reading.sunriseMinute : null,
@@ -82,12 +84,25 @@ export const createFamilyForecast = ({
     });
   };
   let snapshot = build("loading");
-  let publishedSignature = familyForecastSignature("loading", locationLabel(), reading);
+  let publishedSignature = familyForecastSignature(
+    "loading",
+    locationLabel(),
+    place().latitude,
+    place().longitude,
+    reading,
+  );
   const publish = (status: FamilyForecastSnapshot["status"]) => {
     if (disposed) {
       return;
     }
-    const nextSignature = familyForecastSignature(status, locationLabel(), reading);
+    const location = place();
+    const nextSignature = familyForecastSignature(
+      status,
+      location.label || location.name,
+      location.latitude,
+      location.longitude,
+      reading,
+    );
     if (snapshot && nextSignature === publishedSignature) {
       return;
     }

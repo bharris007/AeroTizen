@@ -386,5 +386,11 @@
   "family.now": "الآن",
   "family.percent": "{{value}}٪",
   "family.dailyForecast": "توقعات {{count}} أيام",
-  "family.closeHint": "اضغط رجوع للإغلاق"
+  "family.closeHint": "اضغط رجوع للإغلاق",
+  "family.showRadar": "عرض الرادار المباشر",
+  "family.showForecast": "عرض التوقعات",
+  "family.radar": "رادار مباشر",
+  "family.radarLoading": "جارٍ تحميل الرادار",
+  "family.radarUnavailable": "الرادار المباشر غير متاح",
+  "family.radarCredit": "RainViewer · © Esri · © OpenStreetMap"
 }

@@ -1,5 +1,5 @@
 import { fireEvent, screen } from "@testing-library/preact";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
 import type { CalendarEvent, FamilyCalendarSnapshot } from "../../../contracts/familyCalendar";
 import type { FamilyForecastSnapshot } from "../../../contracts/familyForecast";
@@ -27,7 +27,9 @@ const forecast: FamilyForecastSnapshot = {
     { code: 61, hour: 12, precipitation: 60, temperature: 70 },
     { code: 2, hour: 13, precipitation: 5, temperature: 71 },
   ],
+  latitude: 35.9251,
   locationLabel: "Franklin, TN",
+  longitude: -86.8689,
   low: 51,
   status: "ready",
   sunriseMinute: 7 * 60 + 5,
@@ -168,6 +170,32 @@ test("the Home calendar pane shows another day with its day control and a way ba
   expect(env.shiftCalendarDay).toHaveBeenCalledWith(1);
   fireEvent.click(control);
   expect(env.shiftCalendarDay).toHaveBeenCalledWith(0);
+});
+
+test("full-screen radar keeps a remote toggle back to the forecast", () => {
+  const env = environment({ expanded: "weather", weatherFocus: "radar", weatherRadar: true });
+  const radarMap = {
+    ...createStore({ frames: [], host: "", status: "loading" as const }),
+    dispose() {},
+    watch: vi.fn(() => () => undefined),
+  };
+  const view = {
+    ...env,
+    runtime: { ...env.runtime, radarMap },
+    settings: createStore({ performanceMode: true }),
+  } as unknown as typeof env;
+  const { container } = renderWithEnglish(<FamilyExpanded env={view} timeFormat="12" unit="F" />);
+
+  expect(container.querySelector("[data-family-overlay='weather']")).not.toBeNull();
+  expect(container.querySelector("[data-family-expanded='radar']")).not.toBeNull();
+  expect(screen.getByText("Loading radar")).toBeDefined();
+  expect(screen.getByText("Franklin, TN")).toBeDefined();
+  expect(screen.getByText("Press Back to close")).toBeDefined();
+  const toggle = screen.getByRole("button", { name: "Show the forecast" });
+  expect(toggle.getAttribute("data-focused")).toBe("true");
+  expect(toggle.getAttribute("data-family-radar-toggle")).toBe("forecast");
+  fireEvent.click(toggle);
+  expect(env.toggleWeatherRadar).toHaveBeenCalledTimes(1);
 });
 
 test("the Home calendar pane marks today with a badge", () => {

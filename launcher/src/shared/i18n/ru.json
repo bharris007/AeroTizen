@@ -386,5 +386,11 @@
   "family.now": "Сейчас",
   "family.percent": "{{value}}%",
   "family.dailyForecast": "Прогноз на {{count}} дн.",
-  "family.closeHint": "Нажмите «Назад», чтобы закрыть"
+  "family.closeHint": "Нажмите «Назад», чтобы закрыть",
+  "family.showRadar": "Показать радар",
+  "family.showForecast": "Показать прогноз",
+  "family.radar": "Радар",
+  "family.radarLoading": "Загрузка радара",
+  "family.radarUnavailable": "Радар недоступен",
+  "family.radarCredit": "RainViewer · © Esri · © OpenStreetMap"
 }

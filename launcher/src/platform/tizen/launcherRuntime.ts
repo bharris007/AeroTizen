@@ -12,6 +12,7 @@ import type { ClockService, HomeBridge, LauncherConfig, SettingsBridge } from ".
 import type { NativeNavigation, NativeNavigationCommands } from "../../contracts/nativeNavigation";
 import type { PlatformOverrides } from "../../contracts/platformOverrides";
 import type { SettingsService } from "../../contracts/preferences";
+import type { RadarMapService } from "../../contracts/radarMap";
 import type { NetworkService, WeatherService } from "../../contracts/status";
 import type { Translate } from "../../shared/i18n/createTranslations";
 
@@ -37,6 +38,7 @@ export interface LauncherRuntime {
   nativeNavigation: NativeNavigation;
   network: NetworkService;
   platforms?: PlatformOverrides;
+  radarMap: RadarMapService;
   settings: SettingsService;
   settingsUi?: SettingsBridge;
   tizen?: (AppsTizen & HomeWatcherTizen & InputsTizen & StremioTizen & NativeNavigationTizen) | null;

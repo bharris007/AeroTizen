@@ -15,6 +15,8 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     calendarStart: 0,
     continueOffset: 0,
     expanded: null,
+    weatherFocus: "view",
+    weatherRadar: false,
     draft: null,
     menu: null,
     moving: null,
@@ -55,6 +57,7 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     | "pageCalendar"
     | "setCalendarSpan"
     | "shiftCalendarDay"
+    | "toggleWeatherRadar"
   > = {
     state,
     nodes: new Map<string, HTMLElement>(),
@@ -65,6 +68,7 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     pageCalendar: vi.fn(),
     setCalendarSpan: vi.fn(),
     shiftCalendarDay: vi.fn(),
+    toggleWeatherRadar: vi.fn(),
     select: vi.fn(),
     runtime: runtime as HomeEnvironment["runtime"],
     describe: (app: InstalledApp): AppPresentation => ({

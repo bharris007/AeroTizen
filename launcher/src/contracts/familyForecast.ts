@@ -34,7 +34,10 @@ export interface FamilyForecastSnapshot {
   readonly days: readonly FamilyDay[];
   readonly high: number | null;
   readonly hours: readonly FamilyHour[];
+  // Resolved place for this forecast. An empty or invalid saved place is Franklin, Tennessee.
+  readonly latitude: number;
   readonly locationLabel: string;
+  readonly longitude: number;
   readonly low: number | null;
   readonly status: FamilyForecastStatus;
   // Today's sunrise/sunset as local minutes after midnight, or null when unknown.

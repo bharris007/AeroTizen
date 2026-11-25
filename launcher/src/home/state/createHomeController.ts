@@ -10,6 +10,7 @@ import { revealHorizontalItem } from "./horizontalScroll";
 const HEADER_KEYS = ["gear", "christmas-shortcut", "family-tab", "home-tab"] as const;
 const FAMILY_ROW_KEYS = ["family-weather", "family-calendar"] as const;
 export const FAMILY_DAY_KEY = "family-day";
+export const FAMILY_RADAR_KEY = "family-radar";
 // The calendar keeps events from a week back to a month ahead.
 export const CALENDAR_FIRST_DAY = -7;
 export const CALENDAR_LAST_DAY = 30;
@@ -164,6 +165,7 @@ export const createHomeController = (
     | "pageCalendar"
     | "setCalendarSpan"
     | "shiftCalendarDay"
+    | "toggleWeatherRadar"
   >,
   transaction: (action: () => void) => void,
 ) => {
@@ -179,6 +181,8 @@ export const createHomeController = (
     scroll: 0,
     continueOffset: 0,
     selected: "",
+    weatherFocus: "view",
+    weatherRadar: false,
     active: true,
     appOffset: 0,
     moving: null,
@@ -231,8 +235,8 @@ export const createHomeController = (
   const rows = (): readonly (readonly string[])[] => {
     const page = state.getSnapshot().page;
     if (page === "family") {
-      // The day control sits inside the calendar card; the remote reaches it with Up.
-      return [HEADER_KEYS, FAMILY_ROW_KEYS, [FAMILY_DAY_KEY]];
+      // The radar and day controls sit on the cards. Up from each card reaches its own control.
+      return [HEADER_KEYS, FAMILY_ROW_KEYS, [FAMILY_RADAR_KEY, FAMILY_DAY_KEY]];
     }
     const columns = getAppGridColumns(settings.getSnapshot().homeCardColumns, page);
     const appKeys = ids().map((id) => "app:" + id);
@@ -361,6 +365,7 @@ export const createHomeController = (
       calendarStart: clampDay(current.calendarDay, current.calendarSpan),
       expanded: pane,
       selected: pane === "weather" ? "family-weather" : "family-calendar",
+      weatherFocus: "view",
     });
     focus();
   };
@@ -371,6 +376,9 @@ export const createHomeController = (
   };
   const shiftCalendarDay = (delta: number) => {
     update({ calendarDay: delta === 0 ? 0 : clampDay(state.getSnapshot().calendarDay + delta) });
+  };
+  const toggleWeatherRadar = () => {
+    update({ weatherRadar: !state.getSnapshot().weatherRadar });
   };
   const setCalendarSpan = (span: CalendarSpan) => {
     update({ calendarSpan: span, calendarStart: clampDay(state.getSnapshot().calendarStart, span) });
@@ -398,6 +406,8 @@ export const createHomeController = (
       showPage(nextPage);
     } else if (key === "family-weather" || key === "family-calendar") {
       expandPane(key === "family-weather" ? "weather" : "calendar");
+    } else if (key === FAMILY_RADAR_KEY) {
+      toggleWeatherRadar();
     } else if (key === FAMILY_DAY_KEY) {
       shiftCalendarDay(0);
     } else if (key === "back-to-top") {
@@ -476,6 +486,18 @@ export const createHomeController = (
       }
       enterDown = code === K.ENTER;
       if (current.expanded === "weather") {
+        if (current.weatherFocus === "radar") {
+          if (code === K.DOWN) {
+            update({ weatherFocus: "view" });
+          } else if (code === K.ENTER) {
+            toggleWeatherRadar();
+          }
+          return true;
+        }
+        if (code === K.UP) {
+          update({ weatherFocus: "radar" });
+          return true;
+        }
         if (code === K.ENTER) {
           collapsePane();
         }
@@ -499,6 +521,20 @@ export const createHomeController = (
       }
       return true;
     }
+    if (current.selected === FAMILY_RADAR_KEY) {
+      if (code === K.UP) {
+        select(tabForPage("family"));
+        return true;
+      }
+      if (code === K.DOWN) {
+        select("family-weather");
+        return true;
+      }
+      if (horizontal) {
+        return true;
+      }
+      return false;
+    }
     if (current.selected === FAMILY_DAY_KEY) {
       if (horizontal) {
         shiftCalendarDay(delta);
@@ -509,6 +545,10 @@ export const createHomeController = (
         return true;
       }
       return false;
+    }
+    if (code === K.UP && current.selected === "family-weather") {
+      select(FAMILY_RADAR_KEY);
+      return true;
     }
     if (code === K.UP && current.selected === "family-calendar") {
       select(FAMILY_DAY_KEY);
@@ -648,5 +688,6 @@ export const createHomeController = (
     pageCalendar,
     setCalendarSpan,
     shiftCalendarDay,
+    toggleWeatherRadar,
   };
 };

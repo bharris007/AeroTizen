@@ -18,6 +18,8 @@ export type FamilyPane = "weather" | "calendar";
 export type CalendarSpan = 1 | 3 | 5;
 // Which part of the full-screen calendar the remote is on.
 export type CalendarFocus = "grid" | "span";
+// Which part of the full-screen weather the remote is on.
+export type WeatherFocus = "radar" | "view";
 export interface HomeMenuChoice {
   readonly action: "add" | "remove" | "move";
   readonly label: MessageKey;
@@ -41,6 +43,10 @@ export interface HomeState {
   readonly page: Page;
   readonly scroll: number;
   readonly selected: string;
+  // Full-screen weather: the forecast, or the radar toggle in the corner.
+  readonly weatherFocus: WeatherFocus;
+  // Home and full-screen weather show live radar instead of the forecast.
+  readonly weatherRadar: boolean;
 }
 export interface HomeEnvironment {
   activate(key: string): void;
@@ -71,5 +77,7 @@ export interface HomeEnvironment {
   showPage(page: Page): void;
   state: MutableStore<HomeState>;
   status: StatusStores;
+  // Home and full-screen weather: switch between the forecast and live radar.
+  toggleWeatherRadar(): void;
   updates: LauncherUpdateNotice;
 }

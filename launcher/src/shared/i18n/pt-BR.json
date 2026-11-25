@@ -386,5 +386,11 @@
   "family.now": "Agora",
   "family.percent": "{{value}}%",
   "family.dailyForecast": "Previsão de {{count}} dias",
-  "family.closeHint": "Pressione Voltar para fechar"
+  "family.closeHint": "Pressione Voltar para fechar",
+  "family.showRadar": "Mostrar o radar ao vivo",
+  "family.showForecast": "Mostrar a previsão",
+  "family.radar": "Radar ao vivo",
+  "family.radarLoading": "Carregando o radar",
+  "family.radarUnavailable": "O radar ao vivo não está disponível",
+  "family.radarCredit": "RainViewer · © Esri · © OpenStreetMap"
 }

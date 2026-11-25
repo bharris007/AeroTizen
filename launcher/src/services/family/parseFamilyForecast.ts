@@ -200,11 +200,15 @@ export const parseFamilyForecast = (
 export const familyForecastSignature = (
   status: FamilyForecastSnapshot["status"],
   locationLabel: string,
+  latitude: number,
+  longitude: number,
   reading: FamilyForecastReading,
 ) =>
   JSON.stringify([
     status,
     locationLabel,
+    latitude,
+    longitude,
     reading.timeZone,
     status === "ready" ? reading.temperature : null,
     status === "ready" ? reading.code : null,
