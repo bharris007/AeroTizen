@@ -397,8 +397,8 @@
   "family.radarZoom": "Zoom",
   "family.radarZoomIn": "Zoom avant",
   "family.radarZoomOut": "Zoom arrière",
-  "family.radarPanHint": "Les flèches déplacent la carte. OK pour la chronologie. Retour pour fermer.",
-  "family.radarZoomHint": "Gauche : dézoomer. Droite : zoomer. Bas : retour à la chronologie.",
+  "family.radarPanHint": "Les flèches déplacent la carte. Retour ou OK pour quitter.",
+  "family.radarZoomHint": "Gauche : dézoomer. Droite : zoomer. Bas : le déplacement.",
   "family.radarPlay": "Lecture",
   "family.radarPause": "Pause",
   "family.radarPast": "Passé",
@@ -409,5 +409,9 @@
   "family.radarRange": "Période",
   "family.radarUpdatedNow": "Mis à jour à l’instant",
   "family.radarUpdated": "Mis à jour il y a {{minutes}} min",
-  "family.radarHours": "{{count}} h"
+  "family.radarHours": "{{count}} h",
+  "family.radarPan": "Déplacer",
+  "family.radarPanOn": "Mode déplacement",
+  "family.radarPanSelectHint": "OK pour déplacer la carte. Haut pour le zoom. Bas pour la chronologie.",
+  "family.radarViewHint": "OK pour la chronologie. Haut pour les commandes. Retour pour fermer."
 }

@@ -1,7 +1,9 @@
 import { Pause, Play } from "lucide-preact";
+import { useEffect, useRef } from "preact/hooks";
 
 import type { TimeFormat } from "../../../contracts/preferences";
 import type { RadarPhase, RadarSpanChoice, TimelineEntry } from "../../../services/radar/radarTimeline";
+import { useStoreSelector } from "../../../shared/hooks/useStore";
 import type { Translate } from "../../../shared/i18n/createTranslations";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
 import { Icon } from "../../../shared/icons/Icon/Icon";
@@ -69,8 +71,23 @@ export const FamilyRadarTimeline = ({
   updated: string;
 }) => {
   const { language, t } = useTranslation();
+  const panning = useStoreSelector(env.state, (state) => state.radarPanning);
   const selected = entries[index] ?? null;
+  const previousIndex = useRef(index);
+  const wrapped =
+    entries.length > 1 &&
+    ((previousIndex.current === entries.length - 1 && index === 0) ||
+      (previousIndex.current === 0 && index === entries.length - 1));
+  useEffect(() => {
+    previousIndex.current = index;
+  }, [index]);
   const hint = (() => {
+    if (panning) {
+      return t("family.radarPanHint");
+    }
+    if (focus === "pan") {
+      return t("family.radarPanSelectHint");
+    }
     if (focus === "span") {
       return t("family.radarSpanHint");
     }
@@ -81,7 +98,7 @@ export const FamilyRadarTimeline = ({
       return t("family.radarZoomHint");
     }
     if (focus === "view") {
-      return t("family.radarPanHint");
+      return t("family.radarViewHint");
     }
     return t("family.closeHint");
   })();
@@ -114,13 +131,18 @@ export const FamilyRadarTimeline = ({
             env.commandRadar({ type: "play" });
           }}
         >
-          <Icon icon={playing ? Pause : Play} size={34} />
+          <Icon icon={playing ? Pause : Play} size={22} />
         </button>
         <div class={styles.label}>
           <div class={styles.phase}>{phaseText(phase, t)}</div>
           <div class={styles.when} data-family-radar-when>
             {selected ? clockLabel(selected.time, timeZone, language, timeFormat) : ""}
           </div>
+          {updated ? (
+            <div class={styles.updated} data-family-radar-updated>
+              {updated}
+            </div>
+          ) : null}
         </div>
         <div
           class={styles.spans}
@@ -148,11 +170,6 @@ export const FamilyRadarTimeline = ({
           ))}
         </div>
       </div>
-      {updated ? (
-        <div class={styles.updated} data-family-radar-updated>
-          {updated}
-        </div>
-      ) : null}
       <div
         class={styles.track}
         role="slider"
@@ -172,14 +189,21 @@ export const FamilyRadarTimeline = ({
             style={{ left: position(entryIndex, entries.length) + "%" }}
           />
         ))}
-        <span class={styles.thumb} data-family-radar-thumb style={{ left: position(index, entries.length) + "%" }} />
+        <span
+          class={styles.thumb}
+          data-family-radar-thumb
+          data-wrap={wrapped ? "true" : undefined}
+          style={{ left: position(index, entries.length) + "%" }}
+        />
         <div class={styles.labels}>
           {entries.map((entry, entryIndex) =>
             labels.includes(entryIndex) ? (
-              <span key={entry.id} class={styles.axisLabel} style={{ left: position(entryIndex, entries.length) + "%" }}>
-                {entryIndex === nowIndex
-                  ? t("family.now")
-                  : shortLabel(entry.time, timeZone, language, timeFormat)}
+              <span
+                key={entry.id}
+                class={styles.axisLabel}
+                style={{ left: position(entryIndex, entries.length) + "%" }}
+              >
+                {entryIndex === nowIndex ? t("family.now") : shortLabel(entry.time, timeZone, language, timeFormat)}
               </span>
             ) : null,
           )}

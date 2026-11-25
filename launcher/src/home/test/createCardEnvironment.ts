@@ -12,6 +12,7 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     radarFrame: null,
     radarFrameCount: 0,
     radarNowIndex: 0,
+    radarPanning: false,
     radarPlaying: true,
     radarSpan: 1,
     calendarDay: 0,
@@ -65,6 +66,7 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     | "setCalendarSpan"
     | "shiftCalendarDay"
     | "toggleWeatherRadar"
+    | "toggleRadarPanning"
     | "zoomRadar"
   > = {
     state,
@@ -79,6 +81,7 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     setCalendarSpan: vi.fn(),
     shiftCalendarDay: vi.fn(),
     toggleWeatherRadar: vi.fn(),
+    toggleRadarPanning: vi.fn(),
     zoomRadar: vi.fn(),
     select: vi.fn(),
     runtime: runtime as HomeEnvironment["runtime"],

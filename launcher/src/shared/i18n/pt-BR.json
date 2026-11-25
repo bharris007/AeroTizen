@@ -397,8 +397,8 @@
   "family.radarZoom": "Zoom",
   "family.radarZoomIn": "Aumentar zoom",
   "family.radarZoomOut": "Diminuir zoom",
-  "family.radarPanHint": "As setas movem o mapa. OK para a linha do tempo. Voltar para fechar.",
-  "family.radarZoomHint": "Esquerda diminui. Direita aumenta. Baixo volta à linha do tempo.",
+  "family.radarPanHint": "As setas movem o mapa. Voltar ou OK para sair.",
+  "family.radarZoomHint": "Esquerda diminui. Direita aumenta. Baixo vai para mover.",
   "family.radarPlay": "Reproduzir",
   "family.radarPause": "Pausar",
   "family.radarPast": "Passado",
@@ -409,5 +409,9 @@
   "family.radarRange": "Intervalo",
   "family.radarUpdatedNow": "Atualizado agora",
   "family.radarUpdated": "Atualizado há {{minutes}} min",
-  "family.radarHours": "{{count}} h"
+  "family.radarHours": "{{count}} h",
+  "family.radarPan": "Mover",
+  "family.radarPanOn": "Modo mover",
+  "family.radarPanSelectHint": "OK para mover o mapa. Cima para o zoom. Baixo para a linha do tempo.",
+  "family.radarViewHint": "OK para a linha do tempo. Cima para os controles. Voltar para fechar."
 }

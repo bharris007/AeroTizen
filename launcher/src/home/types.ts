@@ -19,8 +19,8 @@ export type CalendarSpan = 1 | 3 | 5;
 // Which part of the full-screen calendar the remote is on.
 export type CalendarFocus = "grid" | "span";
 // Which part of the full-screen weather the remote is on.
-// Radar adds the timeline, its 1h/2h span, and the zoom control.
-export type WeatherFocus = "radar" | "span" | "timeline" | "view" | "zoom";
+// Radar adds the timeline, its 1h/2h span, zoom, and the pan button.
+export type WeatherFocus = "pan" | "radar" | "span" | "timeline" | "view" | "zoom";
 export type RadarCommand =
   | { count: number; nowIndex: number; type: "sync" }
   | { span: 1 | 2; type: "span" }
@@ -53,6 +53,8 @@ export interface HomeState {
   readonly radarFrame: number | null;
   readonly radarFrameCount: number;
   readonly radarNowIndex: number;
+  // True while the pan button is armed: arrows move the map until Back or OK.
+  readonly radarPanning: boolean;
   readonly radarPlaying: boolean;
   readonly radarSpan: 1 | 2;
   readonly scroll: number;
@@ -95,6 +97,8 @@ export interface HomeEnvironment {
   showPage(page: Page): void;
   state: MutableStore<HomeState>;
   status: StatusStores;
+  // Enter or leave radar pan mode. Arrows move the map only while this is on.
+  toggleRadarPanning(): void;
   // Home and full-screen weather: switch between the forecast and live radar.
   toggleWeatherRadar(): void;
   updates: LauncherUpdateNotice;

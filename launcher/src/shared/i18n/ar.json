@@ -397,8 +397,8 @@
   "family.radarZoom": "التكبير",
   "family.radarZoomIn": "تكبير",
   "family.radarZoomOut": "تصغير",
-  "family.radarPanHint": "الأسهم تحرّك الخريطة. OK للخط الزمني. رجوع للإغلاق.",
-  "family.radarZoomHint": "يسار للتصغير. يمين للتكبير. أسفل للعودة إلى الخط الزمني.",
+  "family.radarPanHint": "الأسهم تحرّك الخريطة. رجوع أو OK للخروج.",
+  "family.radarZoomHint": "يسار للتصغير. يمين للتكبير. أسفل للتحريك.",
   "family.radarPlay": "تشغيل",
   "family.radarPause": "إيقاف",
   "family.radarPast": "الماضي",
@@ -409,5 +409,9 @@
   "family.radarRange": "المدى الزمني",
   "family.radarUpdatedNow": "تم التحديث الآن",
   "family.radarUpdated": "تم التحديث قبل {{minutes}} د",
-  "family.radarHours": "{{count}} س"
+  "family.radarHours": "{{count}} س",
+  "family.radarPan": "تحريك",
+  "family.radarPanOn": "وضع التحريك",
+  "family.radarPanSelectHint": "OK لتحريك الخريطة. أعلى للتكبير. أسفل للخط الزمني.",
+  "family.radarViewHint": "OK للخط الزمني. أعلى لعناصر التحكم. رجوع للإغلاق."
 }

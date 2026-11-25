@@ -5,7 +5,15 @@ import { createInputScope } from "../../shared/input/createInputScope";
 import { focusControl } from "../../shared/navigation/focusControl";
 import { createStore } from "../../shared/state/createStore";
 import { ADD_APPS_KEY } from "../homeControls";
-import type { CalendarSpan, FamilyPane, HomeEnvironment, HomeMenuChoice, HomeState, Page, RadarCommand } from "../types";
+import type {
+  CalendarSpan,
+  FamilyPane,
+  HomeEnvironment,
+  HomeMenuChoice,
+  HomeState,
+  Page,
+  RadarCommand,
+} from "../types";
 
 import { revealHorizontalItem } from "./horizontalScroll";
 
@@ -170,6 +178,7 @@ export const createHomeController = (
     | "setCalendarSpan"
     | "shiftCalendarDay"
     | "toggleWeatherRadar"
+    | "toggleRadarPanning"
     | "zoomRadar"
   >,
   transaction: (action: () => void) => void,
@@ -189,6 +198,7 @@ export const createHomeController = (
     radarFrame: null,
     radarFrameCount: 0,
     radarNowIndex: 0,
+    radarPanning: false,
     radarPlaying: true,
     radarSpan: 1,
     weatherFocus: "view",
@@ -374,6 +384,7 @@ export const createHomeController = (
       calendarFocus: "grid",
       calendarStart: clampDay(current.calendarDay, current.calendarSpan),
       expanded: pane,
+      radarPanning: false,
       selected: pane === "weather" ? "family-weather" : "family-calendar",
       weatherFocus: "view",
     });
@@ -381,14 +392,27 @@ export const createHomeController = (
   };
   const collapsePane = () => {
     const pane = state.getSnapshot().expanded;
-    update({ expanded: null, selected: pane === "weather" ? "family-weather" : "family-calendar" });
+    update({
+      expanded: null,
+      radarPanning: false,
+      selected: pane === "weather" ? "family-weather" : "family-calendar",
+      weatherFocus: "view",
+    });
     focus();
   };
   const shiftCalendarDay = (delta: number) => {
     update({ calendarDay: delta === 0 ? 0 : clampDay(state.getSnapshot().calendarDay + delta) });
   };
   const toggleWeatherRadar = () => {
-    update({ weatherRadar: !state.getSnapshot().weatherRadar });
+    const current = state.getSnapshot();
+    update({ radarPanning: false, weatherRadar: !current.weatherRadar });
+  };
+  const toggleRadarPanning = () => {
+    const current = state.getSnapshot();
+    if (!current.weatherRadar) {
+      return;
+    }
+    update({ radarPanning: !current.radarPanning, weatherFocus: "pan" });
   };
   const radarPlace = () => resolveFamilyLocation(settings.getSnapshot().weatherLocation);
   const radarCamera = () => radarViewport(settings.getSnapshot().radarView, radarPlace());
@@ -554,6 +578,31 @@ export const createHomeController = (
   const familyKey = (code: number, delta: number) => {
     const current = state.getSnapshot();
     const horizontal = code === K.LEFT || code === K.RIGHT;
+    // Pan mode is opt-in. Back or OK leaves it; arrows then return to the controls.
+    if (current.radarPanning) {
+      if (code === K.BACK || code === K.ESC) {
+        update({ radarPanning: false, weatherFocus: "pan" });
+        return true;
+      }
+      if (code === K.ENTER && enterDown) {
+        return true;
+      }
+      if (code === K.ENTER) {
+        enterDown = true;
+        update({ radarPanning: false, weatherFocus: "pan" });
+        return true;
+      }
+      if (code === K.LEFT) {
+        panRadar(-1, 0);
+      } else if (code === K.RIGHT) {
+        panRadar(1, 0);
+      } else if (code === K.UP) {
+        panRadar(0, -1);
+      } else if (code === K.DOWN) {
+        panRadar(0, 1);
+      }
+      return true;
+    }
     if (current.expanded) {
       if (code === K.BACK || code === K.ESC) {
         collapsePane();
@@ -581,6 +630,16 @@ export const createHomeController = (
           } else if (code === K.UP) {
             update({ weatherFocus: "radar" });
           } else if (code === K.DOWN) {
+            update({ weatherFocus: "pan" });
+          }
+          return true;
+        }
+        if (current.weatherRadar && current.weatherFocus === "pan") {
+          if (code === K.ENTER) {
+            update({ radarPanning: true, weatherFocus: "pan" });
+          } else if (code === K.UP) {
+            update({ weatherFocus: "zoom" });
+          } else if (code === K.DOWN) {
             update({ weatherFocus: "span" });
           }
           return true;
@@ -591,7 +650,7 @@ export const createHomeController = (
           } else if (code === K.RIGHT) {
             commandRadar({ span: 2, type: "span" });
           } else if (code === K.UP) {
-            update({ weatherFocus: "zoom" });
+            update({ weatherFocus: "pan" });
           } else if (code === K.DOWN) {
             update({ weatherFocus: "timeline" });
           }
@@ -612,15 +671,7 @@ export const createHomeController = (
           return true;
         }
         if (current.weatherRadar) {
-          if (code === K.LEFT) {
-            panRadar(-1, 0);
-          } else if (code === K.RIGHT) {
-            panRadar(1, 0);
-          } else if (code === K.UP) {
-            panRadar(0, -1);
-          } else if (code === K.DOWN) {
-            panRadar(0, 1);
-          } else if (code === K.ENTER) {
+          if (code === K.UP || code === K.DOWN || code === K.ENTER) {
             update({ weatherFocus: "timeline" });
           }
           return true;
@@ -659,9 +710,15 @@ export const createHomeController = (
       }
       if (code === K.DOWN) {
         select("family-weather");
+        if (current.weatherRadar) {
+          update({ weatherFocus: "zoom" });
+        }
         return true;
       }
       if (horizontal) {
+        if (current.weatherRadar && delta === 1) {
+          select(FAMILY_DAY_KEY);
+        }
         return true;
       }
       return false;
@@ -676,6 +733,39 @@ export const createHomeController = (
         return true;
       }
       return false;
+    }
+    if (!current.expanded && current.weatherRadar && current.selected === "family-weather") {
+      if (current.weatherFocus === "zoom") {
+        if (code === K.LEFT) {
+          zoomRadar(-1);
+        } else if (code === K.RIGHT) {
+          zoomRadar(1);
+        } else if (code === K.UP) {
+          update({ weatherFocus: "view" });
+          select(FAMILY_RADAR_KEY);
+        } else if (code === K.DOWN) {
+          update({ weatherFocus: "pan" });
+        }
+        return true;
+      }
+      if (current.weatherFocus === "pan") {
+        if (code === K.ENTER && enterDown) {
+          return true;
+        }
+        if (code === K.ENTER) {
+          enterDown = true;
+          update({ radarPanning: true, weatherFocus: "pan" });
+        } else if (code === K.UP) {
+          update({ weatherFocus: "zoom" });
+        } else if (code === K.DOWN) {
+          update({ weatherFocus: "view" });
+        }
+        return true;
+      }
+      if (code === K.UP) {
+        update({ weatherFocus: "pan" });
+        return true;
+      }
     }
     if (code === K.UP && current.selected === "family-weather") {
       select(FAMILY_RADAR_KEY);
@@ -822,6 +912,7 @@ export const createHomeController = (
     panRadar,
     shiftCalendarDay,
     toggleWeatherRadar,
+    toggleRadarPanning,
     zoomRadar,
   };
 };

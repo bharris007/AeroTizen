@@ -1,4 +1,4 @@
-import { ZoomIn, ZoomOut } from "lucide-preact";
+import { Move, ZoomIn, ZoomOut } from "lucide-preact";
 import { useEffect, useState } from "preact/hooks";
 
 import type { FamilyForecastSnapshot } from "../../../contracts/familyForecast";
@@ -15,10 +15,10 @@ import { FamilyRadarTimeline } from "../FamilyRadarTimeline/FamilyRadarTimeline"
 
 import styles from "./FamilyRadarFull.module.css";
 
-const PLAY_INTERVAL_MS = 650;
+const PLAY_INTERVAL_MS = 900;
 const AGE_REFRESH_MS = 30 * 1000;
 
-// Full-screen radar. Arrows pan. OK opens the timeline. Up reaches the range, then zoom.
+// Full-screen radar. Arrows move between controls. The pan button arms map movement.
 export const FamilyRadarFull = ({
   env,
   focus,
@@ -34,6 +34,7 @@ export const FamilyRadarFull = ({
   const saved = useStoreSelector(env.settings, (settings) => settings.radarView);
   const viewport = radarViewport(saved, forecast);
   const map = useStore(env.runtime.radarMap);
+  const panning = useStoreSelector(env.state, (state) => state.radarPanning);
   const playing = useStoreSelector(env.state, (state) => state.radarPlaying);
   const radarFrame = useStoreSelector(env.state, (state) => state.radarFrame);
   const span = useStoreSelector(env.state, (state) => state.radarSpan);
@@ -76,6 +77,7 @@ export const FamilyRadarFull = ({
     <section
       class={styles.screen}
       data-family-expanded="radar"
+      data-family-radar-panning={panning ? "true" : "false"}
       aria-label={t("family.radar") + ", " + forecast.locationLabel}
     >
       <FamilyRadarMap
@@ -85,42 +87,57 @@ export const FamilyRadarFull = ({
         label={forecast.locationLabel}
         latitude={viewport.latitude}
         longitude={viewport.longitude}
-        playback={
-          selected
-            ? { nexrad: selected.nexrad, path: selected.path, time: selected.time }
-            : null
-        }
+        playback={selected ? { nexrad: selected.nexrad, path: selected.path, time: selected.time } : null}
         zoom={viewport.zoom}
       />
-      <div
-        class={styles.zoom}
-        role="group"
-        aria-label={t("family.radarZoom")}
-        data-family-radar-zoom
-        data-focused={focus === "zoom" ? "true" : undefined}
-      >
+      <div class={styles.tools}>
+        <div
+          class={styles.zoom}
+          role="group"
+          aria-label={t("family.radarZoom")}
+          data-family-radar-zoom
+          data-focused={focus === "zoom" ? "true" : undefined}
+        >
+          <button
+            type="button"
+            class={styles.zoomButton}
+            tabIndex={-1}
+            aria-label={t("family.radarZoomIn")}
+            data-family-radar-zoom="1"
+            onClick={zoom(1)}
+          >
+            <Icon icon={ZoomIn} size={32} />
+          </button>
+          <span class={styles.zoomLevel} data-family-radar-zoom-level>
+            {viewport.zoom}
+          </span>
+          <button
+            type="button"
+            class={styles.zoomButton}
+            tabIndex={-1}
+            aria-label={t("family.radarZoomOut")}
+            data-family-radar-zoom="-1"
+            onClick={zoom(-1)}
+          >
+            <Icon icon={ZoomOut} size={32} />
+          </button>
+        </div>
         <button
           type="button"
-          class={styles.zoomButton}
+          class={styles.pan}
           tabIndex={-1}
-          aria-label={t("family.radarZoomIn")}
-          data-family-radar-zoom="1"
-          onClick={zoom(1)}
+          aria-label={t("family.radarPan")}
+          aria-pressed={panning ? "true" : "false"}
+          data-family-radar-pan
+          data-focused={focus === "pan" ? "true" : undefined}
+          data-active={panning ? "true" : undefined}
+          onClick={(event) => {
+            event.stopPropagation();
+            env.toggleRadarPanning();
+          }}
         >
-          <Icon icon={ZoomIn} size={32} />
-        </button>
-        <span class={styles.zoomLevel} data-family-radar-zoom-level>
-          {viewport.zoom}
-        </span>
-        <button
-          type="button"
-          class={styles.zoomButton}
-          tabIndex={-1}
-          aria-label={t("family.radarZoomOut")}
-          data-family-radar-zoom="-1"
-          onClick={zoom(-1)}
-        >
-          <Icon icon={ZoomOut} size={32} />
+          <Icon icon={Move} size={32} />
+          <span class={styles.panLabel}>{t(panning ? "family.radarPanOn" : "family.radarPan")}</span>
         </button>
       </div>
       <FamilyRadarTimeline

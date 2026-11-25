@@ -21,6 +21,25 @@
   position: absolute;
 }
 
+.radarLayer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 560ms ease-in-out;
+}
+
+.radarLayer[data-shown="true"] {
+  opacity: 1;
+}
+
+.map[data-radar-crossfade="false"] .radarLayer {
+  transition: none;
+}
+
 .image {
   position: absolute;
   top: 0;

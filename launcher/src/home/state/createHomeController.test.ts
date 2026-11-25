@@ -187,6 +187,8 @@ test("the weather radar control toggles live radar on the card and in full scree
   press(home, KEY.DOWN);
   expect(home.state.getSnapshot().weatherFocus).toBe("zoom");
   press(home, KEY.DOWN);
+  expect(home.state.getSnapshot().weatherFocus).toBe("pan");
+  press(home, KEY.DOWN);
   expect(home.state.getSnapshot().weatherFocus).toBe("span");
   press(home, KEY.DOWN);
   expect(home.state.getSnapshot().weatherFocus).toBe("timeline");
@@ -203,17 +205,37 @@ test("full-screen radar pans and zooms with the remote and saves that view", () 
   home.bridge.focus();
   home.toggleWeatherRadar();
   home.expandPane("weather");
-  expect(home.state.getSnapshot()).toMatchObject({ weatherFocus: "view", weatherRadar: true });
+  expect(home.state.getSnapshot()).toMatchObject({ radarPanning: false, weatherFocus: "view", weatherRadar: true });
 
+  // Arrows on the map navigate controls; they do not pan until pan mode is on.
   press(home, KEY.RIGHT);
-  const panned = home.settings.getSnapshot().radarView;
-  expect(panned?.zoom).toBe(7);
-  expect(panned?.longitude).toBeGreaterThan(panned?.placeLongitude ?? 0);
+  expect(home.settings.getSnapshot().radarView).toBeNull();
   expect(home.state.getSnapshot().expanded).toBe("weather");
 
   press(home, KEY.ENTER);
   expect(home.state.getSnapshot().weatherFocus).toBe("timeline");
   press(home, KEY.UP);
+  press(home, KEY.UP);
+  expect(home.state.getSnapshot().weatherFocus).toBe("pan");
+  ok(home);
+  expect(home.state.getSnapshot().radarPanning).toBe(true);
+  press(home, KEY.RIGHT);
+  const panned = home.settings.getSnapshot().radarView;
+  expect(panned?.zoom).toBe(7);
+  expect(panned?.longitude).toBeGreaterThan(panned?.placeLongitude ?? 0);
+  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", radarPanning: true });
+
+  press(home, KEY.BACK);
+  expect(home.state.getSnapshot()).toMatchObject({
+    expanded: "weather",
+    radarPanning: false,
+    weatherFocus: "pan",
+  });
+  ok(home);
+  expect(home.state.getSnapshot().radarPanning).toBe(true);
+  ok(home);
+  expect(home.state.getSnapshot().radarPanning).toBe(false);
+
   press(home, KEY.UP);
   expect(home.state.getSnapshot().weatherFocus).toBe("zoom");
   press(home, KEY.RIGHT);
@@ -229,6 +251,63 @@ test("full-screen radar pans and zooms with the remote and saves that view", () 
   expect(home.state.getSnapshot().weatherFocus).toBe("radar");
   press(home, KEY.DOWN);
   expect(home.state.getSnapshot().weatherFocus).toBe("zoom");
+});
+
+test("the split weather radar card pans and zooms with the remote and saves that view", () => {
+  const home = controller();
+  home.bridge.focus();
+  home.toggleWeatherRadar();
+  expect(home.state.getSnapshot()).toMatchObject({
+    expanded: null,
+    radarPanning: false,
+    selected: "family-weather",
+    weatherFocus: "view",
+    weatherRadar: true,
+  });
+
+  // Default arrows still move between the two columns.
+  press(home, KEY.RIGHT);
+  expect(home.state.getSnapshot().selected).toBe("family-calendar");
+  expect(home.settings.getSnapshot().radarView).toBeNull();
+  press(home, KEY.LEFT);
+  expect(home.state.getSnapshot().selected).toBe("family-weather");
+
+  press(home, KEY.UP);
+  expect(home.state.getSnapshot()).toMatchObject({
+    selected: "family-weather",
+    weatherFocus: "pan",
+    radarPanning: false,
+  });
+  ok(home);
+  expect(home.state.getSnapshot().radarPanning).toBe(true);
+  press(home, KEY.RIGHT);
+  const panned = home.settings.getSnapshot().radarView;
+  expect(panned?.zoom).toBe(7);
+  expect(panned?.longitude).toBeGreaterThan(panned?.placeLongitude ?? 0);
+  expect(home.state.getSnapshot()).toMatchObject({ expanded: null, selected: "family-weather" });
+
+  press(home, KEY.BACK);
+  expect(home.state.getSnapshot()).toMatchObject({
+    expanded: null,
+    radarPanning: false,
+    selected: "family-weather",
+    weatherFocus: "pan",
+  });
+
+  press(home, KEY.UP);
+  expect(home.state.getSnapshot()).toMatchObject({ selected: "family-weather", weatherFocus: "zoom" });
+  press(home, KEY.RIGHT);
+  expect(home.settings.getSnapshot().radarView?.zoom).toBe(8);
+  press(home, KEY.LEFT);
+  expect(home.settings.getSnapshot().radarView?.zoom).toBe(7);
+  press(home, KEY.UP);
+  expect(home.state.getSnapshot().selected).toBe("family-radar");
+  press(home, KEY.RIGHT);
+  expect(home.state.getSnapshot().selected).toBe("family-day");
+  press(home, KEY.DOWN);
+  expect(home.state.getSnapshot().selected).toBe("family-calendar");
+  press(home, KEY.LEFT);
+  expect(home.state.getSnapshot().selected).toBe("family-weather");
 });
 
 test("the radar timeline plays, scrubs, and switches between one hour and the full range", () => {

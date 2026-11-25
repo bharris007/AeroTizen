@@ -16,11 +16,14 @@ import type { HomeEnvironment } from "../../types";
 
 import styles from "./FamilyRadarMap.module.css";
 
-const RADAR_FRAME_INTERVAL_MS = 700;
+export const RADAR_FRAME_INTERVAL_MS = 900;
+export const RADAR_CROSSFADE_MS = 560;
 const MEASURE_ATTEMPTS = 2;
 const NO_TILES: readonly RadarTile[] = Object.freeze([]);
 
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+
+type RadarLayer = { key: string; nexrad: (typeof NEXRAD_FRAMES)[number] | null; path: string | null };
 
 // Live precipitation over a dark map. Coordinates come from the family forecast, which
 // uses the saved weather place or Franklin, Tennessee when that place is missing.
@@ -50,8 +53,14 @@ export const FamilyRadarMap = ({
   const [reduceMotion] = useState(prefersReducedMotion);
   const [index, setIndex] = useState(0);
   const [size, setSize] = useState({ height: 0, width: 0 });
+  const [stack, setStack] = useState<{ incoming: RadarLayer | null; outgoing: RadarLayer | null; shown: boolean }>({
+    incoming: null,
+    outgoing: null,
+    shown: true,
+  });
   const frame = useRef<HTMLDivElement>(null);
   const frameKey = map.frames.map((item) => item.time).join(",");
+  const softFade = !performanceMode && !reduceMotion;
   useEffect(() => {
     if (!enabled) {
       return;
@@ -157,6 +166,58 @@ export const FamilyRadarMap = ({
     }
     return nexradFrame || undefined;
   })();
+  const activeLayer = useMemo((): RadarLayer | null => {
+    if (nexradFrame) {
+      return { key: "n:" + nexradFrame, nexrad: nexradFrame, path: null };
+    }
+    if (shownFrame) {
+      return { key: "r:" + shownFrame.path, nexrad: null, path: shownFrame.path };
+    }
+    return null;
+  }, [nexradFrame, shownFrame]);
+  const viewKey = [latitude, longitude, zoom, size.width, size.height, overlay.tileZoom].join(":");
+  const viewRef = useRef(viewKey);
+  useLayoutEffect(() => {
+    const viewChanged = viewRef.current !== viewKey;
+    viewRef.current = viewKey;
+    if (!activeLayer) {
+      setStack({ incoming: null, outgoing: null, shown: true });
+      return;
+    }
+    setStack((current) => {
+      if (!softFade || !current.incoming || viewChanged) {
+        return { incoming: activeLayer, outgoing: null, shown: true };
+      }
+      if (current.incoming.key === activeLayer.key) {
+        return current;
+      }
+      return { incoming: activeLayer, outgoing: current.incoming, shown: false };
+    });
+  }, [activeLayer, softFade, viewKey]);
+  useEffect(() => {
+    if (stack.shown || !stack.incoming) {
+      return;
+    }
+    let second = 0;
+    const first = window.requestAnimationFrame(() => {
+      second = window.requestAnimationFrame(() => {
+        setStack((current) => (current.shown ? current : { ...current, shown: true }));
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(first);
+      window.cancelAnimationFrame(second);
+    };
+  }, [stack.incoming, stack.shown]);
+  useEffect(() => {
+    if (!stack.outgoing || !stack.shown) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setStack((current) => ({ ...current, outgoing: null }));
+    }, RADAR_CROSSFADE_MS);
+    return () => window.clearTimeout(timer);
+  }, [stack.outgoing, stack.shown]);
   useEffect(() => {
     if (!animate || radarTiles.length === 0) {
       return;
@@ -184,15 +245,36 @@ export const FamilyRadarMap = ({
     }
     return map.status === "loading" ? t("family.radarLoading") : "";
   })();
-  const radarSrc = (tile: RadarTile) => {
-    if (nexradFrame) {
-      return nexradTileUrl(nexradFrame, overlay.tileZoom, tile);
+  const layerSrc = (layer: RadarLayer, tile: RadarTile) => {
+    if (layer.nexrad) {
+      return nexradTileUrl(layer.nexrad, overlay.tileZoom, tile);
     }
-    if (shownFrame) {
-      return radarTileUrl(map.host, shownFrame.path, overlay.tileZoom, tile);
+    if (layer.path) {
+      return radarTileUrl(map.host, layer.path, overlay.tileZoom, tile);
     }
     return "";
   };
+  const renderLayer = (layer: RadarLayer, shown: boolean) => (
+    <div key={layer.key} class={styles.radarLayer} data-radar-layer={layer.key} data-shown={shown ? "true" : "false"}>
+      {radarTiles.map((tile) => {
+        const src = layerSrc(layer, tile);
+        return src ? (
+          <img
+            key={"radar:" + tile.left + ":" + tile.top + ":" + tile.size}
+            class={styles.image + " " + styles.tile}
+            alt=""
+            src={src}
+            style={{
+              height: tile.size + "px",
+              left: tile.left + "px",
+              top: tile.top + "px",
+              width: tile.size + "px",
+            }}
+          />
+        ) : null;
+      })}
+    </div>
+  );
   return (
     <div
       class={styles.map}
@@ -203,6 +285,7 @@ export const FamilyRadarMap = ({
       data-radar-frame={frameMarker}
       data-radar-source={overlay.kind}
       data-radar-zoom={zoom}
+      data-radar-crossfade={softFade ? "true" : "false"}
     >
       <div class={styles.layers} aria-hidden="true">
         {baseTiles.map((tile) => (
@@ -214,22 +297,8 @@ export const FamilyRadarMap = ({
             style={{ height: tile.size + "px", left: tile.left + "px", top: tile.top + "px", width: tile.size + "px" }}
           />
         ))}
-        {radarTiles.map((tile) =>
-          radarSrc(tile) ? (
-            <img
-              key={"radar:" + tile.left + ":" + tile.top + ":" + tile.size}
-              class={styles.image + " " + styles.tile}
-              alt=""
-              src={radarSrc(tile)}
-              style={{
-                height: tile.size + "px",
-                left: tile.left + "px",
-                top: tile.top + "px",
-                width: tile.size + "px",
-              }}
-            />
-          ) : null,
-        )}
+        {stack.outgoing ? renderLayer(stack.outgoing, !stack.shown) : null}
+        {stack.incoming ? renderLayer(stack.incoming, stack.shown) : null}
         {baseTiles.length > 0 ? <div class={styles.marker} data-family-radar-marker /> : null}
       </div>
       {label ? <div class={styles.place + " " + text.truncate}>{label}</div> : null}
