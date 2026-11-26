@@ -3,6 +3,8 @@ import type { RadarFrame } from "../../contracts/radarMap";
 // Public RainViewer maps API: https://www.rainviewer.com/api.html
 export const RAIN_VIEWER_MAPS_URL = "https://api.rainviewer.com/public/weather-maps.json";
 export const RADAR_TILE_SIZE = 256;
+// Cap so a 4K Tizen view cannot mount hundreds of 256px images at once.
+export const MAX_RADAR_TILES = 24;
 // Scheme 2 is the blue-to-red scale from RainViewer's tile example, with smooth edges and snow.
 export const RADAR_COLOR_SCHEME = 2;
 export const RADAR_TILE_OPTIONS = "1_1";
@@ -34,6 +36,10 @@ export interface RadarTileView {
   readonly originLeft: number;
   readonly originTop: number;
   readonly tiles: readonly RadarTile[];
+}
+
+export interface RadarLimitedTileView extends RadarTileView {
+  readonly tileZoom: number;
 }
 
 const EMPTY_VIEW: RadarTileView = Object.freeze({
@@ -122,6 +128,27 @@ export const tilesForView = (
     }
   }
   return { originLeft: left, originTop: top, tiles };
+};
+
+// Use coarser tiles (drawn larger) when a full-resolution grid would exceed the cap.
+// A 4K screen at zoom 7 would otherwise request well over a hundred 256px tiles.
+export const tilesForLimitedView = (
+  latitude: number,
+  longitude: number,
+  zoom: number,
+  width: number,
+  height: number,
+  tileZoom = zoom,
+  maxTiles = MAX_RADAR_TILES,
+): RadarLimitedTileView => {
+  let source = Number.isInteger(tileZoom) && tileZoom >= 0 && tileZoom <= zoom ? tileZoom : zoom;
+  let view = tilesForView(latitude, longitude, zoom, width, height, source);
+  while (view.tiles.length > maxTiles && source > 0) {
+    source -= 1;
+    view = tilesForView(latitude, longitude, zoom, width, height, source);
+  }
+  const tiles = view.tiles.length > maxTiles ? view.tiles.slice(0, maxTiles) : view.tiles;
+  return { originLeft: view.originLeft, originTop: view.originTop, tileZoom: source, tiles };
 };
 
 export const radarTileUrl = (host: string, path: string, zoom: number, tile: Pick<RadarTile, "x" | "y">) =>

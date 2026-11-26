@@ -4,6 +4,7 @@ import { FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE } from "../family/familyLocation"
 
 import {
   baseTileUrl,
+  MAX_RADAR_TILES,
   nexradCovers,
   nexradTileUrl,
   parseRainViewerMaps,
@@ -12,6 +13,7 @@ import {
   RADAR_TILE_SIZE,
   radarOverlay,
   radarTileUrl,
+  tilesForLimitedView,
   tilesForView,
   unprojectRadar,
 } from "./rainViewer";
@@ -99,4 +101,25 @@ test("zooms past RainViewer with NEXRAD in the US and scaled radar tiles elsewhe
     "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913-m20m/9/132/201.png",
   );
   expect(nexradTileUrl("now", 9, { x: 1, y: 2 })).toContain("/nexrad-n0q-900913/9/1/2.png");
+});
+
+test("caps a 4K viewport with coarser tiles so one layer stays under the TV-safe limit", () => {
+  const uncapped = tilesForView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 3840, 2160);
+  expect(uncapped.tiles.length).toBeGreaterThan(MAX_RADAR_TILES);
+  const limited = tilesForLimitedView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 3840, 2160);
+  expect(limited.tiles.length).toBeGreaterThan(0);
+  expect(limited.tiles.length).toBeLessThanOrEqual(MAX_RADAR_TILES);
+  expect(limited.tileZoom).toBeLessThan(RADAR_CARD_ZOOM);
+  const modest = tilesForLimitedView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 800, 600);
+  expect(modest.tiles.length).toBe(
+    tilesForView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 800, 600).tiles.length,
+  );
+  expect(modest.tileZoom).toBe(RADAR_CARD_ZOOM);
+  const centerX = 1920;
+  const centerY = 1080;
+  const covering = limited.tiles.filter(
+    (tile) =>
+      centerX >= tile.left && centerX < tile.left + tile.size && centerY >= tile.top && centerY < tile.top + tile.size,
+  );
+  expect(covering).toHaveLength(1);
 });

@@ -58,13 +58,14 @@ export const FamilyRadarFull = ({
   useEffect(() => {
     env.commandRadar({ count: timeline.entries.length, nowIndex: timeline.nowIndex, type: "sync" });
   }, [env, timeline.entries.length, timeline.nowIndex]);
+  const playbackReady = overlay.kind === "nexrad" || map.status === "ready";
   useEffect(() => {
-    if (!playing || timeline.entries.length < 2) {
+    if (!playing || !playbackReady || timeline.entries.length < 2) {
       return;
     }
     const timer = window.setInterval(() => env.commandRadar({ type: "tick" }), PLAY_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [env, playing, timeline.entries.length]);
+  }, [env, playbackReady, playing, timeline.entries.length]);
   useEffect(() => {
     const timer = window.setInterval(() => setClock(Date.now()), AGE_REFRESH_MS);
     return () => window.clearInterval(timer);

@@ -15,6 +15,7 @@ const maps = (times: readonly number[]) => ({
 const harness = () => {
   const requests: { abort: ReturnType<typeof vi.fn>; done: (data: unknown) => void; url: string }[] = [];
   let interval: (() => void) | undefined;
+  let timeout: (() => void) | undefined;
   const platform: WeatherPlatform = {
     requestJSON(url, done) {
       const abort = vi.fn();
@@ -26,13 +27,18 @@ const harness = () => {
     platform,
     timers: {
       clearInterval: vi.fn(),
+      clearTimeout: vi.fn(),
       setInterval: vi.fn((callback: () => void) => {
         interval = callback;
         return 1;
       }),
+      setTimeout: vi.fn((callback: () => void) => {
+        timeout = callback;
+        return 2;
+      }),
     },
   });
-  return { interval: () => interval, requests, service };
+  return { interval: () => interval, requests, service, timeout: () => timeout };
 };
 
 test("fetches RainViewer only while a view is watching and does not refetch for a second watcher", () => {
@@ -82,4 +88,13 @@ test("keeps the last frames when a refresh fails and ignores a reply after the l
   failed.service.watch();
   failed.requests[0].done({ host: "https://nope.example", radar: { past: [] } });
   expect(failed.service.getSnapshot()).toMatchObject({ frames: [], status: "unavailable" });
+});
+
+test("marks the catalog unavailable when the metadata request times out with no frames", () => {
+  const { requests, service, timeout } = harness();
+  service.watch();
+  expect(service.getSnapshot().status).toBe("loading");
+  timeout()?.();
+  expect(requests[0].abort).toHaveBeenCalled();
+  expect(service.getSnapshot()).toMatchObject({ frames: [], status: "unavailable" });
 });

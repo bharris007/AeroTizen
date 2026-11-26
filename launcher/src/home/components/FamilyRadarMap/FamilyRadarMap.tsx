@@ -7,7 +7,7 @@ import {
   radarOverlay,
   type RadarTile,
   radarTileUrl,
-  tilesForView,
+  tilesForLimitedView,
 } from "../../../services/radar/rainViewer";
 import { useStore, useStoreSelector } from "../../../shared/hooks/useStore";
 import { useTranslation } from "../../../shared/i18n/useTranslation";
@@ -15,6 +15,7 @@ import text from "../../../shared/styles/text.module.css";
 import type { HomeEnvironment } from "../../types";
 
 import styles from "./FamilyRadarMap.module.css";
+import { FamilyRadarTile } from "./FamilyRadarTile";
 
 export const RADAR_FRAME_INTERVAL_MS = 900;
 export const RADAR_CROSSFADE_MS = 560;
@@ -53,6 +54,7 @@ export const FamilyRadarMap = ({
   const [reduceMotion] = useState(prefersReducedMotion);
   const [index, setIndex] = useState(0);
   const [size, setSize] = useState({ height: 0, width: 0 });
+  const [catalogTimedOut, setCatalogTimedOut] = useState(false);
   const [stack, setStack] = useState<{ incoming: RadarLayer | null; outgoing: RadarLayer | null; shown: boolean }>({
     incoming: null,
     outgoing: null,
@@ -67,6 +69,11 @@ export const FamilyRadarMap = ({
     }
     return env.runtime.radarMap.watch();
   }, [enabled, env.runtime.radarMap]);
+  useEffect(() => {
+    if (!enabled) {
+      setStack({ incoming: null, outgoing: null, shown: true });
+    }
+  }, [enabled]);
   useLayoutEffect(() => {
     const node = frame.current;
     if (!node || !enabled) {
@@ -97,7 +104,15 @@ export const FamilyRadarMap = ({
   const nexrad = overlay.kind === "nexrad";
   const driven = playback !== undefined;
   const frameCount = nexrad ? NEXRAD_FRAMES.length : map.frames.length;
-  const animate = !driven && enabled && !performanceMode && !reduceMotion && frameCount > 1;
+  const animate = !driven && enabled && !performanceMode && !reduceMotion && frameCount > 1 && map.status === "ready";
+  useEffect(() => {
+    if (!enabled || nexrad || map.frames.length > 0 || map.status !== "loading") {
+      setCatalogTimedOut(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setCatalogTimedOut(true), 8_000);
+    return () => window.clearTimeout(timer);
+  }, [enabled, map.frames.length, map.status, nexrad]);
   useEffect(() => {
     if (!animate) {
       return;
@@ -107,18 +122,22 @@ export const FamilyRadarMap = ({
     }, RADAR_FRAME_INTERVAL_MS);
     return () => window.clearInterval(timer);
   }, [animate]);
-  const baseTiles = useMemo(() => {
+  const baseView = useMemo(() => {
     if (!enabled || size.width <= 0 || size.height <= 0) {
-      return NO_TILES;
+      return null;
     }
-    return tilesForView(latitude, longitude, zoom, size.width, size.height).tiles;
+    return tilesForLimitedView(latitude, longitude, zoom, size.width, size.height);
   }, [enabled, latitude, longitude, size.height, size.width, zoom]);
-  const radarTiles = useMemo(() => {
+  const radarView = useMemo(() => {
     if (!enabled || size.width <= 0 || size.height <= 0) {
-      return NO_TILES;
+      return null;
     }
-    return tilesForView(latitude, longitude, zoom, size.width, size.height, overlay.tileZoom).tiles;
+    return tilesForLimitedView(latitude, longitude, zoom, size.width, size.height, overlay.tileZoom);
   }, [enabled, latitude, longitude, overlay.tileZoom, size.height, size.width, zoom]);
+  const baseTiles = baseView?.tiles ?? NO_TILES;
+  const radarTiles = radarView?.tiles ?? NO_TILES;
+  const baseTileZoom = baseView?.tileZoom ?? zoom;
+  const radarTileZoom = radarView?.tileZoom ?? overlay.tileZoom;
   const restingIndex = (() => {
     if (nexrad) {
       return Math.max(0, NEXRAD_FRAMES.length - 1);
@@ -175,7 +194,7 @@ export const FamilyRadarMap = ({
     }
     return null;
   }, [nexradFrame, shownFrame]);
-  const viewKey = [latitude, longitude, zoom, size.width, size.height, overlay.tileZoom].join(":");
+  const viewKey = [latitude, longitude, zoom, size.width, size.height, baseTileZoom, radarTileZoom].join(":");
   const viewRef = useRef(viewKey);
   useLayoutEffect(() => {
     const viewChanged = viewRef.current !== viewKey;
@@ -218,39 +237,21 @@ export const FamilyRadarMap = ({
     }, RADAR_CROSSFADE_MS);
     return () => window.clearTimeout(timer);
   }, [stack.outgoing, stack.shown]);
-  useEffect(() => {
-    if (!animate || radarTiles.length === 0) {
-      return;
-    }
-    const nextIndex = (shownIndex + 1) % Math.max(frameCount, 1);
-    const preloaded = radarTiles.map((tile) => {
-      const image = new Image();
-      if (nexrad) {
-        image.src = nexradTileUrl(NEXRAD_FRAMES[nextIndex] ?? "now", overlay.tileZoom, tile);
-      } else if (map.frames[nextIndex]) {
-        image.src = radarTileUrl(map.host, map.frames[nextIndex].path, overlay.tileZoom, tile);
-      }
-      return image;
-    });
-    return () => {
-      preloaded.splice(0, preloaded.length);
-    };
-  }, [animate, frameCount, map.frames, map.host, nexrad, overlay.tileZoom, radarTiles, shownIndex]);
   const statusText = (() => {
     if (nexrad || map.frames.length > 0) {
       return "";
     }
-    if (map.status === "unavailable") {
+    if (map.status === "unavailable" || catalogTimedOut) {
       return t("family.radarUnavailable");
     }
     return map.status === "loading" ? t("family.radarLoading") : "";
   })();
   const layerSrc = (layer: RadarLayer, tile: RadarTile) => {
     if (layer.nexrad) {
-      return nexradTileUrl(layer.nexrad, overlay.tileZoom, tile);
+      return nexradTileUrl(layer.nexrad, radarTileZoom, tile);
     }
     if (layer.path) {
-      return radarTileUrl(map.host, layer.path, overlay.tileZoom, tile);
+      return radarTileUrl(map.host, layer.path, radarTileZoom, tile);
     }
     return "";
   };
@@ -259,42 +260,41 @@ export const FamilyRadarMap = ({
       {radarTiles.map((tile) => {
         const src = layerSrc(layer, tile);
         return src ? (
-          <img
-            key={"radar:" + tile.left + ":" + tile.top + ":" + tile.size}
-            class={styles.image + " " + styles.tile}
-            alt=""
-            src={src}
-            style={{
-              height: tile.size + "px",
-              left: tile.left + "px",
-              top: tile.top + "px",
-              width: tile.size + "px",
-            }}
-          />
+          <FamilyRadarTile key={"radar:" + tile.left + ":" + tile.top + ":" + tile.size} src={src} tile={tile} />
         ) : null;
       })}
     </div>
   );
+  const catalogStatus = (() => {
+    if (nexrad || map.frames.length > 0) {
+      return "ready";
+    }
+    if (catalogTimedOut) {
+      return "unavailable";
+    }
+    return map.status;
+  })();
   return (
     <div
       class={styles.map}
       ref={frame}
       data-family-radar-map
       data-radar-chrome={chrome}
-      data-family-radar-status={nexrad || map.frames.length > 0 ? "ready" : map.status}
+      data-family-radar-status={catalogStatus}
       data-radar-frame={frameMarker}
       data-radar-source={overlay.kind}
       data-radar-zoom={zoom}
       data-radar-crossfade={softFade ? "true" : "false"}
+      data-radar-tiles={
+        baseTiles.length + (stack.incoming ? radarTiles.length : 0) + (stack.outgoing ? radarTiles.length : 0)
+      }
     >
       <div class={styles.layers} aria-hidden="true">
         {baseTiles.map((tile) => (
-          <img
+          <FamilyRadarTile
             key={"base:" + tile.left + ":" + tile.top}
-            class={styles.image + " " + styles.tile}
-            alt=""
-            src={baseTileUrl(zoom, tile)}
-            style={{ height: tile.size + "px", left: tile.left + "px", top: tile.top + "px", width: tile.size + "px" }}
+            src={baseTileUrl(baseTileZoom, tile)}
+            tile={tile}
           />
         ))}
         {stack.outgoing ? renderLayer(stack.outgoing, !stack.shown) : null}

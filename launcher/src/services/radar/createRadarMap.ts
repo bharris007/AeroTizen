@@ -4,6 +4,7 @@ import type { WeatherPlatform } from "../../contracts/status";
 import { parseRainViewerMaps, RAIN_VIEWER_MAPS_URL } from "./rainViewer";
 
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000;
+const REQUEST_TIMEOUT_MS = 8_000;
 const EMPTY_FRAMES: RadarMapSnapshot["frames"] = Object.freeze([]);
 
 const loadingSnapshot = (): RadarMapSnapshot =>
@@ -32,7 +33,7 @@ export const createRadarMap = ({
   timers,
 }: {
   platform: WeatherPlatform;
-  timers: Pick<Window, "clearInterval" | "setInterval">;
+  timers: Pick<Window, "clearInterval" | "clearTimeout" | "setInterval" | "setTimeout">;
 }): RadarMapService => {
   const listeners = new Set<() => void>();
   let disposed = false;
@@ -61,11 +62,19 @@ export const createRadarMap = ({
         finished = true;
       }
     };
+    let timeout: number | undefined;
+    const clearRequestTimeout = () => {
+      if (timeout !== undefined) {
+        timers.clearTimeout(timeout);
+        timeout = undefined;
+      }
+    };
     const abort = platform.requestJSON(RAIN_VIEWER_MAPS_URL, (data) => {
       if (finished || disposed || version !== generation) {
         return;
       }
       finished = true;
+      clearRequestTimeout();
       const parsed = parseRainViewerMaps(data);
       if (!parsed) {
         if (snapshot.frames.length === 0) {
@@ -82,8 +91,19 @@ export const createRadarMap = ({
         }),
       );
     });
+    timeout = timers.setTimeout(() => {
+      if (finished || disposed || version !== generation) {
+        return;
+      }
+      finished = true;
+      abort();
+      if (snapshot.frames.length === 0) {
+        publish(Object.freeze({ frames: EMPTY_FRAMES, generated: 0, host: "", status: "unavailable" }));
+      }
+    }, REQUEST_TIMEOUT_MS);
     cancelRequest = () => {
       cancel();
+      clearRequestTimeout();
       abort();
     };
     if (finished) {

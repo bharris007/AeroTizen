@@ -168,6 +168,18 @@ test("shows today's events in calendar colours with overlaps side by side and an
   expect(container.querySelectorAll("[data-family-event='all-day']")).toHaveLength(1);
 });
 
+const finishQueuedTiles = (root: ParentNode) => {
+  for (let step = 0; step < 40; step += 1) {
+    const waiting = [...root.querySelectorAll("img")].filter((image) => !image.getAttribute("src"));
+    if (waiting.length === 0) {
+      return;
+    }
+    [...root.querySelectorAll("img")]
+      .filter((image) => image.getAttribute("src"))
+      .forEach((image) => image.dispatchEvent(new Event("load")));
+  }
+};
+
 const radarService = (snapshot: RadarMapSnapshot): RadarMapService => ({
   ...createStore(snapshot),
   dispose() {},
@@ -216,6 +228,7 @@ test("live radar replaces the forecast and loads RainViewer tiles for that place
     expect(screen.getByRole("button", { name: "Show the forecast" }).getAttribute("data-family-radar")).toBe("on");
     expect(screen.getByText("Franklin, TN")).toBeDefined();
     expect(screen.getByText("RainViewer · © Esri · © OpenStreetMap")).toBeDefined();
+    finishQueuedTiles(container);
     const sources = [...container.querySelectorAll("img")].map((image) => image.getAttribute("src") || "");
     const tile = tilesForView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 800, 600).tiles[0];
     expect(sources).toContain(
@@ -223,7 +236,7 @@ test("live radar replaces the forecast and loads RainViewer tiles for that place
     );
     expect(sources).toContain(baseTileUrl(RADAR_CARD_ZOOM, tile));
     expect(container.querySelector("[data-family-radar-marker]")).not.toBeNull();
-    expect(container.querySelector("[data-family-radar-zoom]")).toBeNull();
+    expect(container.querySelector("[data-family-radar-zoom]")).not.toBeNull();
     expect(container.querySelector("[data-family-radar-slot]")?.getAttribute("data-revealed")).toBe("true");
     expect(radarMap.watch).toHaveBeenCalled();
   } finally {
