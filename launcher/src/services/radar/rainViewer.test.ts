@@ -3,19 +3,21 @@ import { expect, test } from "vitest";
 import { FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE } from "../family/familyLocation";
 
 import {
-  baseTileUrl,
-  MAX_RADAR_TILES,
+  baseMapImageUrl,
+  boundedRadarImageSize,
+  MAX_RADAR_IMAGE_HEIGHT,
+  MAX_RADAR_IMAGE_WIDTH,
   nexradCovers,
-  nexradTileUrl,
+  nexradSingleImageUrl,
   parseRainViewerMaps,
   projectRadar,
   RADAR_CARD_ZOOM,
-  RADAR_TILE_SIZE,
-  radarMarkerPosition,
+  radarImagePlacement,
+  radarMarkerPercent,
   radarOverlay,
-  radarTileUrl,
-  tilesForLimitedView,
-  tilesForView,
+  radarViewportBbox,
+  RAIN_VIEWER_SINGLE_SIZE,
+  rainViewerSingleImageUrl,
   unprojectRadar,
 } from "./rainViewer";
 
@@ -46,124 +48,94 @@ test("keeps every observed frame and any nowcast, and rejects a map that is not 
   expect(parseRainViewerMaps(null)).toBeNull();
 });
 
-test("centers the configured location and builds base and radar tile urls", () => {
-  const width = 800;
-  const height = 600;
-  const view = tilesForView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, width, height);
-  const point = projectRadar(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM);
-  expect(point.x * RADAR_TILE_SIZE - view.originLeft).toBeCloseTo(width / 2, 0);
-  expect(point.y * RADAR_TILE_SIZE - view.originTop).toBeCloseTo(height / 2, 0);
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const covering = view.tiles.filter(
-    (tile) =>
-      centerX >= tile.left &&
-      centerX < tile.left + RADAR_TILE_SIZE &&
-      centerY >= tile.top &&
-      centerY < tile.top + RADAR_TILE_SIZE,
+test("builds single bounded basemap and RainViewer composite URLs aligned on Franklin", () => {
+  const size = boundedRadarImageSize(1920, 1080);
+  expect(size.width).toBeLessThanOrEqual(MAX_RADAR_IMAGE_WIDTH);
+  expect(size.height).toBeLessThanOrEqual(MAX_RADAR_IMAGE_HEIGHT);
+  expect(size).toEqual({ height: 450, width: 800 });
+
+  // Even on a 4K screen, image requests remain capped well below 960x540.
+  const fourK = boundedRadarImageSize(3840, 2160);
+  expect(fourK.width).toBeLessThanOrEqual(MAX_RADAR_IMAGE_WIDTH);
+  expect(fourK.height).toBeLessThanOrEqual(MAX_RADAR_IMAGE_HEIGHT);
+
+  const bbox = radarViewportBbox(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 1920, 1080);
+  expect(bbox).not.toBeNull();
+  const baseUrl = baseMapImageUrl(bbox!, size);
+  expect(baseUrl).toContain("World_Dark_Gray_Base/MapServer/export");
+  expect(baseUrl).toContain("size=800,450");
+  expect(baseUrl).toContain("format=jpg&f=image");
+
+  const overlay = radarOverlay(RADAR_CARD_ZOOM, FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE);
+  expect(overlay).toEqual({ kind: "rainviewer", rvZoom: 6 });
+  const radarUrl = rainViewerSingleImageUrl(
+    "https://tilecache.rainviewer.com",
+    "/v2/radar/13f17414a055",
+    overlay.rvZoom,
+    FRANKLIN_LATITUDE,
+    FRANKLIN_LONGITUDE,
   );
-  expect(covering).toHaveLength(1);
-  expect(view.tiles.length).toBeGreaterThan(0);
-  expect(view.tiles.length).toBeLessThan(40);
-  const tile = covering[0];
-  expect(radarTileUrl("https://tilecache.rainviewer.com", "/v2/radar/13f17414a055", RADAR_CARD_ZOOM, tile)).toBe(
-    "https://tilecache.rainviewer.com/v2/radar/13f17414a055/256/" +
-      RADAR_CARD_ZOOM +
+  expect(radarUrl).toBe(
+    "https://tilecache.rainviewer.com/v2/radar/13f17414a055/" +
+      RAIN_VIEWER_SINGLE_SIZE +
+      "/6/" +
+      FRANKLIN_LATITUDE.toFixed(4) +
       "/" +
-      tile.x +
-      "/" +
-      tile.y +
+      FRANKLIN_LONGITUDE.toFixed(4) +
       "/2/1_1.png",
   );
-  expect(baseTileUrl(RADAR_CARD_ZOOM, tile)).toBe(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/" +
-      RADAR_CARD_ZOOM +
-      "/" +
-      tile.y +
-      "/" +
-      tile.x,
-  );
-  expect(tilesForView(90, 0, 8, 0, 600)).toEqual({ originLeft: 0, originTop: 0, tiles: [] });
-  expect(Number.isFinite(projectRadar(89, 179, 3).y)).toBe(true);
+
+  // At UI zoom 7 (rvZoom 6) in 16:9, the square RainViewer image matches viewport width 100% and centers vertically.
+  const placement = radarImagePlacement(overlay, bbox!);
+  expect(placement.widthPercent).toBeCloseTo(100, 3);
+  expect(placement.leftPercent).toBeCloseTo(0, 3);
+  expect(placement.heightPercent).toBeCloseTo((16 / 9) * 100, 2);
+  expect(placement.topPercent).toBeCloseTo((100 - placement.heightPercent) / 2, 2);
+
+  // Round-trip projection helpers used by radarView pan steps remain accurate.
+  const point = projectRadar(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM);
   const roundTrip = unprojectRadar(point.x, point.y, RADAR_CARD_ZOOM);
   expect(roundTrip.latitude).toBeCloseTo(FRANKLIN_LATITUDE, 4);
   expect(roundTrip.longitude).toBeCloseTo(FRANKLIN_LONGITUDE, 4);
+  expect(radarViewportBbox(90, 0, 8, 0, 600)).toBeNull();
 });
 
-test("zooms past RainViewer with NEXRAD in the US and scaled radar tiles elsewhere", () => {
+test("uses single NEXRAD WMS PNGs above zoom 8 in the US and scaled RainViewer elsewhere", () => {
   const unitedStates = radarOverlay(9, FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE);
-  expect(unitedStates).toEqual({ kind: "nexrad", tileSize: RADAR_TILE_SIZE, tileZoom: 9 });
+  expect(unitedStates).toEqual({ kind: "nexrad", rvZoom: 7 });
   expect(nexradCovers(51.5, -0.1)).toBe(false);
   const london = radarOverlay(9, 51.5, -0.1);
-  expect(london).toEqual({ kind: "rainviewer", tileSize: RADAR_TILE_SIZE * 4, tileZoom: 7 });
-  const view = tilesForView(51.5, -0.1, 9, 800, 600, london.tileZoom);
-  expect(view.tiles[0]?.size).toBe(RADAR_TILE_SIZE * 4);
-  expect(nexradTileUrl("m20m", 9, { x: 132, y: 201 })).toBe(
-    "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913-m20m/9/132/201.png",
-  );
-  expect(nexradTileUrl("now", 9, { x: 1, y: 2 })).toContain("/nexrad-n0q-900913/9/1/2.png");
+  expect(london).toEqual({ kind: "rainviewer", rvZoom: 7 });
+
+  const bbox = radarViewportBbox(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, 9, 1920, 1080)!;
+  const size = boundedRadarImageSize(1920, 1080);
+  expect(radarImagePlacement(unitedStates, bbox)).toEqual({
+    heightPercent: 100,
+    leftPercent: 0,
+    topPercent: 0,
+    widthPercent: 100,
+  });
+  const m20 = nexradSingleImageUrl("m20m", bbox, size);
+  expect(m20).toContain("LAYERS=nexrad-n0q-900913-m20m");
+  expect(m20).toContain("WIDTH=800&HEIGHT=450");
+  expect(nexradSingleImageUrl("now", bbox, size)).toContain("LAYERS=nexrad-n0q-900913&");
 });
 
-test("caps a 4K viewport with coarser tiles so one layer stays under the TV-safe limit", () => {
-  const uncapped = tilesForView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 3840, 2160);
-  expect(uncapped.tiles.length).toBeGreaterThan(MAX_RADAR_TILES);
-  const limited = tilesForLimitedView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 3840, 2160);
-  expect(limited.tiles.length).toBeGreaterThan(0);
-  expect(limited.tiles.length).toBeLessThanOrEqual(MAX_RADAR_TILES);
-  expect(limited.tileZoom).toBeLessThan(RADAR_CARD_ZOOM);
-  const modest = tilesForLimitedView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 800, 600);
-  expect(modest.tiles.length).toBe(
-    tilesForView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 800, 600).tiles.length,
-  );
-  expect(modest.tileZoom).toBe(RADAR_CARD_ZOOM);
-  const centerX = 1920;
-  const centerY = 1080;
-  const covering = limited.tiles.filter(
-    (tile) =>
-      centerX >= tile.left && centerX < tile.left + tile.size && centerY >= tile.top && centerY < tile.top + tile.size,
-  );
-  expect(covering).toHaveLength(1);
-});
-
-test("projects the location dot to its true geographic position even after panning", () => {
-  const centered = tilesForView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 800, 600);
-  const atCenter = radarMarkerPosition(
-    FRANKLIN_LATITUDE,
-    FRANKLIN_LONGITUDE,
-    RADAR_CARD_ZOOM,
-    centered.originLeft,
-    centered.originTop,
-    800,
-    600,
-  );
+test("projects the location dot to its true geographic percentage even after panning", () => {
+  const centered = radarViewportBbox(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 800, 600);
+  const atCenter = radarMarkerPercent(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, centered);
   expect(atCenter.visible).toBe(true);
-  expect(atCenter.left).toBeCloseTo(400, 0);
-  expect(atCenter.top).toBeCloseTo(300, 0);
+  expect(atCenter.leftPercent).toBeCloseTo(50, 2);
+  expect(atCenter.topPercent).toBeCloseTo(50, 2);
 
   // Panning east moves Franklin's dot to the left of center.
-  const pannedEast = tilesForView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE + 1.5, RADAR_CARD_ZOOM, 800, 600);
-  const shifted = radarMarkerPosition(
-    FRANKLIN_LATITUDE,
-    FRANKLIN_LONGITUDE,
-    RADAR_CARD_ZOOM,
-    pannedEast.originLeft,
-    pannedEast.originTop,
-    800,
-    600,
-  );
+  const pannedEast = radarViewportBbox(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE + 1.5, RADAR_CARD_ZOOM, 800, 600);
+  const shifted = radarMarkerPercent(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, pannedEast);
   expect(shifted.visible).toBe(true);
-  expect(shifted.left).toBeLessThan(400);
+  expect(shifted.leftPercent).toBeLessThan(50);
 
   // Panning far away hides the marker cleanly.
-  const farAway = tilesForView(51.5, -0.1, RADAR_CARD_ZOOM, 800, 600);
-  const hidden = radarMarkerPosition(
-    FRANKLIN_LATITUDE,
-    FRANKLIN_LONGITUDE,
-    RADAR_CARD_ZOOM,
-    farAway.originLeft,
-    farAway.originTop,
-    800,
-    600,
-  );
+  const farAway = radarViewportBbox(51.5, -0.1, RADAR_CARD_ZOOM, 800, 600);
+  const hidden = radarMarkerPercent(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, farAway);
   expect(hidden.visible).toBe(false);
 });

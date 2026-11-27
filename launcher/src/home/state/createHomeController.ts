@@ -1,3 +1,4 @@
+import { isTizenTv } from "../../platform/tizen/detectTizen";
 import { resolveFamilyLocation } from "../../services/family/familyLocation";
 import { clampRadarZoom, moveRadarCenter, radarViewport } from "../../services/radar/radarView";
 import { getAppGridColumns } from "../../shared/apps/appCardSizes";
@@ -177,6 +178,7 @@ export const createHomeController = (
     | "panRadar"
     | "setCalendarSpan"
     | "shiftCalendarDay"
+    | "toggleRadarLite"
     | "toggleWeatherRadar"
     | "toggleRadarPanning"
     | "zoomRadar"
@@ -197,6 +199,7 @@ export const createHomeController = (
     selected: "",
     radarFrame: null,
     radarFrameCount: 0,
+    radarLite: isTizenTv(),
     radarNowIndex: 0,
     radarPanning: false,
     radarPlaying: false,
@@ -395,6 +398,7 @@ export const createHomeController = (
   };
   const expandPane = (pane: FamilyPane) => {
     const current = state.getSnapshot();
+    const initialRadarFocus = current.radarLite ? "lite" : "timeline";
     update({
       calendarFocus: "grid",
       calendarStart: clampDay(current.calendarDay, current.calendarSpan),
@@ -403,7 +407,7 @@ export const createHomeController = (
       radarPanning: false,
       radarPlaying: false,
       selected: pane === "weather" ? "family-weather" : "family-calendar",
-      weatherFocus: pane === "weather" && current.weatherRadar ? "timeline" : "view",
+      weatherFocus: pane === "weather" && current.weatherRadar ? initialRadarFocus : "view",
     });
     focus();
   };
@@ -431,6 +435,22 @@ export const createHomeController = (
       radarPlaying: false,
       weatherFocus: current.expanded === "weather" ? current.weatherFocus : "view",
       weatherRadar: nextRadar,
+    });
+  };
+  const toggleRadarLite = () => {
+    const current = state.getSnapshot();
+    const nextLite = !current.radarLite;
+    const nextFocus = (() => {
+      if (current.expanded !== "weather" || !current.weatherRadar) {
+        return current.weatherFocus;
+      }
+      return nextLite ? "lite" : "timeline";
+    })();
+    update({
+      radarFrame: null,
+      radarLite: nextLite,
+      radarPlaying: false,
+      weatherFocus: nextFocus,
     });
   };
   const toggleRadarPanning = () => {
@@ -483,6 +503,22 @@ export const createHomeController = (
       const nowIndex = count === 0 ? 0 : Math.max(0, Math.min(count - 1, command.nowIndex));
       const frame = current.radarFrame !== null && current.radarFrame >= count ? null : current.radarFrame;
       update({ radarFrame: frame, radarFrameCount: count, radarNowIndex: nowIndex });
+      return;
+    }
+    if (command.type === "setLite") {
+      const nextFocus =
+        command.lite && (current.weatherFocus === "timeline" || current.weatherFocus === "span")
+          ? "lite"
+          : current.weatherFocus;
+      update({
+        radarFrame: null,
+        radarLite: command.lite,
+        radarPlaying: false,
+        weatherFocus: nextFocus,
+      });
+      return;
+    }
+    if (current.radarLite) {
       return;
     }
     if (command.type === "span") {
@@ -701,6 +737,16 @@ export const createHomeController = (
           } else if (code === K.UP) {
             update({ weatherFocus: "zoomOut" });
           } else if (code === K.DOWN) {
+            update({ weatherFocus: "lite" });
+          }
+          return true;
+        }
+        if (current.weatherRadar && current.weatherFocus === "lite") {
+          if (code === K.ENTER) {
+            toggleRadarLite();
+          } else if (code === K.UP) {
+            update({ weatherFocus: "pan" });
+          } else if (code === K.DOWN && !current.radarLite) {
             update({ weatherFocus: "span" });
           }
           return true;
@@ -711,7 +757,7 @@ export const createHomeController = (
           } else if (code === K.RIGHT) {
             commandRadar({ span: 2, type: "span" });
           } else if (code === K.UP) {
-            update({ weatherFocus: "pan" });
+            update({ weatherFocus: "lite" });
           } else if (code === K.DOWN) {
             update({ weatherFocus: "timeline" });
           }
@@ -730,6 +776,10 @@ export const createHomeController = (
           return true;
         }
         if (current.weatherRadar) {
+          if (current.radarLite) {
+            update({ weatherFocus: "lite" });
+            return true;
+          }
           if (code === K.LEFT) {
             commandRadar({ delta: -1, type: "scrub" });
           } else if (code === K.RIGHT) {
@@ -863,7 +913,9 @@ export const createHomeController = (
         return true;
       }
       if (code === K.DOWN) {
-        update({ weatherFocus: "timeline" });
+        if (!current.radarLite) {
+          update({ weatherFocus: "timeline" });
+        }
         return true;
       }
     }
@@ -1021,6 +1073,7 @@ export const createHomeController = (
     setCalendarSpan,
     panRadar,
     shiftCalendarDay,
+    toggleRadarLite,
     toggleWeatherRadar,
     toggleRadarPanning,
     zoomRadar,

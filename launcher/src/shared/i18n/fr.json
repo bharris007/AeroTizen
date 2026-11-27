@@ -421,5 +421,10 @@
   "family.radarModerate": "Modérée",
   "family.radarHeavy": "Forte",
   "family.radarPreparing": "Chargement des images {{loaded}}/{{total}}",
-  "family.radarCardTimelineHint": "OK lance ou met en pause. Gauche et droite parcourent. Haut revient à la carte."
+  "family.radarCardTimelineHint": "OK lance ou met en pause. Gauche et droite parcourent. Haut revient à la carte.",
+  "family.radarLite": "Léger",
+  "family.radarLiteMode": "Radar fixe (mode léger)",
+  "family.radarLiteHint": "Dernière image fixe. OK active ou coupe le mode léger. Retour pour fermer.",
+  "family.radarLiteFallback": "Chargement lent — dernière image affichée",
+  "family.radarStatic": "Fixe"
 }

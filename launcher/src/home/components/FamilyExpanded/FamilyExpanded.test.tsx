@@ -3,9 +3,14 @@ import { expect, test, vi } from "vitest";
 
 import type { CalendarEvent, FamilyCalendarSnapshot } from "../../../contracts/familyCalendar";
 import type { FamilyForecastSnapshot } from "../../../contracts/familyForecast";
-import { RADAR_PLAY_STEP_MS } from "../../../services/radar/radarTimeline";
-import { MAX_RADAR_TILES } from "../../../services/radar/rainViewer";
-import { activeRadarTileLoads, queuedRadarTileLoads, resetRadarTileQueue } from "../../../services/radar/tileLoadQueue";
+import {
+  activeRadarImageLoads,
+  queuedRadarImageLoads,
+  RADAR_LOAD_WATCHDOG_MS,
+  resetRadarImageQueue,
+} from "../../../services/radar/radarImageLoader";
+import { MAX_RADAR_FRAMES, RADAR_PLAY_STEP_MS } from "../../../services/radar/radarTimeline";
+import { MAX_RADAR_IMAGE_HEIGHT, MAX_RADAR_IMAGE_WIDTH } from "../../../services/radar/rainViewer";
 import { createStore } from "../../../shared/state/createStore";
 import { renderWithEnglish } from "../../../test/renderWithEnglish";
 import { createCardEnvironment } from "../../test/createCardEnvironment";
@@ -213,32 +218,44 @@ test("the Home calendar pane marks today with a badge", () => {
   expect(container.querySelector("[data-family-back-to-today]")).toBeNull();
 });
 
-const finishQueuedTiles = (root: ParentNode) => {
-  for (let step = 0; step < 60; step += 1) {
-    if (activeRadarTileLoads() === 0 && queuedRadarTileLoads() === 0) {
+const finishQueuedImages = (root: ParentNode, extra: readonly HTMLImageElement[] = []) => {
+  for (let step = 0; step < 30; step += 1) {
+    if (activeRadarImageLoads() === 0 && queuedRadarImageLoads() === 0) {
       return;
     }
-    [...root.querySelectorAll("img")]
-      .filter((image) => image.getAttribute("src"))
-      .forEach((image) => image.dispatchEvent(new Event("load")));
+    const candidates = [...root.querySelectorAll("img"), ...extra];
+    candidates.filter((image) => image.getAttribute("src")).forEach((image) => image.dispatchEvent(new Event("load")));
   }
 };
 
-test("full-screen radar never autoplays, preloads frames before playing, and cleans up on exit", async () => {
+test("full-screen radar never autoplays, enforces <= 6 frames and 1 in-flight load, and releases images on exit", async () => {
   vi.useFakeTimers();
-  resetRadarTileQueue();
+  resetRadarImageQueue();
   const width = vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(1920);
   const height = vi.spyOn(Element.prototype, "clientHeight", "get").mockReturnValue(1080);
+  const loaderImages: HTMLImageElement[] = [];
+  const OriginalImage = window.Image;
+  vi.stubGlobal(
+    "Image",
+    class extends OriginalImage {
+      constructor() {
+        super();
+        loaderImages.push(this);
+      }
+    },
+  );
   const stopWatch = vi.fn();
   try {
     const nowSec = Math.floor(NOON / 1000);
-    const frames = [
-      { kind: "past" as const, path: "/v2/radar/f0", time: nowSec - 1200 },
-      { kind: "past" as const, path: "/v2/radar/f1", time: nowSec - 600 },
-      { kind: "past" as const, path: "/v2/radar/f2", time: nowSec },
-    ];
+    // Feed 10 frames to verify the UI strictly enforces MAX_RADAR_FRAMES (6).
+    const frames = Array.from({ length: 10 }, (_, index) => ({
+      kind: "past" as const,
+      path: "/v2/radar/f" + index,
+      time: nowSec - (9 - index) * 600,
+    }));
     const env = environment({
       expanded: "weather",
+      radarLite: false,
       radarPlaying: false,
       weatherFocus: "timeline",
       weatherRadar: true,
@@ -261,30 +278,39 @@ test("full-screen radar never autoplays, preloads frames before playing, and cle
     const { container, unmount } = renderWithEnglish(<FamilyExpanded env={view} timeFormat="12" unit="F" />);
 
     const mapNode = container.querySelector("[data-family-radar-map]");
-    const layerTiles = Number(mapNode?.getAttribute("data-radar-layer-tiles") || "0");
-    expect(layerTiles).toBeGreaterThan(0);
-    expect(layerTiles).toBeLessThanOrEqual(MAX_RADAR_TILES);
+    expect(mapNode?.getAttribute("data-radar-renderer")).toBe("single-image");
+    const [imgWidth, imgHeight] = (mapNode?.getAttribute("data-radar-image-size") || "0x0").split("x").map(Number);
+    expect(imgWidth).toBeLessThanOrEqual(MAX_RADAR_IMAGE_WIDTH);
+    expect(imgHeight).toBeLessThanOrEqual(MAX_RADAR_IMAGE_HEIGHT);
+    expect(container.querySelectorAll("canvas")).toHaveLength(0);
+    expect(container.querySelectorAll("[data-radar-tick]")).toHaveLength(MAX_RADAR_FRAMES);
     expect(container.querySelector("[data-family-radar-legend]")).not.toBeNull();
     expect(container.querySelector("[data-family-radar-marker]")).not.toBeNull();
     expect(container.querySelector("[data-family-radar-when]")?.textContent).toMatch(/CST|GMT-6/);
     expect(container.querySelector("[data-family-radar-timeline]")?.getAttribute("data-radar-playing")).toBe("false");
-    expect(container.querySelector("[data-family-radar-progress]")?.textContent).toContain("Loading frames");
+    expect(activeRadarImageLoads()).toBeLessThanOrEqual(1);
 
-    // Never autoplays on open.
+    // Finish static latest frame load: no animation frames preloaded on open, zero autoplay.
+    await act(() => {
+      finishQueuedImages(container);
+    });
+    expect(loaderImages).toHaveLength(0);
     vi.advanceTimersByTime(RADAR_PLAY_STEP_MS * 4);
     expect(env.commandRadar).not.toHaveBeenCalledWith({ type: "tick" });
 
-    // Even when the user presses Play, ticks wait until all frames finish preloading.
+    // Pressing Play begins sequential loading (<= 1 in flight) and waits for frames to settle.
     await act(() => {
       env.state.set({ ...env.state.getSnapshot(), radarPlaying: true });
     });
+    expect(activeRadarImageLoads()).toBe(1);
     expect(container.querySelector("[data-family-radar-timeline]")?.getAttribute("data-radar-buffering")).toBe("true");
+    expect(container.querySelector("[data-family-radar-progress]")?.textContent).toContain("Loading frames");
     vi.advanceTimersByTime(RADAR_PLAY_STEP_MS * 3);
     expect(env.commandRadar).not.toHaveBeenCalledWith({ type: "tick" });
 
-    // Finish preloading all frames: buffering clears and playback ticks smoothly.
+    // Finish sequential animation loads: buffering clears and playback advances.
     await act(() => {
-      finishQueuedTiles(container);
+      finishQueuedImages(container, loaderImages);
     });
     expect(container.querySelector("[data-family-radar-timeline]")?.getAttribute("data-radar-preload-ready")).toBe(
       "true",
@@ -293,15 +319,103 @@ test("full-screen radar never autoplays, preloads frames before playing, and cle
     vi.advanceTimersByTime(RADAR_PLAY_STEP_MS * 3);
     expect(env.commandRadar).toHaveBeenCalledWith({ type: "tick" });
 
-    // Closing / unmounting stops the radar feed watcher and releases every tile slot.
+    // Snapshot img nodes before exit so we verify src attributes are cleared on unmount.
+    const mountedImages = [...container.querySelectorAll("img")];
+    expect(mountedImages.length).toBeLessThanOrEqual(3);
     unmount();
     expect(stopWatch).toHaveBeenCalledTimes(1);
-    expect(activeRadarTileLoads()).toBe(0);
-    expect(queuedRadarTileLoads()).toBe(0);
+    expect(activeRadarImageLoads()).toBe(0);
+    expect(queuedRadarImageLoads()).toBe(0);
+    expect(mountedImages.every((image) => image.getAttribute("src") === null)).toBe(true);
+  } finally {
+    vi.unstubAllGlobals();
+    width.mockRestore();
+    height.mockRestore();
+    vi.useRealTimers();
+    resetRadarImageQueue();
+  }
+});
+
+test("full-screen radar Lite mode mounts only 1 basemap + 1 static radar img and 8s watchdog falls back cleanly", async () => {
+  vi.useFakeTimers();
+  resetRadarImageQueue();
+  const width = vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(1920);
+  const height = vi.spyOn(Element.prototype, "clientHeight", "get").mockReturnValue(1080);
+  try {
+    const nowSec = Math.floor(NOON / 1000);
+    const frames = [
+      { kind: "past" as const, path: "/v2/radar/f0", time: nowSec - 600 },
+      { kind: "past" as const, path: "/v2/radar/f1", time: nowSec },
+    ];
+    const env = environment({
+      expanded: "weather",
+      radarLite: true,
+      radarPlaying: false,
+      weatherFocus: "lite",
+      weatherRadar: true,
+    });
+    const radarMap = {
+      ...createStore({
+        frames,
+        generated: nowSec,
+        host: "https://tilecache.rainviewer.com",
+        status: "ready" as const,
+      }),
+      dispose() {},
+      watch: vi.fn(() => () => undefined),
+    };
+    const view = {
+      ...env,
+      runtime: { ...env.runtime, radarMap },
+      settings: createStore({ performanceMode: false }),
+    } as unknown as typeof env;
+    const { container, unmount } = renderWithEnglish(<FamilyExpanded env={view} timeFormat="12" unit="F" />);
+
+    // Lite mode mounts strictly 2 <img> elements (1 basemap + 1 latest radar), 0 <canvas>, and no scrubber.
+    expect(container.querySelectorAll("img")).toHaveLength(2);
+    expect(container.querySelectorAll("canvas")).toHaveLength(0);
+    expect(container.querySelector("[data-family-radar-track]")).toBeNull();
+    expect(container.querySelector("[data-family-radar-lite-toggle]")?.getAttribute("aria-pressed")).toBe("true");
+
+    // If the initial static frame stalls past 8 seconds, the watchdog aborts and shows unavailable.
+    await act(() => {
+      vi.advanceTimersByTime(RADAR_LOAD_WATCHDOG_MS);
+    });
+    expect(screen.getByText("Live radar is unavailable")).toBeDefined();
+    expect(activeRadarImageLoads()).toBe(0);
+    expect(queuedRadarImageLoads()).toBe(0);
+
+    // Switching out of Lite mode and stalling during Play triggers the 8s fallback back to Lite mode.
+    unmount();
+    const animEnv = environment({
+      expanded: "weather",
+      radarLite: false,
+      radarPlaying: false,
+      weatherFocus: "timeline",
+      weatherRadar: true,
+    });
+    const animView = {
+      ...animEnv,
+      runtime: { ...animEnv.runtime, radarMap },
+      settings: createStore({ performanceMode: false }),
+    } as unknown as typeof animEnv;
+    const animRender = renderWithEnglish(<FamilyExpanded env={animView} timeFormat="12" unit="F" />);
+    await act(() => {
+      finishQueuedImages(animRender.container);
+    });
+    await act(() => {
+      animEnv.state.set({ ...animEnv.state.getSnapshot(), radarPlaying: true });
+    });
+    await act(() => {
+      vi.advanceTimersByTime(RADAR_LOAD_WATCHDOG_MS);
+    });
+    expect(animEnv.commandRadar).toHaveBeenCalledWith({ lite: true, type: "setLite" });
+    expect(activeRadarImageLoads()).toBe(0);
+    animRender.unmount();
   } finally {
     width.mockRestore();
     height.mockRestore();
     vi.useRealTimers();
-    resetRadarTileQueue();
+    resetRadarImageQueue();
   }
 });

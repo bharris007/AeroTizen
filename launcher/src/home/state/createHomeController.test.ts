@@ -206,6 +206,8 @@ test("the weather radar control toggles live radar on the card and in full scree
   press(home, KEY.DOWN);
   expect(home.state.getSnapshot().weatherFocus).toBe("pan");
   press(home, KEY.DOWN);
+  expect(home.state.getSnapshot().weatherFocus).toBe("lite");
+  press(home, KEY.DOWN);
   expect(home.state.getSnapshot().weatherFocus).toBe("span");
   press(home, KEY.DOWN);
   expect(home.state.getSnapshot().weatherFocus).toBe("timeline");
@@ -248,6 +250,8 @@ test("full-screen radar pans and zooms with the remote and saves that view", () 
 
   press(home, KEY.UP);
   expect(home.state.getSnapshot().weatherFocus).toBe("span");
+  press(home, KEY.UP);
+  expect(home.state.getSnapshot().weatherFocus).toBe("lite");
   press(home, KEY.UP);
   expect(home.state.getSnapshot().weatherFocus).toBe("pan");
   ok(home);
@@ -428,6 +432,52 @@ test("radar card play bar and Samsung media keys control playback without ever a
   expect(home.state.getSnapshot().radarPlaying).toBe(true);
   press(home, KEY.BACK);
   expect(home.state.getSnapshot()).toMatchObject({ expanded: null, radarPlaying: false });
+});
+
+test("defaults to static Lite mode on Tizen TVs and toggles cleanly between Lite and 6-frame playback", () => {
+  const host = window as { tizen?: unknown };
+  const hadTizen = "tizen" in host;
+  const previousTizen = host.tizen;
+  host.tizen = {};
+  try {
+    const home = controller();
+    expect(home.state.getSnapshot().radarLite).toBe(true);
+    home.bridge.focus();
+    home.toggleWeatherRadar();
+    home.expandPane("weather");
+    home.commandRadar({ count: 6, nowIndex: 5, type: "sync" });
+    expect(home.state.getSnapshot()).toMatchObject({
+      expanded: "weather",
+      radarLite: true,
+      radarPlaying: false,
+      weatherFocus: "lite",
+    });
+
+    // Playback and scrubbing are ignored while in Lite mode.
+    home.commandRadar({ type: "play" });
+    home.commandRadar({ delta: -1, type: "scrub" });
+    expect(home.state.getSnapshot()).toMatchObject({ radarFrame: null, radarPlaying: false });
+
+    // OK on the focused Lite toggle switches to 6-frame animation mode on the timeline.
+    ok(home);
+    expect(home.state.getSnapshot()).toMatchObject({
+      radarLite: false,
+      radarPlaying: false,
+      weatherFocus: "timeline",
+    });
+    ok(home);
+    expect(home.state.getSnapshot().radarPlaying).toBe(true);
+    press(home, KEY.LEFT);
+    expect(home.state.getSnapshot()).toMatchObject({ radarFrame: 4, radarPlaying: false });
+    press(home, KEY.BACK);
+    expect(home.state.getSnapshot()).toMatchObject({ expanded: null, radarPlaying: false });
+  } finally {
+    if (hadTizen) {
+      host.tizen = previousTizen;
+    } else {
+      delete host.tizen;
+    }
+  }
 });
 
 test("the calendar's day control changes the Home pane's day and OK returns to today", () => {

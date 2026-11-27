@@ -421,5 +421,10 @@
   "family.radarModerate": "Moderada",
   "family.radarHeavy": "Forte",
   "family.radarPreparing": "Carregando quadros {{loaded}}/{{total}}",
-  "family.radarCardTimelineHint": "OK reproduz ou pausa. Esquerda e direita percorrem. Cima volta ao cartão."
+  "family.radarCardTimelineHint": "OK reproduz ou pausa. Esquerda e direita percorrem. Cima volta ao cartão.",
+  "family.radarLite": "Leve",
+  "family.radarLiteMode": "Radar estático (modo leve)",
+  "family.radarLiteHint": "Último quadro estático. OK alterna o modo leve. Voltar para fechar.",
+  "family.radarLiteFallback": "Carregamento lento — último quadro",
+  "family.radarStatic": "Estático"
 }

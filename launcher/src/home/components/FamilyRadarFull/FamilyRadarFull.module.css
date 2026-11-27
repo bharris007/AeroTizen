@@ -1,7 +1,10 @@
 .screen {
   position: relative;
   width: 100%;
+  max-width: 1920px;
   height: 100%;
+  max-height: 1080px;
+  margin: auto;
   overflow: hidden;
   background: #0d1420;
   color: #fff;
@@ -30,10 +33,9 @@
   align-items: center;
   width: 76px;
   padding: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 22px;
-  background: rgba(12, 18, 28, 0.84);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  background: rgba(12, 18, 28, 0.88);
   color: #fff;
 }
 
@@ -42,22 +44,16 @@
   align-items: center;
   justify-content: center;
   width: 66px;
-  height: 58px;
+  height: 54px;
   border: 2px solid transparent;
   border-radius: 17px;
   background: transparent;
   color: inherit;
   cursor: pointer;
-  transform: translateZ(0);
-  transition:
-    transform var(--motion-duration-focus) ease-out,
-    background-color var(--motion-duration-focus) ease-out,
-    border-color var(--motion-duration-focus) ease-out;
 
   &[data-focused="true"] {
-    border-color: rgba(255, 255, 255, 0.95);
-    background: rgba(255, 255, 255, 0.18);
-    transform: scale(1.05) translateZ(0);
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.2);
   }
 }
 
@@ -70,41 +66,33 @@
   color: rgba(255, 255, 255, 0.78);
 }
 
-.pan {
+.toolButton {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 76px;
-  margin-top: 12px;
-  padding: 10px 6px 8px;
-  border: 2px solid rgba(255, 255, 255, 0.18);
+  margin-top: 10px;
+  padding: 9px 6px 7px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 22px;
-  background: rgba(12, 18, 28, 0.84);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  background: rgba(12, 18, 28, 0.88);
   color: #fff;
   cursor: pointer;
-  transform: translateZ(0);
-  transition:
-    transform var(--motion-duration-focus) ease-out,
-    background-color var(--motion-duration-focus) ease-out,
-    border-color var(--motion-duration-focus) ease-out;
 
   &[data-focused="true"] {
-    border-color: rgba(255, 255, 255, 0.95);
-    background: rgba(255, 255, 255, 0.16);
-    transform: scale(1.05) translateZ(0);
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.18);
   }
 
   &[data-active="true"] {
-    border-color: #fff;
+    border-color: #38bdf8;
     background: #fff;
     color: #0e1624;
-    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.75);
   }
 }
 
-.panLabel {
+.toolLabel {
   margin-top: 3px;
   font-size: 13px;
   font-weight: 600;

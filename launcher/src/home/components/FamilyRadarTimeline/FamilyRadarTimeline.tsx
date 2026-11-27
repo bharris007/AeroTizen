@@ -1,5 +1,4 @@
 import { Pause, Play } from "lucide-preact";
-import { useEffect, useRef } from "preact/hooks";
 
 import type { TimeFormat } from "../../../contracts/preferences";
 import {
@@ -16,9 +15,6 @@ import { Icon } from "../../../shared/icons/Icon/Icon";
 import type { HomeEnvironment, WeatherFocus } from "../../types";
 
 import styles from "./FamilyRadarTimeline.module.css";
-
-const PROGRESS_RING_RADIUS = 21;
-const PROGRESS_RING_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RING_RADIUS;
 
 const phaseText = (phase: RadarPhase, t: Translate) => {
   if (phase === "forecast") {
@@ -39,12 +35,14 @@ export const FamilyRadarTimeline = ({
   env,
   focus,
   index,
+  lite = false,
   loadedFrames,
   nowIndex,
   phase,
   playing,
   preloadReady,
   span,
+  timedOutNotice = false,
   timeFormat,
   timeZone,
   totalFrames,
@@ -55,12 +53,14 @@ export const FamilyRadarTimeline = ({
   env: HomeEnvironment;
   focus: WeatherFocus;
   index: number;
+  lite?: boolean;
   loadedFrames: number;
   nowIndex: number;
   phase: RadarPhase;
   playing: boolean;
   preloadReady: boolean;
   span: 1 | 2;
+  timedOutNotice?: boolean;
   timeFormat: TimeFormat;
   timeZone: string;
   totalFrames: number;
@@ -68,14 +68,6 @@ export const FamilyRadarTimeline = ({
   const { language, t } = useTranslation();
   const panning = useStoreSelector(env.state, (state) => state.radarPanning);
   const selected = entries[index] ?? null;
-  const previousIndex = useRef(index);
-  const wrapped =
-    entries.length > 1 &&
-    ((previousIndex.current === entries.length - 1 && index === 0) ||
-      (previousIndex.current === 0 && index === entries.length - 1));
-  useEffect(() => {
-    previousIndex.current = index;
-  }, [index]);
 
   const hint = (() => {
     if (panning) {
@@ -83,6 +75,9 @@ export const FamilyRadarTimeline = ({
     }
     if (focus === "pan") {
       return t("family.radarPanSelectHint");
+    }
+    if (focus === "lite") {
+      return t("family.radarLiteHint");
     }
     if (focus === "span") {
       return t("family.radarSpanHint");
@@ -99,6 +94,37 @@ export const FamilyRadarTimeline = ({
     return t("family.closeHint");
   })();
 
+  if (lite) {
+    return (
+      <div
+        class={styles.panel}
+        data-family-radar-timeline
+        data-radar-lite="true"
+        data-radar-phase="now"
+        data-radar-playing="false"
+        data-radar-buffering="false"
+        data-radar-preload-ready="false"
+      >
+        <div class={styles.liteRow}>
+          <span class={styles.phase} data-radar-phase-badge="now">
+            <span class={styles.liveDot} aria-hidden="true" />
+            {t("family.radarStatic")}
+          </span>
+          <span class={styles.when} data-family-radar-when>
+            {selected ? formatRadarTimestamp(selected.time, timeZone, language, timeFormat) : ""}
+          </span>
+          <span class={styles.liteBadge}>{t("family.radarLite")}</span>
+        </div>
+        {timedOutNotice ? (
+          <p class={styles.fallbackNotice} data-family-radar-fallback>
+            {t("family.radarLiteFallback")}
+          </p>
+        ) : null}
+        <p class={styles.hint}>{hint}</p>
+      </div>
+    );
+  }
+
   const seek = (event: MouseEvent) => {
     const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
     if (bounds.width <= 0 || entries.length < 2) {
@@ -108,10 +134,8 @@ export const FamilyRadarTimeline = ({
     env.commandRadar({ index: Math.round(ratio * (entries.length - 1)), type: "seek" });
   };
 
-  const activeRatio = ratioFor(index, entries.length);
-  const preloadRatio = totalFrames > 0 ? Math.max(0, Math.min(1, loadedFrames / totalFrames)) : 0;
-  const ringOffset = PROGRESS_RING_CIRCUMFERENCE * (1 - preloadRatio);
-  const showProgressRing = totalFrames > 0 && !preloadReady;
+  const activePercent = ratioFor(index, entries.length) * 100;
+  const preloadPercent = totalFrames > 0 ? Math.max(0, Math.min(1, loadedFrames / totalFrames)) * 100 : 0;
   const showPreparing = totalFrames > 0 && !preloadReady;
   const lastIndex = Math.max(0, entries.length - 1);
   const axisIndices = [0, nowIndex, lastIndex];
@@ -129,6 +153,7 @@ export const FamilyRadarTimeline = ({
     <div
       class={styles.panel}
       data-family-radar-timeline
+      data-radar-lite="false"
       data-focused={focus === "timeline" || focus === "span" ? "true" : undefined}
       data-radar-phase={phase}
       data-radar-playing={playing ? "true" : "false"}
@@ -150,19 +175,6 @@ export const FamilyRadarTimeline = ({
             env.commandRadar({ type: "play" });
           }}
         >
-          {showProgressRing ? (
-            <svg class={styles.ring} viewBox="0 0 48 48" aria-hidden="true">
-              <circle class={styles.ringTrack} cx="24" cy="24" r={PROGRESS_RING_RADIUS} />
-              <circle
-                class={styles.ringFill}
-                cx="24"
-                cy="24"
-                r={PROGRESS_RING_RADIUS}
-                stroke-dasharray={PROGRESS_RING_CIRCUMFERENCE}
-                stroke-dashoffset={ringOffset}
-              />
-            </svg>
-          ) : null}
           <span class={playing ? styles.playGlyph : styles.playGlyphNudge}>
             <Icon icon={playing ? Pause : Play} size={22} />
           </span>
@@ -220,16 +232,8 @@ export const FamilyRadarTimeline = ({
         onClick={seek}
       >
         <div class={styles.rail}>
-          <div
-            class={styles.bufferFill}
-            data-family-radar-buffer
-            style={{ transform: "scaleX(" + preloadRatio + ") translateZ(0)" }}
-          />
-          <div
-            class={styles.activeFill}
-            data-wrap={wrapped ? "true" : undefined}
-            style={{ transform: "scaleX(" + activeRatio + ") translateZ(0)" }}
-          />
+          <div class={styles.bufferFill} data-family-radar-buffer style={{ width: preloadPercent.toFixed(1) + "%" }} />
+          <div class={styles.activeFill} style={{ width: activePercent.toFixed(1) + "%" }} />
         </div>
         {entries.map((entry, entryIndex) => {
           const tickType = (() => {
@@ -247,13 +251,7 @@ export const FamilyRadarTimeline = ({
             />
           );
         })}
-        <div
-          class={styles.thumbCarrier}
-          data-wrap={wrapped ? "true" : undefined}
-          style={{ transform: "translateX(" + activeRatio * 100 + "%) translateZ(0)" }}
-        >
-          <span class={styles.thumb} data-family-radar-thumb />
-        </div>
+        <span class={styles.thumb} data-family-radar-thumb style={{ left: activePercent.toFixed(1) + "%" }} />
         <div class={styles.labels}>
           {entries.map((entry, entryIndex) =>
             axisIndices.includes(entryIndex) ? (

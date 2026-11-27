@@ -19,10 +19,11 @@ export type CalendarSpan = 1 | 3 | 5;
 // Which part of the full-screen calendar the remote is on.
 export type CalendarFocus = "grid" | "span";
 // Which part of the full-screen weather the remote is on.
-// Radar adds the timeline, its 1h/2h span, separate zoom in/out buttons, and pan.
-export type WeatherFocus = "pan" | "radar" | "span" | "timeline" | "view" | "zoomIn" | "zoomOut";
+// Radar adds the timeline, its 1h/2h span, lite toggle, separate zoom in/out buttons, and pan.
+export type WeatherFocus = "lite" | "pan" | "radar" | "span" | "timeline" | "view" | "zoomIn" | "zoomOut";
 export type RadarCommand =
   | { count: number; nowIndex: number; type: "sync" }
+  | { lite: boolean; type: "setLite" }
   | { span: 1 | 2; type: "span" }
   | { type: "play" }
   | { playing: boolean; type: "setPlaying" }
@@ -53,6 +54,8 @@ export interface HomeState {
   // Full-screen radar playback. A null frame follows the newest observation.
   readonly radarFrame: number | null;
   readonly radarFrameCount: number;
+  // Static latest-frame fallback; defaults on on Tizen TVs to keep memory minimal.
+  readonly radarLite: boolean;
   readonly radarNowIndex: number;
   // True while the pan button is armed: arrows move the map until Back or OK.
   readonly radarPanning: boolean;
@@ -98,6 +101,8 @@ export interface HomeEnvironment {
   showPage(page: Page): void;
   state: MutableStore<HomeState>;
   status: StatusStores;
+  // Switch between static latest-frame Lite mode and 6-frame radar animation.
+  toggleRadarLite(): void;
   // Enter or leave radar pan mode. Arrows move the map only while this is on.
   toggleRadarPanning(): void;
   // Home and full-screen weather: switch between the forecast and live radar.

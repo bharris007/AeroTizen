@@ -35,11 +35,10 @@ export const FamilyBoard = ({
         {weatherRadar ? (
           <FamilyRadarCard
             cardClass={styles.card}
-            enabled={shown}
+            enabled={shown && expanded !== "weather"}
             env={env}
             forecast={forecast}
             registered={shown}
-            suspended={expanded === "weather"}
             timeFormat={timeFormat}
           />
         ) : (

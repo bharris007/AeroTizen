@@ -421,5 +421,10 @@
   "family.radarModerate": "Moderate",
   "family.radarHeavy": "Heavy",
   "family.radarPreparing": "Loading frames {{loaded}}/{{total}}",
-  "family.radarCardTimelineHint": "OK plays or pauses. Left and right scrub. Up returns to card."
+  "family.radarCardTimelineHint": "OK plays or pauses. Left and right scrub. Up returns to card.",
+  "family.radarLite": "Lite",
+  "family.radarLiteMode": "Static radar (Lite)",
+  "family.radarLiteHint": "Static latest frame. OK toggles Lite mode. Back to close.",
+  "family.radarLiteFallback": "Slow load — showing latest frame",
+  "family.radarStatic": "Static"
 }

@@ -36,6 +36,7 @@ const harness = () => {
     appsEndOffset: 0,
     radarFrame: null,
     radarFrameCount: 0,
+    radarLite: false,
     radarNowIndex: 0,
     radarPanning: false,
     radarPlaying: true,

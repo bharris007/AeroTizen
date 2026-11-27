@@ -1,4 +1,4 @@
-import { Minus, Move, Plus } from "lucide-preact";
+import { Minus, Move, Plus, Zap } from "lucide-preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 import type { FamilyForecastSnapshot } from "../../../contracts/familyForecast";
@@ -24,10 +24,11 @@ import styles from "./FamilyRadarFull.module.css";
 
 const AGE_REFRESH_MS = 30 * 1000;
 const PLAY_START_WRAP_MS = 120;
-const INITIAL_PRELOAD: RadarPreloadProgress = { loadedFrames: 0, ready: false, totalFrames: 0 };
+const INITIAL_PRELOAD: RadarPreloadProgress = { loadedFrames: 0, ready: false, timedOut: false, totalFrames: 0 };
 
-// Full-screen radar. Opens paused on the newest frame, preloads all frames for the current view
-// before starting smooth crossfade playback, and releases all tiles/canvases cleanly on Back.
+// Full-screen radar capped to 1920x1080 CSS px. Opens static on the latest frame (Lite mode by
+// default on Tizen), loads up to 6 animation frames sequentially only when the user presses Play
+// or scrubs, and releases all <img> elements immediately on Back.
 export const FamilyRadarFull = ({
   env,
   focus,
@@ -43,17 +44,20 @@ export const FamilyRadarFull = ({
   const saved = useStoreSelector(env.settings, (settings) => settings.radarView);
   const viewport = radarViewport(saved, forecast);
   const map = useStore(env.runtime.radarMap);
+  const lite = useStoreSelector(env.state, (state) => state.radarLite);
   const panning = useStoreSelector(env.state, (state) => state.radarPanning);
   const playing = useStoreSelector(env.state, (state) => state.radarPlaying);
   const radarFrame = useStoreSelector(env.state, (state) => state.radarFrame);
   const span = useStoreSelector(env.state, (state) => state.radarSpan);
   const [clock, setClock] = useState(() => Date.now());
   const [preload, setPreload] = useState<RadarPreloadProgress>(INITIAL_PRELOAD);
+  const [animationRequested, setAnimationRequested] = useState(false);
+  const [timedOutNotice, setTimedOutNotice] = useState(false);
 
   const overlay = radarOverlay(viewport.zoom, viewport.latitude, viewport.longitude);
   const timeline = radarTimeline(map.frames, span, overlay.kind, Math.floor(clock / 1000));
   const index =
-    radarFrame === null ? timeline.nowIndex : Math.max(0, Math.min(timeline.entries.length - 1, radarFrame));
+    lite || radarFrame === null ? timeline.nowIndex : Math.max(0, Math.min(timeline.entries.length - 1, radarFrame));
   const selected = timeline.entries[index] ?? null;
   const nowTime = timeline.entries[timeline.nowIndex]?.time ?? 0;
   const age = radarAgeMinutes(map.generated, nowTime, clock);
@@ -71,19 +75,40 @@ export const FamilyRadarFull = ({
     setPreload(next);
   }, []);
 
-  useEffect(() => acquireRadarMediaKeys(), []);
+  const handleLoadTimeout = useCallback(() => {
+    setAnimationRequested(false);
+    setTimedOutNotice(true);
+    env.commandRadar({ lite: true, type: "setLite" });
+  }, [env]);
+
+  useEffect(() => {
+    if (lite) {
+      setAnimationRequested(false);
+      setPreload(INITIAL_PRELOAD);
+      return;
+    }
+    setTimedOutNotice(false);
+    return acquireRadarMediaKeys();
+  }, [lite]);
+
+  // Never load extra animation frames on open; start sequential loading only when Play/Scrub is pressed.
+  useEffect(() => {
+    if (!lite && (playing || radarFrame !== null)) {
+      setAnimationRequested(true);
+    }
+  }, [lite, playing, radarFrame]);
 
   useEffect(() => {
     env.commandRadar({ count: timeline.entries.length, nowIndex: timeline.nowIndex, type: "sync" });
   }, [env, timeline.entries.length, timeline.nowIndex]);
 
   const playbackReady = overlay.kind === "nexrad" || map.status === "ready";
-  const allPreloaded = preload.ready && preload.totalFrames === timeline.entries.length && timeline.entries.length > 0;
-  const buffering = playing && (!playbackReady || !allPreloaded);
-  const activelyPlaying = playing && playbackReady && allPreloaded && timeline.entries.length >= 2;
+  const allPreloaded =
+    !lite && preload.ready && preload.totalFrames === timeline.entries.length && timeline.entries.length > 0;
+  const buffering = !lite && playing && (!playbackReady || !allPreloaded);
+  const activelyPlaying = !lite && playing && playbackReady && allPreloaded && timeline.entries.length >= 2;
   const wasActivelyPlayingRef = useRef(false);
 
-  // Never advance frames until every frame for the current view has been preloaded and composited.
   useEffect(() => {
     if (!activelyPlaying) {
       wasActivelyPlayingRef.current = false;
@@ -116,6 +141,7 @@ export const FamilyRadarFull = ({
     <section
       class={styles.screen}
       data-family-expanded="radar"
+      data-family-radar-lite={lite ? "true" : "false"}
       data-family-radar-panning={panning ? "true" : "false"}
       aria-label={t("family.radar") + ", " + forecast.locationLabel}
     >
@@ -127,12 +153,14 @@ export const FamilyRadarFull = ({
         frameIndex={index}
         label={forecast.locationLabel}
         latitude={viewport.latitude}
+        lite={lite}
+        loadAnimation={!lite && animationRequested}
         longitude={viewport.longitude}
+        onLoadTimeout={handleLoadTimeout}
         onPreloadChange={handlePreloadChange}
         placeLatitude={forecast.latitude}
         placeLongitude={forecast.longitude}
-        playing={playing && allPreloaded}
-        preloadAll
+        playing={!lite && playing && allPreloaded}
         updated={updated}
         zoom={viewport.zoom}
       />
@@ -166,7 +194,7 @@ export const FamilyRadarFull = ({
         </div>
         <button
           type="button"
-          class={styles.pan}
+          class={styles.toolButton}
           tabIndex={-1}
           aria-label={t("family.radarPan")}
           aria-pressed={panning ? "true" : "false"}
@@ -178,8 +206,25 @@ export const FamilyRadarFull = ({
             env.toggleRadarPanning();
           }}
         >
-          <Icon icon={Move} size={28} />
-          <span class={styles.panLabel}>{t(panning ? "family.radarPanOn" : "family.radarPan")}</span>
+          <Icon icon={Move} size={26} />
+          <span class={styles.toolLabel}>{t(panning ? "family.radarPanOn" : "family.radarPan")}</span>
+        </button>
+        <button
+          type="button"
+          class={styles.toolButton}
+          tabIndex={-1}
+          aria-label={t("family.radarLiteMode")}
+          aria-pressed={lite ? "true" : "false"}
+          data-family-radar-lite-toggle
+          data-focused={focus === "lite" ? "true" : undefined}
+          data-active={lite ? "true" : undefined}
+          onClick={(event) => {
+            event.stopPropagation();
+            env.toggleRadarLite();
+          }}
+        >
+          <Icon icon={Zap} size={26} />
+          <span class={styles.toolLabel}>{t("family.radarLite")}</span>
         </button>
       </div>
       <FamilyRadarTimeline
@@ -189,12 +234,14 @@ export const FamilyRadarFull = ({
         env={env}
         focus={focus}
         index={index}
+        lite={lite}
         loadedFrames={preload.loadedFrames}
         nowIndex={timeline.nowIndex}
         phase={selected ? framePhase(selected, nowTime) : "now"}
         playing={playing}
         preloadReady={allPreloaded}
         span={span}
+        timedOutNotice={timedOutNotice}
         timeFormat={timeFormat}
         timeZone={forecast.timeZone}
         totalFrames={preload.totalFrames}

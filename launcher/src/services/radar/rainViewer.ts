@@ -2,57 +2,78 @@ import type { RadarFrame } from "../../contracts/radarMap";
 
 // Public RainViewer maps API: https://www.rainviewer.com/api.html
 export const RAIN_VIEWER_MAPS_URL = "https://api.rainviewer.com/public/weather-maps.json";
-export const RADAR_TILE_SIZE = 256;
-// Cap so a 4K Tizen view cannot mount hundreds of 256px images at once.
-export const MAX_RADAR_TILES = 24;
-// Scheme 2 is the blue-to-red scale from RainViewer's tile example, with smooth edges and snow.
+// Scheme 2 is RainViewer's blue-to-red scale with server-side smooth edges and snow.
 export const RADAR_COLOR_SCHEME = 2;
-export const RADAR_TILE_OPTIONS = "1_1";
-// RainViewer composite radar is a placeholder above this zoom.
+export const RADAR_IMAGE_OPTIONS = "1_1";
+// Single-image caps: keeps each decoded image ~1.0-1.44 MB RGBA so total radar RAM stays well under 20 MB on Tizen.
+export const MAX_RADAR_IMAGE_WIDTH = 960;
+export const MAX_RADAR_IMAGE_HEIGHT = 540;
+export const RADAR_TARGET_IMAGE_WIDTH = 800;
+export const RADAR_TARGET_IMAGE_HEIGHT = 450;
+export const RAIN_VIEWER_SINGLE_SIZE = 512;
+export const RADAR_MAX_VIEWPORT_WIDTH = 1920;
+export const RADAR_MAX_VIEWPORT_HEIGHT = 1080;
+// RainViewer single centered 512px images natively cover rvZoom 3..7 (UI zoom 4..8).
 export const RAIN_VIEWER_MAX_ZOOM = 7;
-// Default view until the user zooms. The card and the full screen share a saved zoom.
-export const RADAR_CARD_ZOOM = RAIN_VIEWER_MAX_ZOOM;
-const ESRI_DARK_CANVAS =
-  "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/";
+export const RAIN_VIEWER_SINGLE_MAX_UI_ZOOM = 8;
+export const RADAR_CARD_ZOOM = 7;
+
+const EARTH_RADIUS_METERS = 6_378_137;
+const WORLD_METERS = 2 * Math.PI * EARTH_RADIUS_METERS;
+const ESRI_DARK_EXPORT =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/export";
+const IEM_NEXRAD_WMS = "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi";
 const MAX_PROJECTED_LATITUDE = 85;
+const MARKER_EDGE_MARGIN_PERCENT = 4;
 const HTTPS_HOST = /^https:\/\/[a-z0-9.-]+$/i;
-// Live paths are hashes (`/v2/radar/13f17414a055`), not only the older timestamp form.
 const RADAR_PATH = /^\/v2\/radar\/[A-Za-z0-9_-]+$/;
+
+// Continental US NEXRAD coverage, including Alaska and Hawaii. Iowa State serves single WMS PNGs with no key.
+const NEXRAD_MIN_LATITUDE = 17;
+const NEXRAD_MAX_LATITUDE = 72;
+const NEXRAD_MIN_LONGITUDE = -168;
+const NEXRAD_MAX_LONGITUDE = -64;
+
+// Oldest to newest. "now" is the live composite; each step is 10 minutes (6 frames total).
+export const NEXRAD_FRAMES = ["m50m", "m40m", "m30m", "m20m", "m10m", "now"] as const;
 
 export interface MapPoint {
   readonly x: number;
   readonly y: number;
 }
 
-export interface RadarTile {
-  readonly left: number;
-  readonly size: number;
-  readonly top: number;
-  readonly x: number;
-  readonly y: number;
+export interface RadarImageBox {
+  readonly heightPercent: number;
+  readonly leftPercent: number;
+  readonly topPercent: number;
+  readonly widthPercent: number;
 }
 
-export interface RadarTileView {
-  readonly originLeft: number;
-  readonly originTop: number;
-  readonly tiles: readonly RadarTile[];
-}
-
-export interface RadarLimitedTileView extends RadarTileView {
-  readonly tileZoom: number;
+export interface RadarImageSize {
+  readonly height: number;
+  readonly width: number;
 }
 
 export interface RadarMarkerPoint {
-  readonly left: number;
-  readonly top: number;
+  readonly leftPercent: number;
+  readonly topPercent: number;
   readonly visible: boolean;
 }
 
-const EMPTY_VIEW: RadarTileView = Object.freeze({
-  originLeft: 0,
-  originTop: 0,
-  tiles: Object.freeze([]),
-});
+export interface RadarOverlay {
+  readonly kind: "nexrad" | "rainviewer";
+  readonly rvZoom: number;
+}
+
+export interface RadarViewportBbox {
+  readonly east: number;
+  readonly north: number;
+  readonly south: number;
+  readonly spanMeters: number;
+  readonly viewHeightMeters: number;
+  readonly viewWidthMeters: number;
+  readonly west: number;
+}
 
 const finiteFrame = (value: unknown): { path: string; time: number } | null => {
   if (!value || typeof value !== "object") {
@@ -68,7 +89,7 @@ const finiteFrame = (value: unknown): { path: string; time: number } | null => {
   return Object.freeze({ path: frame.path, time: frame.time });
 };
 
-// Web Mercator, in tile units at this zoom. Latitude is clamped so the poles stay finite.
+// Web Mercator in unit tile coordinates at this zoom (used by radarView pan steps).
 export const projectRadar = (latitude: number, longitude: number, zoom: number): MapPoint => {
   const scale = 2 ** zoom;
   const clamped = Math.max(-MAX_PROJECTED_LATITUDE, Math.min(MAX_PROJECTED_LATITUDE, latitude));
@@ -86,147 +107,30 @@ export const unprojectRadar = (x: number, y: number, zoom: number): { latitude: 
   return { latitude, longitude };
 };
 
-// tileZoom can be coarser than the view zoom. Those tiles are drawn larger so the map can
-// zoom past a source that has no native tiles there.
-export const tilesForView = (
-  latitude: number,
-  longitude: number,
-  zoom: number,
-  width: number,
-  height: number,
-  tileZoom = zoom,
-): RadarTileView => {
-  const sourceZoom = Number.isInteger(tileZoom) && tileZoom >= 0 && tileZoom <= zoom ? tileZoom : zoom;
-  if (
-    !Number.isFinite(latitude) ||
-    !Number.isFinite(longitude) ||
-    !Number.isInteger(zoom) ||
-    zoom < 0 ||
-    zoom > 12 ||
-    width <= 0 ||
-    height <= 0
-  ) {
-    return EMPTY_VIEW;
-  }
-  const point = projectRadar(latitude, longitude, zoom);
-  const left = Math.round(point.x * RADAR_TILE_SIZE - width / 2);
-  const top = Math.round(point.y * RADAR_TILE_SIZE - height / 2);
-  const tileSize = RADAR_TILE_SIZE * 2 ** (zoom - sourceZoom);
-  const maxIndex = 2 ** sourceZoom;
-  const firstX = Math.floor(left / tileSize);
-  const lastX = Math.floor((left + width - 1) / tileSize);
-  const firstY = Math.floor(top / tileSize);
-  const lastY = Math.floor((top + height - 1) / tileSize);
-  const tiles: RadarTile[] = [];
-  for (let y = firstY; y <= lastY; y += 1) {
-    if (y < 0 || y >= maxIndex) {
-      continue;
-    }
-    for (let x = firstX; x <= lastX; x += 1) {
-      const wrapped = ((x % maxIndex) + maxIndex) % maxIndex;
-      tiles.push({
-        left: x * tileSize - left,
-        size: tileSize,
-        top: y * tileSize - top,
-        x: wrapped,
-        y,
-      });
-    }
-  }
-  return { originLeft: left, originTop: top, tiles };
+// Web Mercator (EPSG:3857) coordinates in meters for exact single-image bbox alignment.
+export const projectMercatorMeters = (latitude: number, longitude: number): MapPoint => {
+  const clamped = Math.max(-MAX_PROJECTED_LATITUDE, Math.min(MAX_PROJECTED_LATITUDE, latitude));
+  const latRad = (clamped * Math.PI) / 180;
+  const lonRad = (longitude * Math.PI) / 180;
+  return {
+    x: lonRad * EARTH_RADIUS_METERS,
+    y: Math.log(Math.tan(Math.PI / 4 + latRad / 2)) * EARTH_RADIUS_METERS,
+  };
 };
 
-// Use coarser tiles (drawn larger) when a full-resolution grid would exceed the cap.
-// A 4K screen at zoom 7 would otherwise request well over a hundred 256px tiles.
-export const tilesForLimitedView = (
-  latitude: number,
-  longitude: number,
-  zoom: number,
-  width: number,
-  height: number,
-  tileZoom = zoom,
-  maxTiles = MAX_RADAR_TILES,
-): RadarLimitedTileView => {
-  let source = Number.isInteger(tileZoom) && tileZoom >= 0 && tileZoom <= zoom ? tileZoom : zoom;
-  let view = tilesForView(latitude, longitude, zoom, width, height, source);
-  while (view.tiles.length > maxTiles && source > 0) {
-    source -= 1;
-    view = tilesForView(latitude, longitude, zoom, width, height, source);
+// Bounded single-image request size (<= 800x450 target, always <= 960x540) preserving container aspect ratio.
+export const boundedRadarImageSize = (width: number, height: number): RadarImageSize => {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return { height: 0, width: 0 };
   }
-  const tiles = view.tiles.length > maxTiles ? view.tiles.slice(0, maxTiles) : view.tiles;
-  return { originLeft: view.originLeft, originTop: view.originTop, tileZoom: source, tiles };
+  const safeWidth = Math.min(width, RADAR_MAX_VIEWPORT_WIDTH);
+  const safeHeight = Math.min(height, RADAR_MAX_VIEWPORT_HEIGHT);
+  const scale = Math.min(1, RADAR_TARGET_IMAGE_WIDTH / safeWidth, RADAR_TARGET_IMAGE_HEIGHT / safeHeight);
+  return {
+    height: Math.max(1, Math.min(MAX_RADAR_IMAGE_HEIGHT, Math.round(safeHeight * scale))),
+    width: Math.max(1, Math.min(MAX_RADAR_IMAGE_WIDTH, Math.round(safeWidth * scale))),
+  };
 };
-
-const MARKER_EDGE_MARGIN_PX = 24;
-
-// Pixel position of a geographic place inside the current viewport. Keeps the location
-// dot anchored on the real city (e.g. Franklin, TN) even after panning the map.
-export const radarMarkerPosition = (
-  latitude: number,
-  longitude: number,
-  zoom: number,
-  originLeft: number,
-  originTop: number,
-  width: number,
-  height: number,
-): RadarMarkerPoint => {
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || width <= 0 || height <= 0) {
-    return { left: 0, top: 0, visible: false };
-  }
-  const worldWidth = RADAR_TILE_SIZE * 2 ** zoom;
-  const point = projectRadar(latitude, longitude, zoom);
-  let left = point.x * RADAR_TILE_SIZE - originLeft;
-  const centerX = width / 2;
-  while (left - centerX > worldWidth / 2) {
-    left -= worldWidth;
-  }
-  while (left - centerX < -worldWidth / 2) {
-    left += worldWidth;
-  }
-  const top = point.y * RADAR_TILE_SIZE - originTop;
-  const visible =
-    left >= -MARKER_EDGE_MARGIN_PX &&
-    left <= width + MARKER_EDGE_MARGIN_PX &&
-    top >= -MARKER_EDGE_MARGIN_PX &&
-    top <= height + MARKER_EDGE_MARGIN_PX;
-  return { left: Math.round(left), top: Math.round(top), visible };
-};
-
-export const radarTileUrl = (host: string, path: string, zoom: number, tile: Pick<RadarTile, "x" | "y">) =>
-  host +
-  path +
-  "/" +
-  RADAR_TILE_SIZE +
-  "/" +
-  zoom +
-  "/" +
-  tile.x +
-  "/" +
-  tile.y +
-  "/" +
-  RADAR_COLOR_SCHEME +
-  "/" +
-  RADAR_TILE_OPTIONS +
-  ".png";
-
-// Esri's dark canvas is a public no-key basemap. Its tile order is z/y/x.
-export const baseTileUrl = (zoom: number, tile: Pick<RadarTile, "x" | "y">) =>
-  ESRI_DARK_CANVAS + zoom + "/" + tile.y + "/" + tile.x;
-
-// Continental US NEXRAD, including Alaska and Hawaii. Iowa State serves these tiles with no key.
-const NEXRAD_MIN_LATITUDE = 17;
-const NEXRAD_MAX_LATITUDE = 72;
-const NEXRAD_MIN_LONGITUDE = -168;
-const NEXRAD_MAX_LONGITUDE = -64;
-const NEXRAD_TILE_ROOT = "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913";
-// Oldest to newest. "now" is the live composite. Each step is about ten minutes.
-export const NEXRAD_FRAMES = ["m50m", "m40m", "m30m", "m20m", "m10m", "now"] as const;
-
-export interface RadarOverlay {
-  readonly kind: "nexrad" | "rainviewer";
-  readonly tileSize: number;
-  readonly tileZoom: number;
-}
 
 export const nexradCovers = (latitude: number, longitude: number) =>
   latitude >= NEXRAD_MIN_LATITUDE &&
@@ -234,23 +138,149 @@ export const nexradCovers = (latitude: number, longitude: number) =>
   longitude >= NEXRAD_MIN_LONGITUDE &&
   longitude <= NEXRAD_MAX_LONGITUDE;
 
-// Above RainViewer's last real zoom, US views use NEXRAD tiles. Everywhere else the zoom-7
-// radar is scaled up so the control still zooms, with a softer image.
+// UI zoom 4..8 maps to RainViewer single centered 512px images (rvZoom 3..7).
+// Above zoom 8 in the US, use IEM NEXRAD single WMS PNGs; elsewhere scale rvZoom 7.
 export const radarOverlay = (zoom: number, latitude: number, longitude: number): RadarOverlay => {
-  if (zoom > RAIN_VIEWER_MAX_ZOOM && nexradCovers(latitude, longitude)) {
-    return { kind: "nexrad", tileSize: RADAR_TILE_SIZE, tileZoom: zoom };
+  const rvZoom = Math.max(3, Math.min(RAIN_VIEWER_MAX_ZOOM, Math.round(zoom) - 1));
+  if (zoom > RAIN_VIEWER_SINGLE_MAX_UI_ZOOM && nexradCovers(latitude, longitude)) {
+    return { kind: "nexrad", rvZoom };
   }
-  const tileZoom = Math.max(0, Math.min(zoom, RAIN_VIEWER_MAX_ZOOM));
-  return { kind: "rainviewer", tileSize: RADAR_TILE_SIZE * 2 ** (zoom - tileZoom), tileZoom };
+  return { kind: "rainviewer", rvZoom };
 };
 
-export const nexradTileUrl = (
-  frame: (typeof NEXRAD_FRAMES)[number],
+// Exact EPSG:3857 bounding box matching the viewport aspect ratio and centered on (latitude, longitude).
+export const radarViewportBbox = (
+  latitude: number,
+  longitude: number,
   zoom: number,
-  tile: Pick<RadarTile, "x" | "y">,
+  width: number,
+  height: number,
+): RadarViewportBbox | null => {
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    !Number.isFinite(zoom) ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return null;
+  }
+  const center = projectMercatorMeters(latitude, longitude);
+  const spanMeters = WORLD_METERS / 2 ** Math.max(1, zoom - 1);
+  const landscape = width >= height;
+  const viewWidthMeters = landscape ? spanMeters : spanMeters * (width / height);
+  const viewHeightMeters = landscape ? spanMeters * (height / width) : spanMeters;
+  return {
+    east: center.x + viewWidthMeters / 2,
+    north: center.y + viewHeightMeters / 2,
+    south: center.y - viewHeightMeters / 2,
+    spanMeters,
+    viewHeightMeters,
+    viewWidthMeters,
+    west: center.x - viewWidthMeters / 2,
+  };
+};
+
+const formatBbox = (bbox: RadarViewportBbox) =>
+  [bbox.west, bbox.south, bbox.east, bbox.north].map((value) => value.toFixed(1)).join(",");
+
+// One single muted dark basemap JPEG (~20 KB) for the exact viewport bbox and bounded size.
+export const baseMapImageUrl = (bbox: RadarViewportBbox, size: RadarImageSize) =>
+  ESRI_DARK_EXPORT +
+  "?bbox=" +
+  formatBbox(bbox) +
+  "&bboxSR=3857&imageSR=3857&size=" +
+  size.width +
+  "," +
+  size.height +
+  "&format=jpg&f=image";
+
+// One single 512x512 smooth RainViewer composite PNG centered on (latitude, longitude).
+export const rainViewerSingleImageUrl = (
+  host: string,
+  path: string,
+  rvZoom: number,
+  latitude: number,
+  longitude: number,
+) =>
+  host +
+  path +
+  "/" +
+  RAIN_VIEWER_SINGLE_SIZE +
+  "/" +
+  rvZoom +
+  "/" +
+  latitude.toFixed(4) +
+  "/" +
+  longitude.toFixed(4) +
+  "/" +
+  RADAR_COLOR_SCHEME +
+  "/" +
+  RADAR_IMAGE_OPTIONS +
+  ".png";
+
+// One single transparent NEXRAD composite PNG from Iowa State WMS matching the exact bbox and bounded size.
+export const nexradSingleImageUrl = (
+  frame: (typeof NEXRAD_FRAMES)[number],
+  bbox: RadarViewportBbox,
+  size: RadarImageSize,
 ) => {
-  const layer = frame === "now" ? NEXRAD_TILE_ROOT : NEXRAD_TILE_ROOT + "-" + frame;
-  return layer + "/" + zoom + "/" + tile.x + "/" + tile.y + ".png";
+  const layer = frame === "now" ? "nexrad-n0q-900913" : "nexrad-n0q-900913-" + frame;
+  return (
+    IEM_NEXRAD_WMS +
+    "?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=" +
+    layer +
+    "&SRS=EPSG:3857&BBOX=" +
+    formatBbox(bbox) +
+    "&WIDTH=" +
+    size.width +
+    "&HEIGHT=" +
+    size.height +
+    "&FORMAT=image/png&TRANSPARENT=TRUE"
+  );
+};
+
+// Pure percentage box aligning the single radar <img> pixel-for-pixel over the Esri basemap without CSS transforms.
+export const radarImagePlacement = (overlay: RadarOverlay, bbox: RadarViewportBbox): RadarImageBox => {
+  if (overlay.kind === "nexrad") {
+    return { heightPercent: 100, leftPercent: 0, topPercent: 0, widthPercent: 100 };
+  }
+  const tileMeters = WORLD_METERS / 2 ** overlay.rvZoom;
+  const widthPercent = (tileMeters / bbox.viewWidthMeters) * 100;
+  const heightPercent = (tileMeters / bbox.viewHeightMeters) * 100;
+  return {
+    heightPercent,
+    leftPercent: (100 - widthPercent) / 2,
+    topPercent: (100 - heightPercent) / 2,
+    widthPercent,
+  };
+};
+
+// Geographic location marker as percentages inside the current bbox (stays accurate after panning).
+export const radarMarkerPercent = (
+  latitude: number,
+  longitude: number,
+  bbox: RadarViewportBbox | null,
+): RadarMarkerPoint => {
+  if (!bbox || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return { leftPercent: 0, topPercent: 0, visible: false };
+  }
+  const point = projectMercatorMeters(latitude, longitude);
+  let dx = point.x - (bbox.west + bbox.viewWidthMeters / 2);
+  while (dx > WORLD_METERS / 2) {
+    dx -= WORLD_METERS;
+  }
+  while (dx < -WORLD_METERS / 2) {
+    dx += WORLD_METERS;
+  }
+  const leftPercent = ((dx + bbox.viewWidthMeters / 2) / bbox.viewWidthMeters) * 100;
+  const topPercent = ((bbox.north - point.y) / bbox.viewHeightMeters) * 100;
+  const visible =
+    leftPercent >= -MARKER_EDGE_MARGIN_PERCENT &&
+    leftPercent <= 100 + MARKER_EDGE_MARGIN_PERCENT &&
+    topPercent >= -MARKER_EDGE_MARGIN_PERCENT &&
+    topPercent <= 100 + MARKER_EDGE_MARGIN_PERCENT;
+  return { leftPercent, topPercent, visible };
 };
 
 const readFrames = (value: unknown, kind: RadarFrame["kind"]) => {

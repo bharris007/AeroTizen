@@ -421,5 +421,10 @@
   "family.radarModerate": "Умеренные",
   "family.radarHeavy": "Сильные",
   "family.radarPreparing": "Загрузка кадров {{loaded}}/{{total}}",
-  "family.radarCardTimelineHint": "OK — воспроизведение или пауза. Влево и вправо — перемотка. Вверх — к карточке."
+  "family.radarCardTimelineHint": "OK — воспроизведение или пауза. Влево и вправо — перемотка. Вверх — к карточке.",
+  "family.radarLite": "Лайт",
+  "family.radarLiteMode": "Статичный радар (лайт)",
+  "family.radarLiteHint": "Последний статичный кадр. OK переключает режим лайт. Назад — закрыть.",
+  "family.radarLiteFallback": "Медленная загрузка — показан последний кадр",
+  "family.radarStatic": "Статично"
 }

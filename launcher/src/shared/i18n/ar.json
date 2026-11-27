@@ -421,5 +421,10 @@
   "family.radarModerate": "متوسط",
   "family.radarHeavy": "غزير",
   "family.radarPreparing": "جارٍ تحميل الإطارات {{loaded}}/{{total}}",
-  "family.radarCardTimelineHint": "OK للتشغيل أو الإيقاف. يسار ويمين للتنقل. أعلى للعودة إلى البطاقة."
+  "family.radarCardTimelineHint": "OK للتشغيل أو الإيقاف. يسار ويمين للتنقل. أعلى للعودة إلى البطاقة.",
+  "family.radarLite": "خفيف",
+  "family.radarLiteMode": "رادار ثابت (وضع خفيف)",
+  "family.radarLiteHint": "أحدث إطار ثابت. OK يبدّل الوضع الخفيف. رجوع للإغلاق.",
+  "family.radarLiteFallback": "التحميل بطيء — عرض أحدث إطار",
+  "family.radarStatic": "ثابت"
 }

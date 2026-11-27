@@ -421,5 +421,10 @@
   "family.radarModerate": "Moderata",
   "family.radarHeavy": "Forte",
   "family.radarPreparing": "Caricamento fotogrammi {{loaded}}/{{total}}",
-  "family.radarCardTimelineHint": "OK riproduce o mette in pausa. Sinistra e destra scorrono. Su torna alla scheda."
+  "family.radarCardTimelineHint": "OK riproduce o mette in pausa. Sinistra e destra scorrono. Su torna alla scheda.",
+  "family.radarLite": "Lite",
+  "family.radarLiteMode": "Radar statico (Lite)",
+  "family.radarLiteHint": "Ultimo fotogramma statico. OK attiva o disattiva Lite. Indietro per chiudere.",
+  "family.radarLiteFallback": "Caricamento lento — ultimo fotogramma",
+  "family.radarStatic": "Statico"
 }
