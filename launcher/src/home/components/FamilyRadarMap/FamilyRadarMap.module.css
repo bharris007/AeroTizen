@@ -5,39 +5,46 @@
   bottom: 0;
   left: 0;
   overflow: hidden;
-  background: #0c121c;
+  background: #0d1420;
   color: #fff;
 }
 
-.layers {
+.layers,
+.basemap,
+.atmosphere,
+.radarStage,
+.vignette {
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
   left: 0;
+}
+
+.basemap {
+  opacity: 0.92;
+}
+
+/* Muted cool slate tint over Esri dark gray for an Apple Weather nocturnal map tone. */
+.atmosphere {
+  background: rgba(8, 17, 32, 0.3);
+  pointer-events: none;
+}
+
+/* Soft top and bottom gradient scrim so floating glass controls read clearly. */
+.vignette {
+  background: linear-gradient(
+    to bottom,
+    rgba(8, 13, 22, 0.48) 0%,
+    rgba(8, 13, 22, 0) 20%,
+    rgba(8, 13, 22, 0) 72%,
+    rgba(8, 13, 22, 0.56) 100%
+  );
+  pointer-events: none;
 }
 
 .tile {
   position: absolute;
-}
-
-.radarLayer {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 560ms ease-in-out;
-}
-
-.radarLayer[data-shown="true"] {
-  opacity: 1;
-}
-
-.map[data-radar-crossfade="false"] .radarLayer {
-  transition: none;
 }
 
 .image {
@@ -48,28 +55,115 @@
   height: 100%;
 }
 
-.marker {
+.radarCanvas {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 2;
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
-  border: 3px solid #fff;
-  border-radius: 50%;
-  background: #3db7ff;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateZ(0);
+  will-change: opacity;
+  transition: opacity 680ms linear;
 }
 
-.place {
+.radarCanvas[data-visible="true"] {
+  opacity: 0.86;
+}
+
+.radarLayer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateZ(0);
+  will-change: opacity;
+  transition: opacity 680ms linear;
+}
+
+.radarLayer[data-shown="true"] {
+  opacity: 0.86;
+}
+
+.map[data-radar-transition="scrub"] .radarCanvas,
+.map[data-radar-transition="scrub"] .radarLayer {
+  transition: opacity 180ms ease-out;
+}
+
+.map[data-radar-transition="none"] .radarCanvas,
+.map[data-radar-transition="none"] .radarLayer {
+  transition: none;
+}
+
+.preloadBin {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.marker {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.markerHalo {
+  position: absolute;
+  top: -19px;
+  left: -19px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.24);
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.35);
+}
+
+.markerDot {
+  position: absolute;
+  top: -9px;
+  left: -9px;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #0a84ff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.52);
+}
+
+.markerLabel {
+  position: absolute;
+  top: 15px;
+  left: 0;
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(12, 18, 28, 0.78);
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.38);
+  transform: translateX(-50%);
+}
+
+.header {
   position: absolute;
   top: 24px;
   left: 28px;
   z-index: 2;
   max-width: calc(100% - 140px);
-  font-size: 28px;
-  line-height: 1.2;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
 
   [dir="rtl"] & {
     right: 28px;
@@ -77,39 +171,125 @@
   }
 }
 
-.map[data-radar-chrome="full"] .credit {
-  top: 72px;
-  bottom: auto;
+.map[data-radar-chrome="full"] .header {
+  top: 32px;
+  left: 44px;
+}
+
+[dir="rtl"] .map[data-radar-chrome="full"] .header {
+  right: 44px;
+  left: auto;
+}
+
+.place {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
+}
+
+.map[data-radar-chrome="full"] .place {
+  font-size: 32px;
+}
+
+.headerMeta {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.72);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+
+.legend {
+  display: inline-flex;
+  flex-direction: column;
+  width: 224px;
+  margin-top: 14px;
+  padding: 10px 14px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  background: rgba(12, 18, 28, 0.76);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+}
+
+.legendBar {
+  height: 7px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #64d2ff 0%, #0a84ff 34%, #0055d4 54%, #ffd60a 78%, #ff453a 100%);
+}
+
+.legend[data-radar-palette="nexrad"] .legendBar {
+  background: linear-gradient(90deg, #60a5fa 0%, #34d399 34%, #22c55e 54%, #facc15 78%, #ef4444 100%);
+}
+
+.legendScale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .credit {
   position: absolute;
-  bottom: 18px;
-  left: 20px;
+  right: 20px;
+  bottom: 14px;
   z-index: 2;
-  max-width: 46%;
+  max-width: 44%;
   margin: 0;
-  font-size: 16px;
+  font-size: 13px;
   line-height: 1.2;
-  color: rgba(255, 255, 255, 0.78);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  text-align: right;
+  color: rgba(255, 255, 255, 0.56);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
 
   [dir="rtl"] & {
-    right: 20px;
-    left: auto;
+    right: auto;
+    left: 20px;
+    text-align: left;
   }
 }
 
-.status {
+.map[data-radar-chrome="full"] .credit {
+  right: auto;
+  bottom: 24px;
+  left: 44px;
+  text-align: left;
+}
+
+[dir="rtl"] .map[data-radar-chrome="full"] .credit {
+  right: 44px;
+  left: auto;
+  text-align: right;
+}
+
+.statusWrap {
   position: absolute;
   top: 50%;
   right: 48px;
   left: 48px;
-  z-index: 2;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.status {
   margin: 0;
-  font-size: 32px;
+  padding: 14px 26px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(12, 18, 28, 0.84);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.42);
+  font-size: 24px;
+  font-weight: 500;
   line-height: 1.3;
   text-align: center;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
-  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.92);
 }

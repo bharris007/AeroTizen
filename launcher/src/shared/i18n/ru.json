@@ -415,5 +415,11 @@
   "family.radarPanSelectHint": "OK — двигать карту. Вверх — отдалить. Вниз — шкала времени.",
   "family.radarViewHint": "OK — шкала времени. Вверх — элементы управления. Назад — закрыть.",
   "family.radarZoomInHint": "OK — приблизить. Вниз — отдалить.",
-  "family.radarZoomOutHint": "OK — отдалить. Вверх — приблизить. Вниз — сдвиг карты."
+  "family.radarZoomOutHint": "OK — отдалить. Вверх — приблизить. Вниз — сдвиг карты.",
+  "family.radarLegend": "Интенсивность осадков",
+  "family.radarLight": "Слабые",
+  "family.radarModerate": "Умеренные",
+  "family.radarHeavy": "Сильные",
+  "family.radarPreparing": "Загрузка кадров {{loaded}}/{{total}}",
+  "family.radarCardTimelineHint": "OK — воспроизведение или пауза. Влево и вправо — перемотка. Вверх — к карточке."
 }

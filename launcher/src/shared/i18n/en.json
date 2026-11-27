@@ -415,5 +415,11 @@
   "family.radarPanSelectHint": "OK to move the map. Up for zoom out. Down for the timeline.",
   "family.radarViewHint": "OK for the timeline. Up for the controls. Back to close.",
   "family.radarZoomInHint": "OK zooms in. Down reaches zoom out.",
-  "family.radarZoomOutHint": "OK zooms out. Up reaches zoom in. Down reaches pan."
+  "family.radarZoomOutHint": "OK zooms out. Up reaches zoom in. Down reaches pan.",
+  "family.radarLegend": "Precipitation intensity",
+  "family.radarLight": "Light",
+  "family.radarModerate": "Moderate",
+  "family.radarHeavy": "Heavy",
+  "family.radarPreparing": "Loading frames {{loaded}}/{{total}}",
+  "family.radarCardTimelineHint": "OK plays or pauses. Left and right scrub. Up returns to card."
 }

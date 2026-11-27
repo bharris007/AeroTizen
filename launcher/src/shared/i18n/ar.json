@@ -415,5 +415,11 @@
   "family.radarPanSelectHint": "OK لتحريك الخريطة. أعلى للتصغير. أسفل للخط الزمني.",
   "family.radarViewHint": "OK للخط الزمني. أعلى لعناصر التحكم. رجوع للإغلاق.",
   "family.radarZoomInHint": "OK للتكبير. أسفل للتصغير.",
-  "family.radarZoomOutHint": "OK للتصغير. أعلى للتكبير. أسفل للتحريك."
+  "family.radarZoomOutHint": "OK للتصغير. أعلى للتكبير. أسفل للتحريك.",
+  "family.radarLegend": "شدة الهطول",
+  "family.radarLight": "خفيف",
+  "family.radarModerate": "متوسط",
+  "family.radarHeavy": "غزير",
+  "family.radarPreparing": "جارٍ تحميل الإطارات {{loaded}}/{{total}}",
+  "family.radarCardTimelineHint": "OK للتشغيل أو الإيقاف. يسار ويمين للتنقل. أعلى للعودة إلى البطاقة."
 }

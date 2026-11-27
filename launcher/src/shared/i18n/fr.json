@@ -415,5 +415,11 @@
   "family.radarPanSelectHint": "OK pour déplacer la carte. Haut pour dézoomer. Bas pour la chronologie.",
   "family.radarViewHint": "OK pour la chronologie. Haut pour les commandes. Retour pour fermer.",
   "family.radarZoomInHint": "OK pour zoomer. Bas pour dézoomer.",
-  "family.radarZoomOutHint": "OK pour dézoomer. Haut pour zoomer. Bas pour le déplacement."
+  "family.radarZoomOutHint": "OK pour dézoomer. Haut pour zoomer. Bas pour le déplacement.",
+  "family.radarLegend": "Intensité des précipitations",
+  "family.radarLight": "Faible",
+  "family.radarModerate": "Modérée",
+  "family.radarHeavy": "Forte",
+  "family.radarPreparing": "Chargement des images {{loaded}}/{{total}}",
+  "family.radarCardTimelineHint": "OK lance ou met en pause. Gauche et droite parcourent. Haut revient à la carte."
 }

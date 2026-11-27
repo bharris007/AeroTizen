@@ -415,5 +415,11 @@
   "family.radarPanSelectHint": "OK per spostare la mappa. Su per ridurre. Giù per la sequenza.",
   "family.radarViewHint": "OK per la sequenza. Su per i comandi. Indietro per chiudere.",
   "family.radarZoomInHint": "OK per ingrandire. Giù per ridurre.",
-  "family.radarZoomOutHint": "OK per ridurre. Su per ingrandire. Giù per lo spostamento."
+  "family.radarZoomOutHint": "OK per ridurre. Su per ingrandire. Giù per lo spostamento.",
+  "family.radarLegend": "Intensità delle precipitazioni",
+  "family.radarLight": "Debole",
+  "family.radarModerate": "Moderata",
+  "family.radarHeavy": "Forte",
+  "family.radarPreparing": "Caricamento fotogrammi {{loaded}}/{{total}}",
+  "family.radarCardTimelineHint": "OK riproduce o mette in pausa. Sinistra e destra scorrono. Su torna alla scheda."
 }

@@ -415,5 +415,11 @@
   "family.radarPanSelectHint": "OK para mover o mapa. Cima para diminuir. Baixo para a linha do tempo.",
   "family.radarViewHint": "OK para a linha do tempo. Cima para os controles. Voltar para fechar.",
   "family.radarZoomInHint": "OK para aumentar. Baixo para diminuir.",
-  "family.radarZoomOutHint": "OK para diminuir. Cima para aumentar. Baixo para mover."
+  "family.radarZoomOutHint": "OK para diminuir. Cima para aumentar. Baixo para mover.",
+  "family.radarLegend": "Intensidade da precipitação",
+  "family.radarLight": "Fraca",
+  "family.radarModerate": "Moderada",
+  "family.radarHeavy": "Forte",
+  "family.radarPreparing": "Carregando quadros {{loaded}}/{{total}}",
+  "family.radarCardTimelineHint": "OK reproduz ou pausa. Esquerda e direita percorrem. Cima volta ao cartão."
 }

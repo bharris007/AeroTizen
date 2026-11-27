@@ -5,7 +5,15 @@ import type { CalendarEvent, FamilyCalendarSnapshot } from "../../../contracts/f
 import type { FamilyForecastSnapshot } from "../../../contracts/familyForecast";
 import type { RadarMapService, RadarMapSnapshot } from "../../../contracts/radarMap";
 import { FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE } from "../../../services/family/familyLocation";
-import { baseTileUrl, RADAR_CARD_ZOOM, radarTileUrl, tilesForView } from "../../../services/radar/rainViewer";
+import { RADAR_PLAY_STEP_MS } from "../../../services/radar/radarTimeline";
+import {
+  baseTileUrl,
+  MAX_RADAR_TILES,
+  RADAR_CARD_ZOOM,
+  radarTileUrl,
+  tilesForView,
+} from "../../../services/radar/rainViewer";
+import { activeRadarTileLoads, queuedRadarTileLoads, resetRadarTileQueue } from "../../../services/radar/tileLoadQueue";
 import { createStore } from "../../../shared/state/createStore";
 import { renderWithEnglish } from "../../../test/renderWithEnglish";
 import { createCardEnvironment } from "../../test/createCardEnvironment";
@@ -169,9 +177,8 @@ test("shows today's events in calendar colours with overlaps side by side and an
 });
 
 const finishQueuedTiles = (root: ParentNode) => {
-  for (let step = 0; step < 40; step += 1) {
-    const waiting = [...root.querySelectorAll("img")].filter((image) => !image.getAttribute("src"));
-    if (waiting.length === 0) {
+  for (let step = 0; step < 60; step += 1) {
+    if (activeRadarTileLoads() === 0 && queuedRadarTileLoads() === 0) {
       return;
     }
     [...root.querySelectorAll("img")]
@@ -237,10 +244,73 @@ test("live radar replaces the forecast and loads RainViewer tiles for that place
     expect(sources).toContain(baseTileUrl(RADAR_CARD_ZOOM, tile));
     expect(container.querySelector("[data-family-radar-marker]")).not.toBeNull();
     expect(container.querySelector("[data-family-radar-zoom]")).not.toBeNull();
+    expect(container.querySelector("[data-family-radar-play-bar]")?.getAttribute("data-radar-playing")).toBe("false");
     expect(container.querySelector("[data-family-radar-slot]")?.getAttribute("data-revealed")).toBe("true");
     expect(radarMap.watch).toHaveBeenCalled();
   } finally {
     width.mockRestore();
     height.mockRestore();
+    resetRadarTileQueue();
+  }
+});
+
+test("radar card never autoplays, gates playback until frames preload, and caps 4K tiles per layer", async () => {
+  vi.useFakeTimers();
+  resetRadarTileQueue();
+  const width = vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(3840);
+  const height = vi.spyOn(Element.prototype, "clientHeight", "get").mockReturnValue(2160);
+  try {
+    const nowSec = Math.floor(NOON / 1000);
+    const frames = [
+      { kind: "past" as const, path: "/v2/radar/past1", time: nowSec - 1200 },
+      { kind: "past" as const, path: "/v2/radar/past2", time: nowSec - 600 },
+      { kind: "past" as const, path: "/v2/radar/now", time: nowSec },
+    ];
+    const env = environment(ready, "family-weather");
+    const radarMap = radarService({
+      frames,
+      generated: nowSec,
+      host: "https://tilecache.rainviewer.com",
+      status: "ready",
+    });
+    env.state.set({ ...env.state.getSnapshot(), weatherRadar: true });
+    const view = {
+      ...env,
+      runtime: { ...env.runtime, radarMap },
+      settings: createStore({ performanceMode: false }),
+    } as unknown as typeof env;
+    const { container, unmount } = renderWithEnglish(<FamilyBoard env={view} shown timeFormat="12" />);
+
+    const mapNode = container.querySelector("[data-family-radar-map]");
+    const layerTiles = Number(mapNode?.getAttribute("data-radar-layer-tiles") || "0");
+    expect(layerTiles).toBeGreaterThan(0);
+    expect(layerTiles).toBeLessThanOrEqual(MAX_RADAR_TILES);
+
+    // Even after waiting several playback intervals, the card never autoplays.
+    vi.advanceTimersByTime(RADAR_PLAY_STEP_MS * 4);
+    expect(env.commandRadar).not.toHaveBeenCalledWith({ type: "tick" });
+
+    // Turning on playback starts preloading all frames, but does not tick until frames settle.
+    await act(() => {
+      env.state.set({ ...env.state.getSnapshot(), radarPlaying: true });
+    });
+    vi.advanceTimersByTime(RADAR_PLAY_STEP_MS * 3);
+    expect(env.commandRadar).not.toHaveBeenCalledWith({ type: "tick" });
+
+    // Once all frames finish preloading, playback begins advancing.
+    await act(() => {
+      finishQueuedTiles(container);
+    });
+    vi.advanceTimersByTime(RADAR_PLAY_STEP_MS * 3);
+    expect(env.commandRadar).toHaveBeenCalledWith({ type: "tick" });
+
+    unmount();
+    expect(activeRadarTileLoads()).toBe(0);
+    expect(queuedRadarTileLoads()).toBe(0);
+  } finally {
+    width.mockRestore();
+    height.mockRestore();
+    vi.useRealTimers();
+    resetRadarTileQueue();
   }
 });

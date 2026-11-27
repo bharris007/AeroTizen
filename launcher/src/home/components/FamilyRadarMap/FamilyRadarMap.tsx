@@ -1,9 +1,12 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
 
+import { createRadarPreloader, type RadarPreloadFrame } from "../../../services/radar/createRadarPreloader";
+import { releaseRadarCanvas, resizeCanvasElement } from "../../../services/radar/radarCompositor";
+import type { TimelineEntry } from "../../../services/radar/radarTimeline";
 import {
   baseTileUrl,
-  NEXRAD_FRAMES,
   nexradTileUrl,
+  radarMarkerPosition,
   radarOverlay,
   type RadarTile,
   radarTileUrl,
@@ -17,63 +20,117 @@ import type { HomeEnvironment } from "../../types";
 import styles from "./FamilyRadarMap.module.css";
 import { FamilyRadarTile } from "./FamilyRadarTile";
 
-export const RADAR_FRAME_INTERVAL_MS = 900;
-export const RADAR_CROSSFADE_MS = 560;
+export const RADAR_CROSSFADE_MS = 680;
+export const RADAR_SCRUB_FADE_MS = 180;
+const CATALOG_TIMEOUT_MS = 8_000;
 const MEASURE_ATTEMPTS = 2;
 const NO_TILES: readonly RadarTile[] = Object.freeze([]);
+const NO_READY_IDS: readonly string[] = Object.freeze([]);
+
+export interface RadarPreloadProgress {
+  readonly loadedFrames: number;
+  readonly ready: boolean;
+  readonly totalFrames: number;
+}
 
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
 
-type RadarLayer = { key: string; nexrad: (typeof NEXRAD_FRAMES)[number] | null; path: string | null };
+const shortPlaceName = (label: string) => {
+  const comma = label.indexOf(",");
+  return comma > 0 ? label.slice(0, comma).trim() : label.trim();
+};
 
-// Live precipitation over a dark map. Coordinates come from the family forecast, which
-// uses the saved weather place or Franklin, Tennessee when that place is missing.
+const drawCachedCanvas = (target: HTMLCanvasElement | null, source: HTMLCanvasElement) => {
+  if (!target) {
+    return false;
+  }
+  resizeCanvasElement(target, source.width, source.height);
+  const ctx = target.getContext("2d");
+  if (!ctx) {
+    return false;
+  }
+  ctx.clearRect(0, 0, target.width, target.height);
+  ctx.drawImage(source, 0, 0);
+  return true;
+};
+
+// Live precipitation over a muted dark map. Uses pre-composited offscreen canvases for
+// smooth GPU opacity crossfades with zero blocky tiles or layout thrash, and never autoplays.
 export const FamilyRadarMap = ({
   chrome = "card",
   enabled,
+  entries,
   env,
+  frameIndex,
   label,
   latitude,
   longitude,
-  playback,
+  onPreloadChange,
+  placeLatitude,
+  placeLongitude,
+  playing = false,
+  preloadAll = false,
+  suspended = false,
+  updated = "",
   zoom,
 }: {
   chrome?: "card" | "full";
   enabled: boolean;
+  entries: readonly TimelineEntry[];
   env: HomeEnvironment;
+  frameIndex: number;
   label: string;
   latitude: number;
   longitude: number;
-  // Set on the full-screen player. Undefined lets the card loop on its own.
-  playback?: { nexrad: (typeof NEXRAD_FRAMES)[number] | null; path: string | null; time: number } | null;
+  onPreloadChange?: (progress: RadarPreloadProgress) => void;
+  placeLatitude?: number;
+  placeLongitude?: number;
+  playing?: boolean;
+  preloadAll?: boolean;
+  suspended?: boolean;
+  updated?: string;
   zoom: number;
 }) => {
   const { t } = useTranslation();
   const performanceMode = useStoreSelector(env.settings, (settings) => settings.performanceMode);
   const map = useStore(env.runtime.radarMap);
   const [reduceMotion] = useState(prefersReducedMotion);
-  const [index, setIndex] = useState(0);
   const [size, setSize] = useState({ height: 0, width: 0 });
   const [catalogTimedOut, setCatalogTimedOut] = useState(false);
-  const [stack, setStack] = useState<{ incoming: RadarLayer | null; outgoing: RadarLayer | null; shown: boolean }>({
-    incoming: null,
-    outgoing: null,
-    shown: true,
-  });
+
+  const preloader = useMemo(() => createRadarPreloader(), []);
+  const preloadSnapshot = useStore(preloader);
+  const canComposite = preloadSnapshot.canComposite;
+
+  const [displaySlot, setDisplaySlot] = useState<{
+    active: 0 | 1;
+    frameId: string | null;
+    visible: boolean;
+  }>({ active: 0, frameId: null, visible: false });
+
+  // DOM tile fallback state (used only when 2D canvas compositing is unavailable).
+  const [domStack, setDomStack] = useState<{
+    incoming: TimelineEntry | null;
+    outgoing: TimelineEntry | null;
+    shown: boolean;
+  }>({ incoming: null, outgoing: null, shown: true });
+  const domSettledRef = useRef<Map<string, Set<number>>>(new Map());
+  const [domReadyIds, setDomReadyIds] = useState<readonly string[]>(NO_READY_IDS);
+
   const frame = useRef<HTMLDivElement>(null);
-  const frameKey = map.frames.map((item) => item.time).join(",");
+  const slot0Ref = useRef<HTMLCanvasElement>(null);
+  const slot1Ref = useRef<HTMLCanvasElement>(null);
   const softFade = !performanceMode && !reduceMotion;
+
+  useEffect(() => () => preloader.dispose(), [preloader]);
+
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || suspended) {
       return;
     }
     return env.runtime.radarMap.watch();
-  }, [enabled, env.runtime.radarMap]);
-  useEffect(() => {
-    if (!enabled) {
-      setStack({ incoming: null, outgoing: null, shown: true });
-    }
-  }, [enabled]);
+  }, [enabled, env.runtime.radarMap, suspended]);
+
   useLayoutEffect(() => {
     const node = frame.current;
     if (!node || !enabled) {
@@ -97,146 +154,317 @@ export const FamilyRadarMap = ({
       window.cancelAnimationFrame(frameId);
     };
   }, [enabled, zoom]);
-  useEffect(() => {
-    setIndex(0);
-  }, [frameKey]);
+
   const overlay = radarOverlay(zoom, latitude, longitude);
   const nexrad = overlay.kind === "nexrad";
-  const driven = playback !== undefined;
-  const frameCount = nexrad ? NEXRAD_FRAMES.length : map.frames.length;
-  const animate = !driven && enabled && !performanceMode && !reduceMotion && frameCount > 1 && map.status === "ready";
+
   useEffect(() => {
     if (!enabled || nexrad || map.frames.length > 0 || map.status !== "loading") {
       setCatalogTimedOut(false);
       return;
     }
-    const timer = window.setTimeout(() => setCatalogTimedOut(true), 8_000);
+    const timer = window.setTimeout(() => setCatalogTimedOut(true), CATALOG_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
   }, [enabled, map.frames.length, map.status, nexrad]);
-  useEffect(() => {
-    if (!animate) {
-      return;
-    }
-    const timer = window.setInterval(() => {
-      setIndex((current) => current + 1);
-    }, RADAR_FRAME_INTERVAL_MS);
-    return () => window.clearInterval(timer);
-  }, [animate]);
+
   const baseView = useMemo(() => {
     if (!enabled || size.width <= 0 || size.height <= 0) {
       return null;
     }
     return tilesForLimitedView(latitude, longitude, zoom, size.width, size.height);
   }, [enabled, latitude, longitude, size.height, size.width, zoom]);
+
   const radarView = useMemo(() => {
     if (!enabled || size.width <= 0 || size.height <= 0) {
       return null;
     }
     return tilesForLimitedView(latitude, longitude, zoom, size.width, size.height, overlay.tileZoom);
   }, [enabled, latitude, longitude, overlay.tileZoom, size.height, size.width, zoom]);
+
   const baseTiles = baseView?.tiles ?? NO_TILES;
   const radarTiles = radarView?.tiles ?? NO_TILES;
   const baseTileZoom = baseView?.tileZoom ?? zoom;
   const radarTileZoom = radarView?.tileZoom ?? overlay.tileZoom;
-  const restingIndex = (() => {
-    if (nexrad) {
-      return Math.max(0, NEXRAD_FRAMES.length - 1);
+
+  const clampedIndex = entries.length === 0 ? 0 : Math.max(0, Math.min(entries.length - 1, frameIndex));
+  const activeEntry = entries[clampedIndex] ?? null;
+  const viewKey = [
+    latitude,
+    longitude,
+    zoom,
+    size.width,
+    size.height,
+    baseTileZoom,
+    radarTileZoom,
+    overlay.kind,
+    map.host,
+  ].join(":");
+
+  const entryTileSrc = useCallback(
+    (entry: TimelineEntry, tile: RadarTile) => {
+      if (entry.nexrad) {
+        return nexradTileUrl(entry.nexrad, radarTileZoom, tile);
+      }
+      if (entry.path && map.host) {
+        return radarTileUrl(map.host, entry.path, radarTileZoom, tile);
+      }
+      return "";
+    },
+    [map.host, radarTileZoom],
+  );
+
+  const preloadFrames = useMemo((): readonly RadarPreloadFrame[] => {
+    if (!enabled || radarTiles.length === 0 || entries.length === 0) {
+      return [];
     }
-    for (let frameIndex = map.frames.length - 1; frameIndex >= 0; frameIndex -= 1) {
-      if (map.frames[frameIndex]?.kind !== "forecast") {
-        return frameIndex;
+    return entries.map((entry) => ({
+      id: entry.id,
+      tiles: radarTiles.map((tile) => ({ src: entryTileSrc(entry, tile), tile })).filter((item) => Boolean(item.src)),
+    }));
+  }, [enabled, entries, entryTileSrc, radarTiles]);
+
+  // Clear canvases and fallback state whenever disabled or the viewport changes.
+  const previousViewRef = useRef(viewKey);
+  useLayoutEffect(() => {
+    const viewChanged = previousViewRef.current !== viewKey;
+    previousViewRef.current = viewKey;
+    if (!enabled || viewChanged) {
+      releaseRadarCanvas(slot0Ref.current);
+      releaseRadarCanvas(slot1Ref.current);
+      setDisplaySlot({ active: 0, frameId: null, visible: false });
+      domSettledRef.current = new Map();
+      setDomReadyIds(NO_READY_IDS);
+      if (!enabled) {
+        preloader.clear();
+        setDomStack({ incoming: null, outgoing: null, shown: true });
       }
     }
-    return 0;
-  })();
-  const shownIndex = (() => {
-    if (frameCount === 0) {
-      return 0;
-    }
-    if (!animate) {
-      return Math.min(restingIndex, frameCount - 1);
-    }
-    return index % frameCount;
-  })();
-  const shownFrame = (() => {
-    if (driven) {
-      return playback?.path ? { kind: "past" as const, path: playback.path, time: playback.time } : null;
-    }
-    if (nexrad || map.frames.length === 0) {
-      return null;
-    }
-    return map.frames[shownIndex] ?? null;
-  })();
-  const nexradFrame = (() => {
-    if (driven) {
-      return playback?.nexrad ?? null;
-    }
-    if (nexrad) {
-      return NEXRAD_FRAMES[shownIndex] ?? null;
-    }
-    return null;
-  })();
-  const frameMarker = (() => {
-    if (driven) {
-      return playback?.time;
-    }
-    if (shownFrame) {
-      return shownFrame.time;
-    }
-    return nexradFrame || undefined;
-  })();
-  const activeLayer = useMemo((): RadarLayer | null => {
-    if (nexradFrame) {
-      return { key: "n:" + nexradFrame, nexrad: nexradFrame, path: null };
-    }
-    if (shownFrame) {
-      return { key: "r:" + shownFrame.path, nexrad: null, path: shownFrame.path };
-    }
-    return null;
-  }, [nexradFrame, shownFrame]);
-  const viewKey = [latitude, longitude, zoom, size.width, size.height, baseTileZoom, radarTileZoom].join(":");
-  const viewRef = useRef(viewKey);
-  useLayoutEffect(() => {
-    const viewChanged = viewRef.current !== viewKey;
-    viewRef.current = viewKey;
-    if (!activeLayer) {
-      setStack({ incoming: null, outgoing: null, shown: true });
+  }, [enabled, preloader, viewKey]);
+
+  // Release both display canvases on unmount to free GPU memory on Tizen immediately.
+  useEffect(
+    () => () => {
+      releaseRadarCanvas(slot0Ref.current);
+      releaseRadarCanvas(slot1Ref.current);
+    },
+    [],
+  );
+
+  // Drive offscreen canvas preloader in real browsers.
+  useEffect(() => {
+    if (!enabled || !canComposite) {
       return;
     }
-    setStack((current) => {
-      if (!softFade || !current.incoming || viewChanged) {
-        return { incoming: activeLayer, outgoing: null, shown: true };
+    if (suspended) {
+      preloader.cancelInFlight();
+      return;
+    }
+    if (size.width <= 0 || size.height <= 0 || preloadFrames.length === 0) {
+      preloader.clear();
+      return;
+    }
+    preloader.sync({
+      frames: preloadFrames,
+      height: size.height,
+      preloadAll,
+      priorityFrameId: activeEntry?.id ?? null,
+      source: overlay.kind,
+      viewKey,
+      width: size.width,
+    });
+  }, [
+    activeEntry?.id,
+    canComposite,
+    enabled,
+    overlay.kind,
+    preloadAll,
+    preloadFrames,
+    preloader,
+    size.height,
+    size.width,
+    suspended,
+    viewKey,
+  ]);
+
+  // Blit the pre-composited canvas into the hidden display slot and crossfade via GPU opacity.
+  const activeReadyInCanvas =
+    canComposite &&
+    Boolean(activeEntry) &&
+    preloadSnapshot.viewKey === viewKey &&
+    preloadSnapshot.readyIds.includes(activeEntry?.id ?? "");
+
+  useLayoutEffect(() => {
+    if (!enabled || !canComposite || !activeEntry || !activeReadyInCanvas) {
+      return;
+    }
+    if (displaySlot.frameId === activeEntry.id) {
+      return;
+    }
+    const cached = preloader.getFrameCanvas(activeEntry.id);
+    if (!cached) {
+      return;
+    }
+    if (!displaySlot.frameId) {
+      if (drawCachedCanvas(slot0Ref.current, cached)) {
+        setDisplaySlot({ active: 0, frameId: activeEntry.id, visible: !softFade });
       }
-      if (current.incoming.key === activeLayer.key) {
+      return;
+    }
+    const nextSlot: 0 | 1 = displaySlot.active === 0 ? 1 : 0;
+    const target = nextSlot === 0 ? slot0Ref.current : slot1Ref.current;
+    if (drawCachedCanvas(target, cached)) {
+      setDisplaySlot({ active: nextSlot, frameId: activeEntry.id, visible: true });
+    }
+  }, [
+    activeEntry,
+    activeReadyInCanvas,
+    canComposite,
+    displaySlot.active,
+    displaySlot.frameId,
+    enabled,
+    preloader,
+    softFade,
+  ]);
+
+  useEffect(() => {
+    if (!canComposite || !displaySlot.frameId || displaySlot.visible) {
+      return;
+    }
+    const frameId = window.requestAnimationFrame(() => {
+      setDisplaySlot((current) => (current.visible ? current : { ...current, visible: true }));
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [canComposite, displaySlot.frameId, displaySlot.visible]);
+
+  // DOM fallback layer transitions (used only when 2D canvas context is unavailable).
+  useLayoutEffect(() => {
+    if (!enabled || canComposite) {
+      return;
+    }
+    if (!activeEntry) {
+      setDomStack({ incoming: null, outgoing: null, shown: true });
+      return;
+    }
+    setDomStack((current) => {
+      if (!softFade || !current.incoming) {
+        return { incoming: activeEntry, outgoing: null, shown: true };
+      }
+      if (current.incoming.id === activeEntry.id) {
         return current;
       }
-      return { incoming: activeLayer, outgoing: current.incoming, shown: false };
+      return { incoming: activeEntry, outgoing: current.incoming, shown: false };
     });
-  }, [activeLayer, softFade, viewKey]);
+  }, [activeEntry, canComposite, enabled, softFade, viewKey]);
+
   useEffect(() => {
-    if (stack.shown || !stack.incoming) {
+    if (canComposite || domStack.shown || !domStack.incoming) {
       return;
     }
     let second = 0;
     const first = window.requestAnimationFrame(() => {
       second = window.requestAnimationFrame(() => {
-        setStack((current) => (current.shown ? current : { ...current, shown: true }));
+        setDomStack((current) => (current.shown ? current : { ...current, shown: true }));
       });
     });
     return () => {
       window.cancelAnimationFrame(first);
       window.cancelAnimationFrame(second);
     };
-  }, [stack.incoming, stack.shown]);
+  }, [canComposite, domStack.incoming, domStack.shown]);
+
   useEffect(() => {
-    if (!stack.outgoing || !stack.shown) {
+    if (canComposite || !domStack.outgoing || !domStack.shown) {
       return;
     }
-    const timer = window.setTimeout(() => {
-      setStack((current) => ({ ...current, outgoing: null }));
-    }, RADAR_CROSSFADE_MS);
+    const timer = window.setTimeout(
+      () => setDomStack((current) => ({ ...current, outgoing: null })),
+      playing ? RADAR_CROSSFADE_MS : RADAR_SCRUB_FADE_MS,
+    );
     return () => window.clearTimeout(timer);
-  }, [stack.outgoing, stack.shown]);
+  }, [canComposite, domStack.outgoing, domStack.shown, playing]);
+
+  const markDomTileSettled = useCallback((entryId: string, tileIndex: number, expectedTotal: number) => {
+    const settledMap = domSettledRef.current;
+    let bucket = settledMap.get(entryId);
+    if (!bucket) {
+      bucket = new Set<number>();
+      settledMap.set(entryId, bucket);
+    }
+    bucket.add(tileIndex);
+    if (bucket.size >= expectedTotal) {
+      setDomReadyIds((current) => (current.includes(entryId) ? current : [...current, entryId]));
+    }
+  }, []);
+
+  // Compute unified preload progress across both canvas and DOM fallback renderers.
+  const totalFrames = enabled && size.width > 0 && size.height > 0 ? entries.length : 0;
+  const loadedFrames = (() => {
+    if (totalFrames === 0) {
+      return 0;
+    }
+    if (canComposite) {
+      return preloadSnapshot.viewKey === viewKey ? preloadSnapshot.loadedFrames : 0;
+    }
+    return entries.filter((entry) => domReadyIds.includes(entry.id)).length;
+  })();
+  const preloadReady = totalFrames > 0 && loadedFrames >= totalFrames;
+
+  const progressRef = useRef<RadarPreloadProgress>({ loadedFrames: -1, ready: false, totalFrames: -1 });
+  useEffect(() => {
+    if (!onPreloadChange) {
+      return;
+    }
+    const previous = progressRef.current;
+    if (
+      previous.loadedFrames === loadedFrames &&
+      previous.totalFrames === totalFrames &&
+      previous.ready === preloadReady
+    ) {
+      return;
+    }
+    const next = { loadedFrames, ready: preloadReady, totalFrames };
+    progressRef.current = next;
+    onPreloadChange(next);
+  }, [loadedFrames, onPreloadChange, preloadReady, totalFrames]);
+
+  const domPreloadEntries = useMemo(() => {
+    if (canComposite || !enabled || !preloadAll || radarTiles.length === 0) {
+      return [] as readonly TimelineEntry[];
+    }
+    const mountedIds = new Set<string>();
+    if (domStack.incoming) {
+      mountedIds.add(domStack.incoming.id);
+    }
+    if (domStack.outgoing) {
+      mountedIds.add(domStack.outgoing.id);
+    }
+    return entries.filter((entry) => !mountedIds.has(entry.id) && !domReadyIds.includes(entry.id));
+  }, [
+    canComposite,
+    domReadyIds,
+    domStack.incoming,
+    domStack.outgoing,
+    enabled,
+    entries,
+    preloadAll,
+    radarTiles.length,
+  ]);
+
+  const marker = useMemo(() => {
+    if (!baseView || size.width <= 0 || size.height <= 0) {
+      return { left: 0, top: 0, visible: false };
+    }
+    return radarMarkerPosition(
+      placeLatitude ?? latitude,
+      placeLongitude ?? longitude,
+      zoom,
+      baseView.originLeft,
+      baseView.originTop,
+      size.width,
+      size.height,
+    );
+  }, [baseView, latitude, longitude, placeLatitude, placeLongitude, size.height, size.width, zoom]);
+
   const statusText = (() => {
     if (nexrad || map.frames.length > 0) {
       return "";
@@ -246,25 +474,7 @@ export const FamilyRadarMap = ({
     }
     return map.status === "loading" ? t("family.radarLoading") : "";
   })();
-  const layerSrc = (layer: RadarLayer, tile: RadarTile) => {
-    if (layer.nexrad) {
-      return nexradTileUrl(layer.nexrad, radarTileZoom, tile);
-    }
-    if (layer.path) {
-      return radarTileUrl(map.host, layer.path, radarTileZoom, tile);
-    }
-    return "";
-  };
-  const renderLayer = (layer: RadarLayer, shown: boolean) => (
-    <div key={layer.key} class={styles.radarLayer} data-radar-layer={layer.key} data-shown={shown ? "true" : "false"}>
-      {radarTiles.map((tile) => {
-        const src = layerSrc(layer, tile);
-        return src ? (
-          <FamilyRadarTile key={"radar:" + tile.left + ":" + tile.top + ":" + tile.size} src={src} tile={tile} />
-        ) : null;
-      })}
-    </div>
-  );
+
   const catalogStatus = (() => {
     if (nexrad || map.frames.length > 0) {
       return "ready";
@@ -274,6 +484,39 @@ export const FamilyRadarMap = ({
     }
     return map.status;
   })();
+
+  const renderDomLayer = (entry: TimelineEntry, shown: boolean, priority: "high" | "low" = "high") => {
+    const validTiles = radarTiles
+      .map((tile) => ({ src: entryTileSrc(entry, tile), tile }))
+      .filter((item) => Boolean(item.src));
+    return (
+      <div key={entry.id} class={styles.radarLayer} data-radar-layer={entry.id} data-shown={shown ? "true" : "false"}>
+        {validTiles.map((item, tileIndex) => (
+          <FamilyRadarTile
+            key={"radar:" + item.tile.left + ":" + item.tile.top + ":" + item.tile.size}
+            priority={priority}
+            src={item.src}
+            tile={item.tile}
+            onSettled={() => markDomTileSettled(entry.id, tileIndex, validTiles.length)}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  const transitionMode = (() => {
+    if (!softFade) {
+      return "none";
+    }
+    return playing ? "play" : "scrub";
+  })();
+
+  const mountedDomRadarTiles = canComposite
+    ? 0
+    : (domStack.incoming ? radarTiles.length : 0) + (domStack.outgoing ? radarTiles.length : 0);
+
+  const markerChip = label ? shortPlaceName(label) : "";
+
   return (
     <div
       class={styles.map}
@@ -281,29 +524,97 @@ export const FamilyRadarMap = ({
       data-family-radar-map
       data-radar-chrome={chrome}
       data-family-radar-status={catalogStatus}
-      data-radar-frame={frameMarker}
+      data-radar-frame={activeEntry?.time}
       data-radar-source={overlay.kind}
       data-radar-zoom={zoom}
+      data-radar-renderer={canComposite ? "canvas" : "tiles"}
+      data-radar-preload-loaded={loadedFrames}
+      data-radar-preload-total={totalFrames}
+      data-radar-preload-ready={preloadReady ? "true" : "false"}
       data-radar-crossfade={softFade ? "true" : "false"}
-      data-radar-tiles={
-        baseTiles.length + (stack.incoming ? radarTiles.length : 0) + (stack.outgoing ? radarTiles.length : 0)
-      }
+      data-radar-transition={transitionMode}
+      data-radar-tiles={baseTiles.length + mountedDomRadarTiles}
+      data-radar-layer-tiles={radarTiles.length}
     >
       <div class={styles.layers} aria-hidden="true">
-        {baseTiles.map((tile) => (
-          <FamilyRadarTile
-            key={"base:" + tile.left + ":" + tile.top}
-            src={baseTileUrl(baseTileZoom, tile)}
-            tile={tile}
-          />
-        ))}
-        {stack.outgoing ? renderLayer(stack.outgoing, !stack.shown) : null}
-        {stack.incoming ? renderLayer(stack.incoming, stack.shown) : null}
-        {baseTiles.length > 0 ? <div class={styles.marker} data-family-radar-marker /> : null}
+        <div class={styles.basemap}>
+          {baseTiles.map((tile) => (
+            <FamilyRadarTile
+              key={"base:" + tile.left + ":" + tile.top + ":" + baseTileZoom}
+              priority="high"
+              src={baseTileUrl(baseTileZoom, tile)}
+              tile={tile}
+            />
+          ))}
+        </div>
+        <div class={styles.atmosphere} />
+        <div class={styles.radarStage}>
+          {canComposite ? (
+            <>
+              <canvas
+                ref={slot0Ref}
+                class={styles.radarCanvas}
+                data-radar-slot="0"
+                data-visible={displaySlot.visible && displaySlot.active === 0 ? "true" : "false"}
+              />
+              <canvas
+                ref={slot1Ref}
+                class={styles.radarCanvas}
+                data-radar-slot="1"
+                data-visible={displaySlot.visible && displaySlot.active === 1 ? "true" : "false"}
+              />
+            </>
+          ) : (
+            <>
+              {domStack.outgoing ? renderDomLayer(domStack.outgoing, !domStack.shown) : null}
+              {domStack.incoming ? renderDomLayer(domStack.incoming, domStack.shown) : null}
+              {domPreloadEntries.length > 0 ? (
+                <div class={styles.preloadBin} data-radar-preload-bin>
+                  {domPreloadEntries.map((entry) => renderDomLayer(entry, false, "low"))}
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
+        <div class={styles.vignette} />
+        {baseTiles.length > 0 && marker.visible ? (
+          <div
+            class={styles.marker}
+            data-family-radar-marker
+            style={{ left: marker.left + "px", top: marker.top + "px" }}
+          >
+            <span class={styles.markerHalo} />
+            <span class={styles.markerDot} />
+            {chrome === "full" && markerChip ? <span class={styles.markerLabel}>{markerChip}</span> : null}
+          </div>
+        ) : null}
       </div>
-      {label ? <div class={styles.place + " " + text.truncate}>{label}</div> : null}
+      <div class={styles.header}>
+        {label ? <div class={styles.place + " " + text.truncate}>{label}</div> : null}
+        {chrome === "full" && updated ? <div class={styles.headerMeta}>{updated}</div> : null}
+        {chrome === "full" ? (
+          <div
+            class={styles.legend}
+            role="img"
+            aria-label={t("family.radarLegend")}
+            data-family-radar-legend
+            data-radar-palette={overlay.kind}
+          >
+            <div class={styles.legendBar} />
+            <div class={styles.legendScale}>
+              <span>{t("family.radarLight")}</span>
+              <span>{t("family.radarModerate")}</span>
+              <span>{t("family.radarHeavy")}</span>
+            </div>
+          </div>
+        ) : null}
+      </div>
       <p class={styles.credit}>{t(nexrad ? "family.radarCreditNexrad" : "family.radarCredit")}</p>
-      {statusText ? <p class={styles.status}>{statusText}</p> : null}
+      {statusText ? (
+        <div class={styles.statusWrap}>
+          <p class={styles.status}>{statusText}</p>
+        </div>
+      ) : null}
     </div>
   );
 };
