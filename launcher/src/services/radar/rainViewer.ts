@@ -42,6 +42,12 @@ export interface RadarLimitedTileView extends RadarTileView {
   readonly tileZoom: number;
 }
 
+export interface RadarMarkerPoint {
+  readonly left: number;
+  readonly top: number;
+  readonly visible: boolean;
+}
+
 const EMPTY_VIEW: RadarTileView = Object.freeze({
   originLeft: 0,
   originTop: 0,
@@ -149,6 +155,41 @@ export const tilesForLimitedView = (
   }
   const tiles = view.tiles.length > maxTiles ? view.tiles.slice(0, maxTiles) : view.tiles;
   return { originLeft: view.originLeft, originTop: view.originTop, tileZoom: source, tiles };
+};
+
+const MARKER_EDGE_MARGIN_PX = 24;
+
+// Pixel position of a geographic place inside the current viewport. Keeps the location
+// dot anchored on the real city (e.g. Franklin, TN) even after panning the map.
+export const radarMarkerPosition = (
+  latitude: number,
+  longitude: number,
+  zoom: number,
+  originLeft: number,
+  originTop: number,
+  width: number,
+  height: number,
+): RadarMarkerPoint => {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || width <= 0 || height <= 0) {
+    return { left: 0, top: 0, visible: false };
+  }
+  const worldWidth = RADAR_TILE_SIZE * 2 ** zoom;
+  const point = projectRadar(latitude, longitude, zoom);
+  let left = point.x * RADAR_TILE_SIZE - originLeft;
+  const centerX = width / 2;
+  while (left - centerX > worldWidth / 2) {
+    left -= worldWidth;
+  }
+  while (left - centerX < -worldWidth / 2) {
+    left += worldWidth;
+  }
+  const top = point.y * RADAR_TILE_SIZE - originTop;
+  const visible =
+    left >= -MARKER_EDGE_MARGIN_PX &&
+    left <= width + MARKER_EDGE_MARGIN_PX &&
+    top >= -MARKER_EDGE_MARGIN_PX &&
+    top <= height + MARKER_EDGE_MARGIN_PX;
+  return { left: Math.round(left), top: Math.round(top), visible };
 };
 
 export const radarTileUrl = (host: string, path: string, zoom: number, tile: Pick<RadarTile, "x" | "y">) =>

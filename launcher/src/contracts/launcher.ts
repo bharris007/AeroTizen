@@ -72,7 +72,21 @@ export interface LauncherConfig extends AppsConfig {
   readonly APP_ID: string;
   readonly DEFAULTS?: Partial<SettingsDefaults>;
   readonly KEY: Readonly<
-    Record<"LEFT" | "RIGHT" | "UP" | "DOWN" | "ENTER" | "BACK" | "ESC" | "IME_DONE" | "IME_CANCEL", number>
+    Record<
+      | "BACK"
+      | "DOWN"
+      | "ENTER"
+      | "ESC"
+      | "IME_CANCEL"
+      | "IME_DONE"
+      | "LEFT"
+      | "MEDIA_PAUSE"
+      | "MEDIA_PLAY"
+      | "MEDIA_PLAY_PAUSE"
+      | "RIGHT"
+      | "UP",
+      number
+    >
   >;
   readonly LONG_PRESS_MS: number;
   readonly SERVICE_ID: string;

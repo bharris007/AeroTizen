@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { RadarFrame } from "../../contracts/radarMap";
 
-import { framePhase, radarAgeMinutes, radarTimeline } from "./radarTimeline";
+import { formatRadarTimestamp, framePhase, radarAgeMinutes, radarTimeline } from "./radarTimeline";
 
 const past = (time: number): RadarFrame => ({ kind: "past", path: "/v2/radar/" + time, time });
 const forecast = (time: number): RadarFrame => ({ kind: "forecast", path: "/v2/radar/nowcast_" + time, time });
@@ -47,4 +47,15 @@ test("age uses the catalog time", () => {
   expect(radarAgeMinutes(NOON, NOON - 600, (NOON + 4 * 60) * 1000)).toBe(4);
   expect(radarAgeMinutes(0, NOON, (NOON + 30) * 1000)).toBe(1);
   expect(radarAgeMinutes(0, 0, NOON * 1000)).toBeNull();
+});
+
+test("formats radar timestamps in Central Time with the timezone abbreviation", () => {
+  // 2026-01-15T18:30:00Z is 12:30 PM CST in America/Chicago.
+  const winterUtcSeconds = Math.floor(Date.UTC(2026, 0, 15, 18, 30) / 1000);
+  const twelveHour = formatRadarTimestamp(winterUtcSeconds, "America/Chicago", "en", "12");
+  expect(twelveHour).toContain("12:30");
+  expect(twelveHour).toMatch(/CST|GMT-6/);
+  const twentyFourHour = formatRadarTimestamp(winterUtcSeconds, "America/Chicago", "en", "24");
+  expect(twentyFourHour).toContain("12:30");
+  expect(twentyFourHour).toMatch(/CST|GMT-6/);
 });

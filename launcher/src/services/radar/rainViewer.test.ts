@@ -11,6 +11,7 @@ import {
   projectRadar,
   RADAR_CARD_ZOOM,
   RADAR_TILE_SIZE,
+  radarMarkerPosition,
   radarOverlay,
   radarTileUrl,
   tilesForLimitedView,
@@ -122,4 +123,47 @@ test("caps a 4K viewport with coarser tiles so one layer stays under the TV-safe
       centerX >= tile.left && centerX < tile.left + tile.size && centerY >= tile.top && centerY < tile.top + tile.size,
   );
   expect(covering).toHaveLength(1);
+});
+
+test("projects the location dot to its true geographic position even after panning", () => {
+  const centered = tilesForView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 800, 600);
+  const atCenter = radarMarkerPosition(
+    FRANKLIN_LATITUDE,
+    FRANKLIN_LONGITUDE,
+    RADAR_CARD_ZOOM,
+    centered.originLeft,
+    centered.originTop,
+    800,
+    600,
+  );
+  expect(atCenter.visible).toBe(true);
+  expect(atCenter.left).toBeCloseTo(400, 0);
+  expect(atCenter.top).toBeCloseTo(300, 0);
+
+  // Panning east moves Franklin's dot to the left of center.
+  const pannedEast = tilesForView(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE + 1.5, RADAR_CARD_ZOOM, 800, 600);
+  const shifted = radarMarkerPosition(
+    FRANKLIN_LATITUDE,
+    FRANKLIN_LONGITUDE,
+    RADAR_CARD_ZOOM,
+    pannedEast.originLeft,
+    pannedEast.originTop,
+    800,
+    600,
+  );
+  expect(shifted.visible).toBe(true);
+  expect(shifted.left).toBeLessThan(400);
+
+  // Panning far away hides the marker cleanly.
+  const farAway = tilesForView(51.5, -0.1, RADAR_CARD_ZOOM, 800, 600);
+  const hidden = radarMarkerPosition(
+    FRANKLIN_LATITUDE,
+    FRANKLIN_LONGITUDE,
+    RADAR_CARD_ZOOM,
+    farAway.originLeft,
+    farAway.originTop,
+    800,
+    600,
+  );
+  expect(hidden.visible).toBe(false);
 });

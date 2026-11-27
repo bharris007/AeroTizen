@@ -1,8 +1,11 @@
+import type { TimeFormat } from "../../contracts/preferences";
 import type { RadarFrame } from "../../contracts/radarMap";
 
 import { NEXRAD_FRAMES } from "./rainViewer";
 
 export const ONE_HOUR_SECONDS = 60 * 60;
+export const RADAR_PLAY_STEP_MS = 740;
+export const RADAR_PLAY_END_HOLD_MS = 1400;
 const FULL_SPAN_SECONDS = 90 * 60;
 const NOW_MATCH_SECONDS = 5 * 60;
 const NEXRAD_STEPS = [
@@ -99,3 +102,25 @@ export const radarTimeline = (
     nowIndex: entries.length === 0 ? 0 : Math.max(0, selectedPast.length - 1),
   };
 };
+
+// Full timestamp in the location's time zone (e.g. America/Chicago Central Time for Franklin, TN).
+export const formatRadarTimestamp = (time: number, timeZone: string, language: string, format: TimeFormat) => {
+  const stamp = new Date(time * 1000);
+  const weekday = new Intl.DateTimeFormat(language, { timeZone, weekday: "short" }).format(stamp);
+  const clock = new Intl.DateTimeFormat(language, {
+    hour: "numeric",
+    hour12: format === "12",
+    minute: "2-digit",
+    timeZone,
+    timeZoneName: "short",
+  }).format(stamp);
+  return weekday + ", " + clock;
+};
+
+export const formatRadarShortTime = (time: number, timeZone: string, language: string, format: TimeFormat) =>
+  new Intl.DateTimeFormat(language, {
+    hour: "numeric",
+    hour12: format === "12",
+    minute: "2-digit",
+    timeZone,
+  }).format(new Date(time * 1000));

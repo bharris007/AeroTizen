@@ -1,22 +1,32 @@
 import { expect, test, vi } from "vitest";
 
-import { loadRadarTile, MAX_CONCURRENT_RADAR_TILES, resetRadarTileQueue } from "./tileLoadQueue";
+import {
+  activeRadarTileLoads,
+  loadRadarTile,
+  MAX_CONCURRENT_RADAR_TILES,
+  queuedRadarTileLoads,
+  resetRadarTileQueue,
+} from "./tileLoadQueue";
 
 const image = () => {
   const listeners: Record<string, () => void> = {};
+  const attrs: Record<string, string> = {};
   return {
     addEventListener(type: string, handler: () => void) {
       listeners[type] = handler;
     },
+    attrs,
     removeEventListener(type: string) {
       delete listeners[type];
     },
     removeAttribute(name: string) {
+      delete attrs[name];
       if (name === "src") {
         this.src = "";
       }
     },
     setAttribute(name: string, value: string) {
+      attrs[name] = value;
       if (name === "src") {
         this.src = value;
       }
@@ -61,4 +71,37 @@ test("a cancelled tile never starts and frees a running slot", () => {
   expect(fourth.src).toBe("d");
   resetRadarTileQueue();
   vi.clearAllMocks();
+});
+
+test("high-priority tiles jump ahead of queued low-priority tiles and report settlement", () => {
+  resetRadarTileQueue();
+  const active = Array.from({ length: MAX_CONCURRENT_RADAR_TILES }, () => image());
+  active.forEach((tile, index) => loadRadarTile(tile as unknown as HTMLImageElement, "run:" + index));
+  const low = image();
+  const high = image();
+  const settledLow = vi.fn();
+  const settledHigh = vi.fn();
+  loadRadarTile(low as unknown as HTMLImageElement, "low:0", { onSettled: settledLow, priority: "low" });
+  loadRadarTile(high as unknown as HTMLImageElement, "high:0", {
+    crossOrigin: "anonymous",
+    onSettled: settledHigh,
+    priority: "high",
+  });
+  expect(activeRadarTileLoads()).toBe(MAX_CONCURRENT_RADAR_TILES);
+  expect(queuedRadarTileLoads()).toBe(2);
+  expect(high.src).toBe("");
+  expect(low.src).toBe("");
+
+  active[0].emit("load");
+  expect(high.src).toBe("high:0");
+  expect(high.attrs.crossorigin).toBe("anonymous");
+  expect(low.src).toBe("");
+
+  high.emit("load");
+  expect(settledHigh).toHaveBeenCalledWith(true);
+  expect(low.src).toBe("low:0");
+
+  low.emit("error");
+  expect(settledLow).toHaveBeenCalledWith(false);
+  resetRadarTileQueue();
 });
