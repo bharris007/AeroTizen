@@ -71,7 +71,9 @@ const harness = (location: WeatherLocation | null = null, unit: "C" | "F" = "F")
 test("uses Franklin when the saved place is missing and ignores a stale reply", () => {
   const missing = harness({ latitude: 999, longitude: 0, name: "Nope" });
   expect(missing.service.getSnapshot()).toMatchObject({
+    latitude: 35.9251,
     locationLabel: "Franklin, TN",
+    longitude: -86.8689,
     status: "loading",
     timeZone: "America/Chicago",
   });
@@ -94,7 +96,9 @@ test("uses Franklin when the saved place is missing and ignores a stale reply", 
   expect(londonRequest.url).not.toContain("temperature_unit=fahrenheit");
   londonRequest.done(forecast(12, "Europe/London"));
   expect(missing.service.getSnapshot()).toMatchObject({
+    latitude: 51.5085,
     locationLabel: LONDON_LABEL,
+    longitude: -0.1257,
     status: "ready",
     temperature: 12,
     timeZone: "Europe/London",

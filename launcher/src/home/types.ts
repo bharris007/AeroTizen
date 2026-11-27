@@ -18,6 +18,18 @@ export type FamilyPane = "weather" | "calendar";
 export type CalendarSpan = 1 | 3 | 5;
 // Which part of the full-screen calendar the remote is on.
 export type CalendarFocus = "grid" | "span";
+// Which part of the full-screen weather the remote is on.
+// Radar adds the timeline, its 1h/2h span, lite toggle, separate zoom in/out buttons, and pan.
+export type WeatherFocus = "lite" | "pan" | "radar" | "span" | "timeline" | "view" | "zoomIn" | "zoomOut";
+export type RadarCommand =
+  | { count: number; nowIndex: number; type: "sync" }
+  | { lite: boolean; type: "setLite" }
+  | { span: 1 | 2; type: "span" }
+  | { type: "play" }
+  | { playing: boolean; type: "setPlaying" }
+  | { delta: number; type: "scrub" }
+  | { index: number; type: "seek" }
+  | { type: "tick" };
 export interface HomeMenuChoice {
   readonly action: "add" | "remove" | "move";
   readonly label: MessageKey;
@@ -39,8 +51,22 @@ export interface HomeState {
   readonly menu: Readonly<{ id: string }> | null;
   readonly moving: string | null;
   readonly page: Page;
+  // Full-screen radar playback. A null frame follows the newest observation.
+  readonly radarFrame: number | null;
+  readonly radarFrameCount: number;
+  // Static latest-frame fallback; defaults on on Tizen TVs to keep memory minimal.
+  readonly radarLite: boolean;
+  readonly radarNowIndex: number;
+  // True while the pan button is armed: arrows move the map until Back or OK.
+  readonly radarPanning: boolean;
+  readonly radarPlaying: boolean;
+  readonly radarSpan: 1 | 2;
   readonly scroll: number;
   readonly selected: string;
+  // Full-screen weather: the forecast, or the radar toggle in the corner.
+  readonly weatherFocus: WeatherFocus;
+  // Home and full-screen weather show live radar instead of the forecast.
+  readonly weatherRadar: boolean;
 }
 export interface HomeEnvironment {
   activate(key: string): void;
@@ -51,6 +77,8 @@ export interface HomeEnvironment {
   calendarToday(): void;
   choose(index: number): void;
   collapsePane(): void;
+  // Full-screen radar timeline: play, scrub, seek, and choose 1h or the full range.
+  commandRadar(command: RadarCommand): void;
   continueItems: RefObject<HTMLDivElement>;
   continueViewport: RefObject<HTMLDivElement>;
   describe(app: InstalledApp): AppPresentation;
@@ -60,6 +88,8 @@ export interface HomeEnvironment {
   menuChoices(): readonly HomeMenuChoice[];
   nodes: Map<string, HTMLElement>;
   pageCalendar(direction: number): void;
+  // Full-screen radar: move the map by one step. x is west/east, y is north/south (-1 or 1).
+  panRadar(x: number, y: number): void;
   rows: RefObject<HTMLElement>;
   runtime: LauncherRuntime;
   select(key: string): void;
@@ -71,5 +101,13 @@ export interface HomeEnvironment {
   showPage(page: Page): void;
   state: MutableStore<HomeState>;
   status: StatusStores;
+  // Switch between static latest-frame Lite mode and 6-frame radar animation.
+  toggleRadarLite(): void;
+  // Enter or leave radar pan mode. Arrows move the map only while this is on.
+  toggleRadarPanning(): void;
+  // Home and full-screen weather: switch between the forecast and live radar.
+  toggleWeatherRadar(): void;
   updates: LauncherUpdateNotice;
+  // Full-screen radar: change the saved zoom by one step.
+  zoomRadar(delta: number): void;
 }

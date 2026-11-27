@@ -1,0 +1,253 @@
+.map {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  max-width: 1920px;
+  max-height: 1080px;
+  margin: auto;
+  overflow: hidden;
+  background: #0d1420;
+  color: #fff;
+}
+
+.layers,
+.basemap,
+.atmosphere,
+.radarStage,
+.vignette {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+}
+
+.basemapImage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.basemapImage[data-visible="true"] {
+  opacity: 0.92;
+}
+
+/* Muted cool slate tint over Esri dark gray for a nocturnal map tone. */
+.atmosphere {
+  background: rgba(8, 17, 32, 0.28);
+  pointer-events: none;
+}
+
+.radarImage {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms ease-out;
+}
+
+.radarImage[data-visible="true"] {
+  opacity: 0.85;
+}
+
+.map[data-radar-transition="scrub"] .radarImage {
+  transition: opacity 160ms ease-out;
+}
+
+.map[data-radar-transition="none"] .radarImage {
+  transition: none;
+}
+
+/* Simple gradient scrim so floating controls read clearly without blur or filters. */
+.vignette {
+  background: linear-gradient(
+    to bottom,
+    rgba(8, 13, 22, 0.48) 0%,
+    rgba(8, 13, 22, 0) 20%,
+    rgba(8, 13, 22, 0) 72%,
+    rgba(8, 13, 22, 0.56) 100%
+  );
+  pointer-events: none;
+}
+
+.marker {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.markerHalo {
+  position: absolute;
+  top: -18px;
+  left: -18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.24);
+}
+
+.markerDot {
+  position: absolute;
+  top: -9px;
+  left: -9px;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #0a84ff;
+}
+
+.markerLabel {
+  position: absolute;
+  top: 15px;
+  left: 0;
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(12, 18, 28, 0.82);
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.header {
+  position: absolute;
+  top: 24px;
+  left: 28px;
+  z-index: 2;
+  max-width: calc(100% - 140px);
+  pointer-events: none;
+
+  [dir="rtl"] & {
+    right: 28px;
+    left: auto;
+  }
+}
+
+.map[data-radar-chrome="full"] .header {
+  top: 32px;
+  left: 44px;
+}
+
+[dir="rtl"] .map[data-radar-chrome="full"] .header {
+  right: 44px;
+  left: auto;
+}
+
+.place {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.map[data-radar-chrome="full"] .place {
+  font-size: 32px;
+}
+
+.headerMeta {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.legend {
+  display: inline-flex;
+  flex-direction: column;
+  width: 224px;
+  margin-top: 14px;
+  padding: 10px 14px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(12, 18, 28, 0.82);
+}
+
+.legendBar {
+  height: 7px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #64d2ff 0%, #0a84ff 34%, #0055d4 54%, #ffd60a 78%, #ff453a 100%);
+}
+
+.legend[data-radar-palette="nexrad"] .legendBar {
+  background: linear-gradient(90deg, #60a5fa 0%, #34d399 34%, #22c55e 54%, #facc15 78%, #ef4444 100%);
+}
+
+.legendScale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.credit {
+  position: absolute;
+  right: 20px;
+  bottom: 14px;
+  z-index: 2;
+  max-width: 44%;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+
+  [dir="rtl"] & {
+    right: auto;
+    left: 20px;
+    text-align: left;
+  }
+}
+
+.map[data-radar-chrome="full"] .credit {
+  right: auto;
+  bottom: 24px;
+  left: 44px;
+  text-align: left;
+}
+
+[dir="rtl"] .map[data-radar-chrome="full"] .credit {
+  right: 44px;
+  left: auto;
+  text-align: right;
+}
+
+.statusWrap {
+  position: absolute;
+  top: 50%;
+  right: 48px;
+  left: 48px;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.status {
+  margin: 0;
+  padding: 14px 26px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(12, 18, 28, 0.88);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.92);
+}

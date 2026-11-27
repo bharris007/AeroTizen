@@ -1,8 +1,26 @@
-import { screen } from "@testing-library/preact";
-import { expect, test } from "vitest";
+import { act, fireEvent, screen } from "@testing-library/preact";
+import { expect, test, vi } from "vitest";
 
 import type { CalendarEvent, FamilyCalendarSnapshot } from "../../../contracts/familyCalendar";
 import type { FamilyForecastSnapshot } from "../../../contracts/familyForecast";
+import type { RadarMapService, RadarMapSnapshot } from "../../../contracts/radarMap";
+import { FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE } from "../../../services/family/familyLocation";
+import {
+  activeRadarImageLoads,
+  queuedRadarImageLoads,
+  resetRadarImageQueue,
+} from "../../../services/radar/radarImageLoader";
+import { RADAR_PLAY_STEP_MS } from "../../../services/radar/radarTimeline";
+import {
+  baseMapImageUrl,
+  boundedRadarImageSize,
+  MAX_RADAR_IMAGE_HEIGHT,
+  MAX_RADAR_IMAGE_WIDTH,
+  RADAR_CARD_ZOOM,
+  radarOverlay,
+  radarViewportBbox,
+  rainViewerSingleImageUrl,
+} from "../../../services/radar/rainViewer";
 import { createStore } from "../../../shared/state/createStore";
 import { renderWithEnglish } from "../../../test/renderWithEnglish";
 import { createCardEnvironment } from "../../test/createCardEnvironment";
@@ -25,7 +43,9 @@ const ready: FamilyForecastSnapshot = {
     { code: 2, hour: 15, temperature: 70 },
     { code: 1, hour: 16, temperature: 68 },
   ],
+  latitude: FRANKLIN_LATITUDE,
   locationLabel: "Franklin, TN",
+  longitude: FRANKLIN_LONGITUDE,
   low: 51,
   status: "ready",
   sunriseMinute: 7 * 60 + 30,
@@ -161,4 +181,198 @@ test("shows today's events in calendar colours with overlaps side by side and an
   expect(block("Pickup").style.width).toBe("100%");
   expect(Number.parseFloat(block("Pickup").style.top)).toBeGreaterThan(Number.parseFloat(block("Dentist").style.top));
   expect(container.querySelectorAll("[data-family-event='all-day']")).toHaveLength(1);
+});
+
+const finishQueuedImages = (root: ParentNode, extra: readonly HTMLImageElement[] = []) => {
+  for (let step = 0; step < 30; step += 1) {
+    if (activeRadarImageLoads() === 0 && queuedRadarImageLoads() === 0) {
+      return;
+    }
+    const candidates = [...root.querySelectorAll("img"), ...extra];
+    candidates.filter((image) => image.getAttribute("src")).forEach((image) => image.dispatchEvent(new Event("load")));
+  }
+};
+
+const radarService = (snapshot: RadarMapSnapshot): RadarMapService => ({
+  ...createStore(snapshot),
+  dispose() {},
+  watch: vi.fn(() => () => undefined),
+});
+
+test("pressing up reveals the weather radar control and OK is wired to it", async () => {
+  const env = environment(ready, "family-calendar");
+  const { container } = renderWithEnglish(<FamilyBoard env={env} shown timeFormat="12" />);
+
+  expect(container.querySelector("[data-family-radar-slot]")?.getAttribute("data-revealed")).toBeNull();
+  const control = screen.getByRole("button", { name: "Show live radar" });
+  expect(control.getAttribute("data-family-radar")).toBe("off");
+  await act(() => {
+    env.state.set({ ...env.state.getSnapshot(), selected: "family-radar" });
+  });
+  expect(container.querySelector("[data-family-radar-slot]")?.getAttribute("data-revealed")).toBe("true");
+  expect(control.getAttribute("data-focused")).toBe("true");
+  fireEvent.click(control);
+  expect(env.select).toHaveBeenCalledWith("family-radar");
+  expect(env.activate).toHaveBeenCalledWith("family-radar");
+});
+
+test("live radar replaces the forecast and keeps basemap loading when the RainViewer catalog arrives asynchronously", async () => {
+  resetRadarImageQueue();
+  const width = vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(800);
+  const height = vi.spyOn(Element.prototype, "clientHeight", "get").mockReturnValue(600);
+  try {
+    const env = environment(ready, "family-weather");
+    const radarStore = createStore<RadarMapSnapshot>({
+      frames: [],
+      generated: 0,
+      host: "",
+      status: "loading",
+    });
+    const radarMap: RadarMapService = {
+      ...radarStore,
+      dispose() {},
+      watch: vi.fn(() => () => undefined),
+    };
+    env.state.set({ ...env.state.getSnapshot(), weatherRadar: true });
+    const view = {
+      ...env,
+      runtime: { ...env.runtime, radarMap },
+      settings: createStore({ performanceMode: true }),
+    } as unknown as typeof env;
+    const { container } = renderWithEnglish(<FamilyBoard env={view} shown timeFormat="12" />);
+
+    // Basemap starts loading immediately while the RainViewer catalog is still in flight.
+    expect(activeRadarImageLoads()).toBe(1);
+    const basemap = container.querySelector("[data-radar-basemap]") as HTMLImageElement;
+    expect(basemap.getAttribute("src")).toContain("World_Dark_Gray_Base/MapServer/export");
+
+    // RainViewer catalog arrives while basemap is still loading: basemap must stay intact and slot 0 queues behind it.
+    await act(() => {
+      radarStore.set({
+        frames: [{ kind: "past", path: "/v2/radar/13f17414a055", time: 100 }],
+        generated: 100,
+        host: "https://tilecache.rainviewer.com",
+        status: "ready",
+      });
+    });
+    expect(activeRadarImageLoads()).toBe(1);
+    expect(basemap.getAttribute("src")).toContain("World_Dark_Gray_Base/MapServer/export");
+
+    expect(container.querySelector("[data-family-weather-view]")?.getAttribute("data-family-weather-view")).toBe(
+      "radar",
+    );
+    expect(screen.getByRole("button", { name: "Show the forecast" }).getAttribute("data-family-radar")).toBe("on");
+    expect(screen.getByText("Franklin, TN")).toBeDefined();
+    expect(screen.getByText("RainViewer · © Esri · © OpenStreetMap")).toBeDefined();
+    // Single-image architecture: zero <canvas>, at most 1 in-flight image load.
+    expect(container.querySelectorAll("canvas")).toHaveLength(0);
+    await act(() => {
+      finishQueuedImages(container);
+    });
+    const sources = [...container.querySelectorAll("img")]
+      .map((image) => image.getAttribute("src") || "")
+      .filter(Boolean);
+    const bbox = radarViewportBbox(FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE, RADAR_CARD_ZOOM, 800, 600)!;
+    const imageSize = boundedRadarImageSize(800, 600);
+    const overlay = radarOverlay(RADAR_CARD_ZOOM, FRANKLIN_LATITUDE, FRANKLIN_LONGITUDE);
+    expect(sources).toEqual([
+      baseMapImageUrl(bbox, imageSize),
+      rainViewerSingleImageUrl(
+        "https://tilecache.rainviewer.com",
+        "/v2/radar/13f17414a055",
+        overlay.rvZoom,
+        FRANKLIN_LATITUDE,
+        FRANKLIN_LONGITUDE,
+      ),
+    ]);
+    expect(container.querySelector("[data-family-radar-marker]")).not.toBeNull();
+    expect(container.querySelector("[data-family-radar-zoom]")).not.toBeNull();
+    expect(container.querySelector("[data-family-radar-play-bar]")?.getAttribute("data-radar-playing")).toBe("false");
+    expect(container.querySelector("[data-family-radar-slot]")?.getAttribute("data-revealed")).toBe("true");
+    expect(radarMap.watch).toHaveBeenCalled();
+  } finally {
+    width.mockRestore();
+    height.mockRestore();
+    resetRadarImageQueue();
+  }
+});
+
+test("radar card stays static at rest, caps 4K image dimensions, loads sequentially on Play, and releases on exit", async () => {
+  vi.useFakeTimers();
+  resetRadarImageQueue();
+  const width = vi.spyOn(Element.prototype, "clientWidth", "get").mockReturnValue(3840);
+  const height = vi.spyOn(Element.prototype, "clientHeight", "get").mockReturnValue(2160);
+  const loaderImages: HTMLImageElement[] = [];
+  const OriginalImage = window.Image;
+  vi.stubGlobal(
+    "Image",
+    class extends OriginalImage {
+      constructor() {
+        super();
+        loaderImages.push(this);
+      }
+    },
+  );
+  try {
+    const nowSec = Math.floor(NOON / 1000);
+    const frames = [
+      { kind: "past" as const, path: "/v2/radar/past1", time: nowSec - 1200 },
+      { kind: "past" as const, path: "/v2/radar/past2", time: nowSec - 600 },
+      { kind: "past" as const, path: "/v2/radar/now", time: nowSec },
+    ];
+    const env = environment(ready, "family-weather");
+    const radarMap = radarService({
+      frames,
+      generated: nowSec,
+      host: "https://tilecache.rainviewer.com",
+      status: "ready",
+    });
+    env.state.set({ ...env.state.getSnapshot(), weatherRadar: true });
+    const view = {
+      ...env,
+      runtime: { ...env.runtime, radarMap },
+      settings: createStore({ performanceMode: false }),
+    } as unknown as typeof env;
+    const { container, unmount } = renderWithEnglish(<FamilyBoard env={view} shown timeFormat="12" />);
+
+    const mapNode = container.querySelector("[data-family-radar-map]");
+    const [imgWidth, imgHeight] = (mapNode?.getAttribute("data-radar-image-size") || "0x0").split("x").map(Number);
+    expect(imgWidth).toBeGreaterThan(0);
+    expect(imgWidth).toBeLessThanOrEqual(MAX_RADAR_IMAGE_WIDTH);
+    expect(imgHeight).toBeLessThanOrEqual(MAX_RADAR_IMAGE_HEIGHT);
+    expect(container.querySelectorAll("canvas")).toHaveLength(0);
+
+    // At rest: loads only basemap + latest radar frame (no sequence loader yet) and never autoplays.
+    await act(() => {
+      finishQueuedImages(container);
+    });
+    expect(loaderImages).toHaveLength(0);
+    vi.advanceTimersByTime(RADAR_PLAY_STEP_MS * 4);
+    expect(env.commandRadar).not.toHaveBeenCalledWith({ type: "tick" });
+
+    // Turning on playback starts sequential loading (1 in flight), gating ticks until ready.
+    await act(() => {
+      env.state.set({ ...env.state.getSnapshot(), radarPlaying: true });
+    });
+    expect(activeRadarImageLoads()).toBe(1);
+    vi.advanceTimersByTime(RADAR_PLAY_STEP_MS * 3);
+    expect(env.commandRadar).not.toHaveBeenCalledWith({ type: "tick" });
+
+    // Finish loading the remaining frames sequentially: playback begins advancing.
+    await act(() => {
+      finishQueuedImages(container, loaderImages);
+    });
+    vi.advanceTimersByTime(RADAR_PLAY_STEP_MS * 3);
+    expect(env.commandRadar).toHaveBeenCalledWith({ type: "tick" });
+
+    unmount();
+    expect(activeRadarImageLoads()).toBe(0);
+    expect(queuedRadarImageLoads()).toBe(0);
+  } finally {
+    vi.unstubAllGlobals();
+    width.mockRestore();
+    height.mockRestore();
+    vi.useRealTimers();
+    resetRadarImageQueue();
+  }
 });

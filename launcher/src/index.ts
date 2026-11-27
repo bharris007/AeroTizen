@@ -19,6 +19,7 @@ import type { InputsService } from "./contracts/inputs";
 import type { ClockService } from "./contracts/launcher";
 import type { NativeNavigation } from "./contracts/nativeNavigation";
 import type { SettingsService } from "./contracts/preferences";
+import type { RadarMapService } from "./contracts/radarMap";
 import type { NetworkService, WeatherService } from "./contracts/status";
 import { createFireplaceKeyHandler } from "./fireplace/createFireplaceKeyHandler";
 import { mountFireplace } from "./fireplace/mountFireplace";
@@ -50,6 +51,7 @@ import { createSettingsService } from "./services/createSettingsService";
 import { createWeatherService } from "./services/createWeatherService";
 import { createFamilyForecast } from "./services/family/createFamilyForecast";
 import { FRANKLIN_TIME_ZONE, resolveFamilyLocation } from "./services/family/familyLocation";
+import { createRadarMap } from "./services/radar/createRadarMap";
 import { mountSettings } from "./settings/index";
 import { appCatalog } from "./shared/apps/appCatalog";
 
@@ -91,6 +93,7 @@ const hotData = import.meta.hot
       preferences?: SettingsService;
       familyCalendar?: FamilyCalendarService;
       familyForecast?: FamilyForecastService;
+      radarMap?: RadarMapService;
       stopBoot?: () => void;
       weather?: WeatherService;
     })
@@ -193,6 +196,13 @@ const familyForecast =
     timers: window,
   });
 runtime.familyForecast = familyForecast;
+const radarMap =
+  hotData?.radarMap ||
+  createRadarMap({
+    platform: createWeatherPlatform(window),
+    timers: window,
+  });
+runtime.radarMap = radarMap;
 const familyCalendar =
   hotData?.familyCalendar ||
   createFamilyCalendar({
@@ -314,6 +324,7 @@ try {
       hotData.network = network;
       hotData.familyCalendar = familyCalendar;
       hotData.familyForecast = familyForecast;
+      hotData.radarMap = radarMap;
       hotData.weather = weather;
       hotData.continueWatching = continueWatching;
       hotData.stopBoot = stopBoot;

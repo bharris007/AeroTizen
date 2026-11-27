@@ -1,0 +1,101 @@
+.screen {
+  position: relative;
+  width: 100%;
+  max-width: 1920px;
+  height: 100%;
+  max-height: 1080px;
+  margin: auto;
+  overflow: hidden;
+  background: #0d1420;
+  color: #fff;
+  font-family: var(--font-ui, "SamsungOne", "Roboto", Arial, sans-serif);
+}
+
+.tools {
+  position: absolute;
+  top: 50%;
+  right: 40px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateY(-50%);
+
+  [dir="rtl"] & {
+    right: auto;
+    left: 40px;
+  }
+}
+
+.zoom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 76px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 22px;
+  background: rgba(12, 18, 28, 0.88);
+  color: #fff;
+}
+
+.zoomButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 54px;
+  border: 2px solid transparent;
+  border-radius: 17px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+
+  &[data-focused="true"] {
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.zoomLevel {
+  margin: 2px 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.toolButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  margin-top: 10px;
+  padding: 9px 6px 7px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 22px;
+  background: rgba(12, 18, 28, 0.88);
+  color: #fff;
+  cursor: pointer;
+
+  &[data-focused="true"] {
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  &[data-active="true"] {
+    border-color: #38bdf8;
+    background: #fff;
+    color: #0e1624;
+  }
+}
+
+.toolLabel {
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-align: center;
+}

@@ -68,6 +68,8 @@ test("the header Christmas icon sits between the gear and Wi-Fi and opens the co
   await expect(page.locator("[data-header-tabs] [role=button]")).toHaveText(["Home", "Watch"]);
 
   await page.keyboard.press("ArrowUp");
+  await expect(page.locator("[data-family-radar]")).toHaveAttribute("data-focused", "true");
+  await page.keyboard.press("ArrowUp");
   await expect(page.locator("#family-tab")).toHaveAttribute("data-focused", "true");
   await page.keyboard.press("ArrowLeft");
   await expect(icon).toHaveAttribute("data-focused", "true");

@@ -18,6 +18,9 @@ export const launcherConfig: LauncherConfig = {
     ESC: 27,
     IME_DONE: 65376,
     IME_CANCEL: 65385,
+    MEDIA_PLAY: 415,
+    MEDIA_PAUSE: 19,
+    MEDIA_PLAY_PAUSE: 10252,
   },
 
   // Apps placed on the home grid the first time, by name prefix, in this order.

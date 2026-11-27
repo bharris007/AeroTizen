@@ -1,7 +1,8 @@
 import { normalizeColour } from "../../backgrounds/colours";
 import { normalizeGradient } from "../../backgrounds/gradients";
-import type { SettingsDefaults, SettingsPreferences, WeatherLocation } from "../../contracts/preferences";
+import type { RadarView, SettingsDefaults, SettingsPreferences, WeatherLocation } from "../../contracts/preferences";
 import { normalizeCalendars } from "../calendar/calendarSources";
+import { clampRadarZoom, RADAR_MAX_ZOOM, RADAR_MIN_ZOOM } from "../radar/radarView";
 
 const record = (value: unknown): Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
@@ -22,6 +23,31 @@ const dictionary = <T extends string | boolean>(value: unknown, kind: "string" |
     (result, [key, item]) => (typeof item === kind ? { ...result, [key]: item as T } : result),
     {},
   );
+
+const axis = (value: unknown, limit: number) =>
+  typeof value === "number" && Number.isFinite(value) && Math.abs(value) <= limit ? value : null;
+
+const radarView = (value: unknown): RadarView | null => {
+  const item = record(value);
+  const latitude = axis(item.latitude, 90);
+  const longitude = axis(item.longitude, 180);
+  const placeLatitude = axis(item.placeLatitude, 90);
+  const placeLongitude = axis(item.placeLongitude, 180);
+  const zoom = item.zoom;
+  if (
+    latitude === null ||
+    longitude === null ||
+    placeLatitude === null ||
+    placeLongitude === null ||
+    typeof zoom !== "number" ||
+    !Number.isInteger(zoom) ||
+    zoom < RADAR_MIN_ZOOM ||
+    zoom > RADAR_MAX_ZOOM
+  ) {
+    return null;
+  }
+  return { latitude, longitude, placeLatitude, placeLongitude, zoom: clampRadarZoom(zoom) };
+};
 
 const location = (value: unknown): WeatherLocation | null => {
   const item = record(value);
@@ -67,6 +93,7 @@ export const normalizeSettings = (
       defaults.theme,
     ),
     performanceMode: boolean(data.performanceMode, defaults.performanceMode),
+    radarView: radarView(data.radarView),
     homeCardColumns: typeof columns === "number" && [3, 4, 5].includes(columns) ? columns : defaults.homeCardColumns,
     homeAppLayout: choice(data.homeAppLayout, ["grid", "scroll"], defaults.homeAppLayout),
     background: text(data.background, defaults.background),
