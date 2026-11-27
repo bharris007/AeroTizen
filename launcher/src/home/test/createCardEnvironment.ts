@@ -13,7 +13,7 @@ export const createCardEnvironment = (selected = "", presentation: Partial<AppPr
     radarFrameCount: 0,
     radarNowIndex: 0,
     radarPanning: false,
-    radarPlaying: true,
+    radarPlaying: false,
     radarSpan: 1,
     calendarDay: 0,
     calendarFocus: "grid",

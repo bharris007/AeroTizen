@@ -25,6 +25,7 @@ export type RadarCommand =
   | { count: number; nowIndex: number; type: "sync" }
   | { span: 1 | 2; type: "span" }
   | { type: "play" }
+  | { playing: boolean; type: "setPlaying" }
   | { delta: number; type: "scrub" }
   | { index: number; type: "seek" }
   | { type: "tick" };

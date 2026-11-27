@@ -199,7 +199,7 @@ export const createHomeController = (
     radarFrameCount: 0,
     radarNowIndex: 0,
     radarPanning: false,
-    radarPlaying: true,
+    radarPlaying: false,
     radarSpan: 1,
     weatherFocus: "view",
     weatherRadar: false,
@@ -211,6 +211,7 @@ export const createHomeController = (
   });
   let timer: number | undefined;
   let enterDown = false;
+  let mediaPlayPauseDown = false;
   let started = false;
   const cancelPress = () => {
     if (timer !== undefined) {
@@ -218,6 +219,7 @@ export const createHomeController = (
     }
     timer = undefined;
     enterDown = false;
+    mediaPlayPauseDown = false;
   };
   const update = (patch: Partial<HomeState>) =>
     transaction(() => {
@@ -354,10 +356,12 @@ export const createHomeController = (
     update({ appsEndOffset, scroll });
   };
   const select = (selected: string) => {
-    if (state.getSnapshot().selected !== selected) {
+    const current = state.getSnapshot();
+    if (current.selected !== selected) {
       cancelPress();
     }
-    update({ selected });
+    const resetWeatherFocus = !current.expanded && selected !== "family-weather" && current.weatherFocus !== "view";
+    update(resetWeatherFocus ? { selected, weatherFocus: "view" } : { selected });
     focus();
   };
   const endMove = () => {
@@ -375,7 +379,18 @@ export const createHomeController = (
   const showPage = (page: Page) => {
     cancelPress();
     endMove();
-    update({ page, appsEndOffset: 0, scroll: 0, menu: null, selected: tabForPage(page), expanded: null });
+    update({
+      page,
+      appsEndOffset: 0,
+      scroll: 0,
+      menu: null,
+      selected: tabForPage(page),
+      expanded: null,
+      radarFrame: null,
+      radarPanning: false,
+      radarPlaying: false,
+      weatherFocus: "view",
+    });
     focus();
   };
   const expandPane = (pane: FamilyPane) => {
@@ -384,9 +399,11 @@ export const createHomeController = (
       calendarFocus: "grid",
       calendarStart: clampDay(current.calendarDay, current.calendarSpan),
       expanded: pane,
+      radarFrame: null,
       radarPanning: false,
+      radarPlaying: false,
       selected: pane === "weather" ? "family-weather" : "family-calendar",
-      weatherFocus: "view",
+      weatherFocus: pane === "weather" && current.weatherRadar ? "timeline" : "view",
     });
     focus();
   };
@@ -394,7 +411,9 @@ export const createHomeController = (
     const pane = state.getSnapshot().expanded;
     update({
       expanded: null,
+      radarFrame: null,
       radarPanning: false,
+      radarPlaying: false,
       selected: pane === "weather" ? "family-weather" : "family-calendar",
       weatherFocus: "view",
     });
@@ -405,14 +424,21 @@ export const createHomeController = (
   };
   const toggleWeatherRadar = () => {
     const current = state.getSnapshot();
-    update({ radarPanning: false, weatherRadar: !current.weatherRadar });
+    const nextRadar = !current.weatherRadar;
+    update({
+      radarFrame: null,
+      radarPanning: false,
+      radarPlaying: false,
+      weatherFocus: current.expanded === "weather" ? current.weatherFocus : "view",
+      weatherRadar: nextRadar,
+    });
   };
   const toggleRadarPanning = () => {
     const current = state.getSnapshot();
     if (!current.weatherRadar) {
       return;
     }
-    update({ radarPanning: !current.radarPanning, weatherFocus: "pan" });
+    update({ radarPanning: !current.radarPanning, radarPlaying: false, weatherFocus: "pan" });
   };
   const radarPlace = () => resolveFamilyLocation(settings.getSnapshot().weatherLocation);
   const radarCamera = () => radarViewport(settings.getSnapshot().radarView, radarPlace());
@@ -431,6 +457,7 @@ export const createHomeController = (
   const panRadar = (x: number, y: number) => {
     const current = radarCamera();
     const center = moveRadarCenter(current.latitude, current.longitude, current.zoom, x, y);
+    update({ radarPlaying: false });
     saveRadarView({ latitude: center.latitude, longitude: center.longitude, zoom: current.zoom });
   };
   const zoomRadar = (delta: number) => {
@@ -439,6 +466,7 @@ export const createHomeController = (
     if (zoom === current.zoom) {
       return;
     }
+    update({ radarPlaying: false });
     saveRadarView({ latitude: current.latitude, longitude: current.longitude, zoom });
   };
   const radarIndex = () => {
@@ -458,11 +486,15 @@ export const createHomeController = (
       return;
     }
     if (command.type === "span") {
-      update({ radarFrame: null, radarSpan: command.span });
+      update({ radarFrame: null, radarPlaying: false, radarSpan: command.span });
       return;
     }
     if (command.type === "play") {
       update({ radarPlaying: !current.radarPlaying });
+      return;
+    }
+    if (command.type === "setPlaying") {
+      update({ radarPlaying: command.playing });
       return;
     }
     const count = current.radarFrameCount;
@@ -478,7 +510,7 @@ export const createHomeController = (
       return;
     }
     if (command.type === "scrub") {
-      update({ radarFrame: (base + command.delta + count) % count, radarPlaying: false });
+      update({ radarFrame: Math.max(0, Math.min(count - 1, base + command.delta)), radarPlaying: false });
       return;
     }
     update({ radarFrame: Math.max(0, Math.min(count - 1, command.index)), radarPlaying: false });
@@ -574,10 +606,31 @@ export const createHomeController = (
     focus();
   };
   const K = runtime.config.KEY;
+  const MEDIA_KEY_CODES = [K.MEDIA_PLAY, K.MEDIA_PAUSE, K.MEDIA_PLAY_PAUSE];
+  const NAV_KEY_CODES = [K.LEFT, K.RIGHT, K.UP, K.DOWN, K.BACK, K.ESC, K.ENTER, ...MEDIA_KEY_CODES];
   // Remote keys for the Family page's panes. Returns true when the key was used.
   const familyKey = (code: number, delta: number) => {
     const current = state.getSnapshot();
     const horizontal = code === K.LEFT || code === K.RIGHT;
+    if (code !== K.MEDIA_PLAY_PAUSE) {
+      mediaPlayPauseDown = false;
+    }
+    const radarVisible = current.weatherRadar && (current.expanded === "weather" || current.expanded === null);
+    if (radarVisible && MEDIA_KEY_CODES.includes(code)) {
+      if (code === K.MEDIA_PLAY_PAUSE) {
+        if (mediaPlayPauseDown) {
+          return true;
+        }
+        mediaPlayPauseDown = true;
+        commandRadar({ type: "play" });
+        return true;
+      }
+      commandRadar({ playing: code === K.MEDIA_PLAY, type: "setPlaying" });
+      return true;
+    }
+    if (MEDIA_KEY_CODES.includes(code)) {
+      return false;
+    }
     // Pan mode is opt-in. Back or OK leaves it; arrows then return to the controls.
     if (current.radarPanning) {
       if (code === K.BACK || code === K.ESC) {
@@ -673,15 +726,18 @@ export const createHomeController = (
             commandRadar({ type: "play" });
           } else if (code === K.UP) {
             update({ weatherFocus: "span" });
-          } else if (code === K.DOWN) {
-            update({ weatherFocus: "view" });
           }
           return true;
         }
         if (current.weatherRadar) {
-          if (code === K.UP || code === K.DOWN || code === K.ENTER) {
-            update({ weatherFocus: "timeline" });
+          if (code === K.LEFT) {
+            commandRadar({ delta: -1, type: "scrub" });
+          } else if (code === K.RIGHT) {
+            commandRadar({ delta: 1, type: "scrub" });
+          } else if (code === K.ENTER) {
+            commandRadar({ type: "play" });
           }
+          update({ weatherFocus: "timeline" });
           return true;
         }
         if (code === K.UP) {
@@ -786,8 +842,28 @@ export const createHomeController = (
         }
         return true;
       }
+      if (current.weatherFocus === "timeline") {
+        if (code === K.ENTER && enterDown) {
+          return true;
+        }
+        if (code === K.ENTER) {
+          enterDown = true;
+          commandRadar({ type: "play" });
+        } else if (code === K.LEFT) {
+          commandRadar({ delta: -1, type: "scrub" });
+        } else if (code === K.RIGHT) {
+          commandRadar({ delta: 1, type: "scrub" });
+        } else if (code === K.UP || code === K.BACK || code === K.ESC) {
+          update({ weatherFocus: "view" });
+        }
+        return true;
+      }
       if (code === K.UP) {
         update({ weatherFocus: "pan" });
+        return true;
+      }
+      if (code === K.DOWN) {
+        update({ weatherFocus: "timeline" });
         return true;
       }
     }
@@ -807,7 +883,13 @@ export const createHomeController = (
       // Rows run right to left in RTL languages, so Left moves to the next item there.
       const rtl = window.document?.documentElement.dir === "rtl";
       const delta = code === K.UP || (code === K.LEFT && !rtl) || (code === K.RIGHT && rtl) ? -1 : 1;
-      if (![K.LEFT, K.RIGHT, K.UP, K.DOWN, K.BACK, K.ESC, K.ENTER].includes(code)) {
+      if (!NAV_KEY_CODES.includes(code)) {
+        return;
+      }
+      if (MEDIA_KEY_CODES.includes(code)) {
+        if (current.page === "family" && familyKey(code, delta)) {
+          event.preventDefault();
+        }
         return;
       }
       event.preventDefault();
@@ -878,6 +960,10 @@ export const createHomeController = (
       select(all[target][Math.max(0, Math.min(all[target].length - 1, column))]);
     });
   const keyup = (code: number) => {
+    if (code === K.MEDIA_PLAY_PAUSE) {
+      mediaPlayPauseDown = false;
+      return;
+    }
     if (code !== K.ENTER) {
       return;
     }

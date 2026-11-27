@@ -162,12 +162,17 @@ test("the weather radar control toggles live radar on the card and in full scree
   home.bridge.focus();
   press(home, KEY.UP);
   expect(home.state.getSnapshot()).toMatchObject({
+    radarPlaying: false,
     selected: "family-radar",
     weatherFocus: "view",
     weatherRadar: false,
   });
   ok(home);
-  expect(home.state.getSnapshot()).toMatchObject({ selected: "family-radar", weatherRadar: true });
+  expect(home.state.getSnapshot()).toMatchObject({
+    radarPlaying: false,
+    selected: "family-radar",
+    weatherRadar: true,
+  });
   ok(home);
   expect(home.state.getSnapshot().weatherRadar).toBe(false);
   press(home, KEY.RIGHT);
@@ -176,12 +181,22 @@ test("the weather radar control toggles live radar on the card and in full scree
   expect(home.state.getSnapshot().selected).toBe("family-weather");
 
   ok(home);
-  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", weatherFocus: "view", weatherRadar: false });
+  expect(home.state.getSnapshot()).toMatchObject({
+    expanded: "weather",
+    radarPlaying: false,
+    weatherFocus: "view",
+    weatherRadar: false,
+  });
   press(home, KEY.UP);
   expect(home.state.getSnapshot().weatherFocus).toBe("radar");
   press(home, KEY.ENTER);
   press(home, KEY.ENTER);
-  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", weatherFocus: "radar", weatherRadar: true });
+  expect(home.state.getSnapshot()).toMatchObject({
+    expanded: "weather",
+    radarPlaying: false,
+    weatherFocus: "radar",
+    weatherRadar: true,
+  });
   home.bridge.keyup(KEY.ENTER);
   expect(home.state.getSnapshot().weatherRadar).toBe(true);
   press(home, KEY.DOWN);
@@ -194,12 +209,23 @@ test("the weather radar control toggles live radar on the card and in full scree
   expect(home.state.getSnapshot().weatherFocus).toBe("span");
   press(home, KEY.DOWN);
   expect(home.state.getSnapshot().weatherFocus).toBe("timeline");
+  // Down on the timeline stays on the timeline without trapping focus.
   press(home, KEY.DOWN);
-  expect(home.state.getSnapshot().weatherFocus).toBe("view");
+  expect(home.state.getSnapshot().weatherFocus).toBe("timeline");
   ok(home);
-  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", weatherFocus: "timeline", weatherRadar: true });
+  expect(home.state.getSnapshot()).toMatchObject({
+    expanded: "weather",
+    radarPlaying: true,
+    weatherFocus: "timeline",
+    weatherRadar: true,
+  });
   press(home, KEY.BACK);
-  expect(home.state.getSnapshot()).toMatchObject({ expanded: null, selected: "family-weather", weatherRadar: true });
+  expect(home.state.getSnapshot()).toMatchObject({
+    expanded: null,
+    radarPlaying: false,
+    selected: "family-weather",
+    weatherRadar: true,
+  });
 });
 
 test("full-screen radar pans and zooms with the remote and saves that view", () => {
@@ -207,16 +233,21 @@ test("full-screen radar pans and zooms with the remote and saves that view", () 
   home.bridge.focus();
   home.toggleWeatherRadar();
   home.expandPane("weather");
-  expect(home.state.getSnapshot()).toMatchObject({ radarPanning: false, weatherFocus: "view", weatherRadar: true });
+  home.commandRadar({ count: 8, nowIndex: 6, type: "sync" });
+  expect(home.state.getSnapshot()).toMatchObject({
+    radarPanning: false,
+    radarPlaying: false,
+    weatherFocus: "timeline",
+    weatherRadar: true,
+  });
 
-  // Arrows on the map navigate controls; they do not pan until pan mode is on.
+  // Left/Right on the timeline scrubs frames; it does not pan until pan mode is on.
   press(home, KEY.RIGHT);
   expect(home.settings.getSnapshot().radarView).toBeNull();
-  expect(home.state.getSnapshot().expanded).toBe("weather");
+  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", radarFrame: 7, radarPlaying: false });
 
-  press(home, KEY.ENTER);
-  expect(home.state.getSnapshot().weatherFocus).toBe("timeline");
   press(home, KEY.UP);
+  expect(home.state.getSnapshot().weatherFocus).toBe("span");
   press(home, KEY.UP);
   expect(home.state.getSnapshot().weatherFocus).toBe("pan");
   ok(home);
@@ -225,7 +256,7 @@ test("full-screen radar pans and zooms with the remote and saves that view", () 
   const panned = home.settings.getSnapshot().radarView;
   expect(panned?.zoom).toBe(7);
   expect(panned?.longitude).toBeGreaterThan(panned?.placeLongitude ?? 0);
-  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", radarPanning: true });
+  expect(home.state.getSnapshot()).toMatchObject({ expanded: "weather", radarPanning: true, radarPlaying: false });
 
   press(home, KEY.BACK);
   expect(home.state.getSnapshot()).toMatchObject({
@@ -327,6 +358,8 @@ test("the radar timeline plays, scrubs, and switches between one hour and the fu
   home.toggleWeatherRadar();
   home.expandPane("weather");
   home.commandRadar({ count: 8, nowIndex: 6, type: "sync" });
+  // Opens paused directly on the timeline.
+  expect(home.state.getSnapshot()).toMatchObject({ radarPlaying: false, weatherFocus: "timeline" });
   press(home, KEY.ENTER);
   expect(home.state.getSnapshot()).toMatchObject({ radarPlaying: true, weatherFocus: "timeline" });
   press(home, KEY.RIGHT);
@@ -341,9 +374,60 @@ test("the radar timeline plays, scrubs, and switches between one hour and the fu
   press(home, KEY.UP);
   expect(home.state.getSnapshot().weatherFocus).toBe("span");
   press(home, KEY.RIGHT);
-  expect(home.state.getSnapshot()).toMatchObject({ radarFrame: null, radarSpan: 2 });
+  expect(home.state.getSnapshot()).toMatchObject({ radarFrame: null, radarPlaying: false, radarSpan: 2 });
   press(home, KEY.LEFT);
   expect(home.state.getSnapshot().radarSpan).toBe(1);
+});
+
+test("radar card play bar and Samsung media keys control playback without ever autoplaying", () => {
+  const home = controller();
+  home.bridge.focus();
+  home.toggleWeatherRadar();
+  home.commandRadar({ count: 6, nowIndex: 5, type: "sync" });
+  expect(home.state.getSnapshot()).toMatchObject({
+    expanded: null,
+    radarPlaying: false,
+    selected: "family-weather",
+    weatherFocus: "view",
+  });
+
+  // Down from the radar card reaches the card Play/Pause bar; OK toggles play, Left/Right scrubs.
+  press(home, KEY.DOWN);
+  expect(home.state.getSnapshot().weatherFocus).toBe("timeline");
+  ok(home);
+  expect(home.state.getSnapshot().radarPlaying).toBe(true);
+  press(home, KEY.LEFT);
+  expect(home.state.getSnapshot()).toMatchObject({ radarFrame: 4, radarPlaying: false });
+  press(home, KEY.BACK);
+  expect(home.state.getSnapshot().weatherFocus).toBe("view");
+
+  // Samsung hardware media keys play, pause, and toggle on the card and in full screen.
+  press(home, KEY.MEDIA_PLAY);
+  expect(home.state.getSnapshot().radarPlaying).toBe(true);
+  press(home, KEY.MEDIA_PLAY);
+  expect(home.state.getSnapshot().radarPlaying).toBe(true);
+  press(home, KEY.MEDIA_PAUSE);
+  expect(home.state.getSnapshot().radarPlaying).toBe(false);
+  press(home, KEY.MEDIA_PLAY_PAUSE);
+  home.bridge.keyup(KEY.MEDIA_PLAY_PAUSE);
+  expect(home.state.getSnapshot().radarPlaying).toBe(true);
+
+  // Expanding to full screen resets playback to paused (never autoplays).
+  ok(home);
+  expect(home.state.getSnapshot()).toMatchObject({
+    expanded: "weather",
+    radarPlaying: false,
+    weatherFocus: "timeline",
+  });
+  press(home, KEY.MEDIA_PLAY_PAUSE);
+  home.bridge.keyup(KEY.MEDIA_PLAY_PAUSE);
+  expect(home.state.getSnapshot().radarPlaying).toBe(true);
+  press(home, KEY.MEDIA_PAUSE);
+  expect(home.state.getSnapshot().radarPlaying).toBe(false);
+  press(home, KEY.MEDIA_PLAY);
+  expect(home.state.getSnapshot().radarPlaying).toBe(true);
+  press(home, KEY.BACK);
+  expect(home.state.getSnapshot()).toMatchObject({ expanded: null, radarPlaying: false });
 });
 
 test("the calendar's day control changes the Home pane's day and OK returns to today", () => {
